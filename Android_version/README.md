@@ -5,4 +5,4 @@
 4. Connect android device with usb on the pc
 5. Use the run button tu run the application on the device.
 # Structure of the app
-1. Find documentation for structure of the app [here](./Web_Version/Documentation)
+1. Find documentation for structure of the app [here](./Web_Version/Documentations)
