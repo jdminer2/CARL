@@ -11,6 +11,8 @@ import {
     LabelSeries
 } from 'react-vis';
 
+import Button from '@mui/material/Button';
+
 import React, { useEffect, useState, useRef} from 'react';
 import { useReactToPrint } from "react-to-print";
 
@@ -191,9 +193,9 @@ function Ce325App(){
                     <LineSeries data = {[{x:playerLoc ,y: 0},{x:playerLoc,y: 20}]} stroke = "black"/>
                     <LineSeries data = {[{x : 0, y : 0},{x : loadData.length ,y : 0}]} />
                 </XYPlot>
-                <button style={butStyle} id={"single_325_left_btn"} onClick={()=>{playerMovement(playerLoc-1)}}><span>&#8592;</span></button>
-                <button style={butStyle} id={"single_325_right_btn"} onClick={()=>{playerMovement(playerLoc+1)}}><span>&#8594;</span></button>
-                <button style={butStyle} id={"perform_print_325_btn"} onClick={()=>{handlePrint()}}><span>Print Plots</span></button>
+                <Button variant="contained" sx={{margin: 0.5}} id={"single_325_left_btn"} onClick={()=>{playerMovement(playerLoc-1)}}><span>&#8592;</span></Button>
+                <Button variant="contained" sx={{margin: 0.5}} id={"single_325_right_btn"} onClick={()=>{playerMovement(playerLoc+1)}}><span>&#8594;</span></Button>
+                <Button variant="contained" sx={{margin: 0.5}} id={"perform_print_325_btn"} onClick={()=>{handlePrint()}}><span>Print Plots</span></Button>
             </div>
             <div id={"printable_div"} ref={printDivRef}>
                 <div>Load Location is {playerLoc} </div>

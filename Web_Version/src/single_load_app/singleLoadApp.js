@@ -10,6 +10,8 @@ import {
     LabelSeries
 } from 'react-vis';
 
+import Button from '@mui/material/Button';
+
 import React, {useEffect, useRef, useState} from 'react';
 import {useInterval} from "../useInterval";
 import io from "socket.io-client"
@@ -343,10 +345,10 @@ function SingleLoadApp(){
                         <LineSeries data = {[{x:(playerLoc),y: calcPlayerLoc(playerLoc,updateMdata(mData))},{x:(playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>
                         <LineSeries data={updateMdata(mData)} curve={'curveMonotoneX'}/>
                     </XYPlot>
-                    <button style={butStyle} id={"single_left_btn"} onClick={()=>{playerMovement(playerLoc-1,2,mi,true,0.5)}}><span>&#8592;</span></button>
-                    <button style={butStyle} id={"single_jump_btn"} onClick={()=>{playerMovement(playerLoc,10,mi,true,0.5)}}>JUMP</button>
-                    <button style={butStyle} id={"single_right_btn"} onClick={()=>{playerMovement(playerLoc+1,2,mi,true,0.5)}}><span>&#8594;</span></button>
-                    <button style={butStyle} id={"perform_print_325_btn"} onClick={()=>{handlePrint()}}><span>Print Plots</span></button>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"single_left_btn"} onClick={()=>{playerMovement(playerLoc-1,2,mi,true,0.5)}}><span>&#8592;</span></Button>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"single_jump_btn"} onClick={()=>{playerMovement(playerLoc,10,mi,true,0.5)}}>JUMP</Button>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"single_right_btn"} onClick={()=>{playerMovement(playerLoc+1,2,mi,true,0.5)}}><span>&#8594;</span></Button>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"perform_print_325_btn"} onClick={()=>{handlePrint()}}><span>Print Plots</span></Button>
                 </div>
                 <div id={"printable_div"} ref={printDivRef}>
                     <div>Load Location is {playerLoc} </div>

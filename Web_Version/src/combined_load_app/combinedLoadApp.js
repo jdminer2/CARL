@@ -268,10 +268,10 @@ function CombinedLoadApp(){
                     <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
                 <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
-                <button style={butStyle} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></button>
-                <button style={butStyle} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></button>
-                <button style={butStyle} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></button>
-                <button style={butStyle} id={"multi_delete_btn"}onClick={()=>{deleteLoad()}}>delete</button>
+                <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
+                <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
+                <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
+                <Button variant="contained" sx={{margin: 0.5}} id={"multi_delete_btn"}onClick={()=>{deleteLoad()}}>delete</Button>
 
             </div>
             <div>
