@@ -197,7 +197,7 @@ function CombinedLoadApp(){
                 />
             </label>
             <div></div>
-            <input type="submit" value="analyze" />
+            <input type="submit" value="analyze" autoFocus/>
             <div></div>
         </form>);
     }

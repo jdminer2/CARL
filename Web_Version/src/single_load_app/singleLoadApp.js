@@ -106,6 +106,24 @@ function SingleLoadApp(){
         // socket.emit("message",turl)
     }
 
+    /**
+     * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
+     */
+    function handleKeyDown(event){
+        // Prevent arrow keys from scrolling the screen.
+        if([37,38,39,40].includes(event.keyCode))
+            event.preventDefault();
+        // Left arrow key.
+        if(event.keyCode == 37)
+            playerMovement(playerLoc-1,2,mi,true,0.5)
+        // Up arrow key (Jump).
+        else if(event.keyCode == 38)
+            playerMovement(playerLoc,10,mi,true,0.5)
+        // Right arrow key.
+        else if(event.keyCode == 39)
+            playerMovement(playerLoc+1,2,mi,true,0.5)
+    }
+
     useInterval(updateGraph, 1);
     // useEffect(() => {
     //     const interval = setInterval(emitPing, 2000);
@@ -181,24 +199,6 @@ function SingleLoadApp(){
         return <div>Error: {error.message}</div>;
     }else {
         if(!isLoadInitialized){
-            /**
-             * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
-             */
-            function handleKeyDown(event){
-                // Prevent arrow keys from scrolling the screen.
-                if([37,38,39,40].includes(event.keyCode))
-                    event.preventDefault();
-                // Left arrow key.
-                if(event.keyCode == 37)
-                    playerMovement(playerLoc-1,2,mi,true,0.5)
-                // Up arrow key (Jump).
-                else if(event.keyCode == 38)
-                    playerMovement(playerLoc,10,mi,true,0.5)
-                // Right arrow key.
-                else if(event.keyCode == 39)
-                    playerMovement(playerLoc+1,2,mi,true,0.5)
-            }
-
             function handleSubmit(data){
                 setLoadData(data)
                 setIsLoadInitialized(true);
@@ -331,7 +331,7 @@ function SingleLoadApp(){
                             />
                         </label>
                         <div></div>
-                        <input type="submit" value="analyze"/>
+                        <input type="submit" value="analyze" autoFocus/>
                         <div></div>
                         {/* eslint-disable-next-line no-undef */}
                         <div><img src={require("../resources/images/Single_load_schematic.png")} height={window.innerHeight/3} width={window.innerWidth/2.5}/></div>

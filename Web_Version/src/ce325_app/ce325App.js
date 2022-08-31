@@ -35,27 +35,27 @@ function Ce325App(){
         }
     }
 
+    /**
+     * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
+     */
+    function handleKeyDown(event){
+        // Prevent arrow keys from scrolling the screen.
+        if([37,38,39,40].includes(event.keyCode))
+            event.preventDefault();
+        // Left arrow key.
+        if(event.keyCode == 37)
+            playerMovement(playerLoc-1)
+        // Right arrow key.
+        else if(event.keyCode == 39)
+            playerMovement(playerLoc+1)
+    }
+
     const handlePrint = useReactToPrint({
         content: () => printDivRef.current
     });
 
     // // eslint-disable-next-line react-hooks/exhaustive-deps
     if(!isLoadInitialized) {
-        /**
-         * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
-         */
-        function handleKeyDown(event){
-            // Prevent arrow keys from scrolling the screen.
-            if([37,38,39,40].includes(event.keyCode))
-                event.preventDefault();
-            // Left arrow key.
-            if(event.keyCode == 37)
-                playerMovement(playerLoc-1)
-            // Right arrow key.
-            else if(event.keyCode == 39)
-                playerMovement(playerLoc+1)
-        }
-
         function handleSubmit(data) {
             setLoadData(data)
             setIsLoadInitialized(true);
@@ -187,7 +187,7 @@ function Ce325App(){
                         />
                     </label>
                     <div></div>
-                    <input type="submit" value="analyze"/>
+                    <input type="submit" value="analyze" autoFocus/>
                     <div></div>
                     {/* eslint-disable-next-line no-undef */}
                     <div><img src={require("../resources/images/Single_load_schematic.png")} height={window.innerHeight/3} width={window.innerWidth/2.5}/></div>

@@ -110,7 +110,7 @@ function CantileverBeamApp(){
         loads[selectedLoad].location += disp;
         setLoadUpdated(true)
     }
-    
+
     /**
      * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
      */
@@ -218,7 +218,7 @@ function CantileverBeamApp(){
                 />
             </label>
             <div></div>
-            <input type="submit" value="analyze" />
+            <input type="submit" value="analyze" autoFocus/>
             <div></div>
         </form>);
     }
