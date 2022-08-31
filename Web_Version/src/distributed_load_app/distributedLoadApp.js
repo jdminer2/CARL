@@ -45,6 +45,24 @@ function DistributedLoadApp(){
     }else {
         console.log("came here")
         if(!isLoadInitialized){
+            /**
+             * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
+             */
+            function handleKeyDown(event){
+                // Prevent arrow keys from scrolling the screen.
+                if([37,38,39,40].includes(event.keyCode))
+                    event.preventDefault();
+                // Left arrow key.
+                if(event.keyCode == 37)
+                    loadMovement(loadLocation-1)
+                // Up arrow key (Jump).
+                //else if(event.keyCode == 38)
+                //    playerMovement(playerLoc,10,mi,true,0.5)
+                // Right arrow key.
+                else if(event.keyCode == 39)
+                    loadMovement(loadLocation+1)
+            }
+            
             function handleSubmit(data){
                 setLoadData(data)
                 setIsLoadInitialized(true);
@@ -154,7 +172,7 @@ function DistributedLoadApp(){
         var ymin = -60000000;
         var mulScale  = 1
         return (
-            <div className={"rowC"}>
+            <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
                 <div className="App">
                     <h1>CARL</h1>
                     {/*ydomain changer*/}

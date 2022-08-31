@@ -181,6 +181,24 @@ function SingleLoadApp(){
         return <div>Error: {error.message}</div>;
     }else {
         if(!isLoadInitialized){
+            /**
+             * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
+             */
+            function handleKeyDown(event){
+                // Prevent arrow keys from scrolling the screen.
+                if([37,38,39,40].includes(event.keyCode))
+                    event.preventDefault();
+                // Left arrow key.
+                if(event.keyCode == 37)
+                    playerMovement(playerLoc-1,2,mi,true,0.5)
+                // Up arrow key (Jump).
+                else if(event.keyCode == 38)
+                    playerMovement(playerLoc,10,mi,true,0.5)
+                // Right arrow key.
+                else if(event.keyCode == 39)
+                    playerMovement(playerLoc+1,2,mi,true,0.5)
+            }
+
             function handleSubmit(data){
                 setLoadData(data)
                 setIsLoadInitialized(true);
@@ -334,7 +352,7 @@ function SingleLoadApp(){
         var ymin = -60000000;
         var mulScale  = 1
         return (
-            <div className={"rowC"}>
+            <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
                 <div className="App">
                     <h1>CARL</h1>
                     <XYPlot height={window.innerHeight * 0.7} width={window.innerWidth/2} yDomain ={[ymin*mulScale,-1 * ymin*mulScale]} margin = {{left : 10}}>

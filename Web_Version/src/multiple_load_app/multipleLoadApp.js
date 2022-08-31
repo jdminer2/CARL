@@ -257,6 +257,35 @@ function MultipleLoadApp(){
         }
     }
 
+    function handleKeyDown(event){
+        if([37,38,39].includes(event.keyCode))
+            event.preventDefault();
+        if(event.keyCode == 37) // Left arrow key
+            playerMovement(-1,1,10);
+        else if(event.keyCode == 38) // Up arrow key (Jump)
+            playerMovement(0,5,10);
+        else if(event.keyCode == 39) // Right arrow key
+            playerMovement(1,1,10);
+    }
+
+    /**
+     * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
+     */
+    function handleKeyDown(event){
+        // Prevent arrow keys from scrolling the screen.
+        if([37,38,39,40].includes(event.keyCode))
+            event.preventDefault();
+        // Left arrow key.
+        if(event.keyCode == 37)
+            playerMovement(-1,1,10);
+        // Up arrow key (Jump).
+        else if(event.keyCode == 38)
+            playerMovement(0,5,10);
+        // Right arrow key.
+        else if(event.keyCode == 39)
+            playerMovement(1,1,10);
+    }
+
     function handleSubmit(data){
         setBeamProperties(data)
         setIsBeamIni(true)
@@ -378,7 +407,7 @@ function MultipleLoadApp(){
         setOnceLoaded(true)
     }
     return(
-        <div className={"rowC"}>
+        <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <div>
                     <Button variant="outlined" onClick={handleClickOpen}>
