@@ -5,4 +5,13 @@
 - Visit the deployed app [HERE]( https://react-vis-app-test.herokuapp.com/)
 ## Contact Information
 - Name : Ankur Sharma
-- email : asharm48@ncsu.edu
+- Email : asharm48@ncsu.edu
+
+- Name: Jonathan Miner
+- Email : jdminer2@ncsu.edu
+
+- Supervised by: Dr. Kevin Han
+- Email : kevin_han@ncsu.edu
+
+Department of Civil, Construction, and Environmental Engineering
+NC State University
