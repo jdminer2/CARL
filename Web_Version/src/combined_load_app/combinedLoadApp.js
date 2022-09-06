@@ -345,9 +345,9 @@ function dataMakerForLoads(loads, beamProperties){
     for(let load in loads){
         console.log("load is : " + load.type)
         if(loads[load].type === "c"){
-            data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35}})
-            data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10}})
-            data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10}})
+            data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }else{
             let d = loads[load].length
             let s = []

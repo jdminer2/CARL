@@ -4,11 +4,19 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 
+/**
+ * This component receives a list of loads from a multi-load page through props.loadList,
+ * then it creates a dropdown list for the user to select a load to control. 
+ * The variable for currently selected load must be entered through props.value, 
+ * and a function must be entered through props.onChange to allow the dropdown to alter the variable.
+ * 
+ * Usage could look like:
+ * <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
+ */
 const LoadSelectionOptions = (props) => {
     const menuItemList = [];
     for(let load in props.loadList)
-    menuItemList.push(<MenuItem value={load}>{load}</MenuItem>);
-    console.log(Object.keys(props.loadList)[0]);
+        menuItemList.push(<MenuItem value={load}>{load}</MenuItem>);
 
     return (
         <FormControl>

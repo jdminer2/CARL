@@ -294,7 +294,7 @@ function MultipleLoadApp(){
         for(let load in loads){
             var ycord = calcPlayerLoc(loads[load].location,mData)// calculate y with a function for dynamic
             var xcord = loads[load].location
-            data.push({x: xcord, y: ycord+5000000, label: "\u2193", style: {fontSize: 35}})
+            data.push({x: xcord, y: ycord+5000000, label: "\u2193", style: {fontSize: 35, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }
         return data;
     }
@@ -531,9 +531,9 @@ function dataMakerForLoads(loads, beamProperties){
     var length = beamProperties.length
     for(let load in loads){
         var ycord = 0// calculate y with a function for dynamic
-        data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35}})
-        data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10}})
-        data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10}})
+        data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
     }
     return data;
 }
