@@ -17,6 +17,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import LoadSelector from '../components/LoadSelector';
 import React, { useEffect, useState} from 'react';
 import io from "socket.io-client";
 import {useInterval} from "../useInterval";
@@ -34,7 +35,7 @@ function CantileverBeamApp(){
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [isLoadInitialized, setIsLoadInitialized] = useState(false)
     // edit this to add or edit add a load
-    const [loads,setLoads] = useState({load1 : {mass:10.0,location:50.0}, load3 : {mass:15.0, location: 60.0}, load2 : {mass:10.0, location: 20.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
+    const [loads,setLoads] = useState({load1 : {mass:10.0,location:50.0}, load2 : {mass:10.0, location: 20.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newMass, setNewMass] = useState(10.0)
@@ -127,6 +128,10 @@ function CantileverBeamApp(){
         // Right arrow key.
         else if(event.keyCode == 39)
             playerMovement(1,1,10);
+    }
+
+    function handleDropdownChange(event){
+        setSelectedLoad(event.target.value);
     }
 
     function handleSubmit(data){
@@ -285,6 +290,7 @@ function CantileverBeamApp(){
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
                     <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
+                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
                 <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>

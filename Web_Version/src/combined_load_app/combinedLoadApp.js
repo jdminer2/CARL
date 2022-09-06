@@ -7,6 +7,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import TextField from "@mui/material/TextField";
 import DialogActions from "@mui/material/DialogActions";
+import LoadSelector from '../components/LoadSelector';
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis";
 import {inv, multiply} from "mathjs";
 
@@ -18,7 +19,7 @@ function CombinedLoadApp(){
     const [beamProperties,setBeamProperties] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,loacationOfLoad:20})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
-    const [loads,setLoads] = useState({load1 : {mass:10.0,location:50.0,type:"d",length:25}, load3 : {mass:15.0, location: 60.0,type:"d",length:25}, load2 : {mass:10.0, location: 20.0,type:"c",length:0}, load4 : {mass: 20.0, location: 70.0,type:"c",length:25} , load5 : {mass: 10.0, location: 30.0,type:"c",length:25} })
+    const [loads,setLoads] = useState({load1 : {mass:10.0,location:50.0,type:"d",length:25}, load2 : {mass:10.0, location: 20.0,type:"c",length:0}, load3 : {mass:15.0, location: 60.0,type:"d",length:25}, load4 : {mass: 20.0, location: 70.0,type:"c",length:25} , load5 : {mass: 10.0, location: 30.0,type:"c",length:25} })
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newMass, setNewMass] = useState(10.0)
@@ -108,6 +109,10 @@ function CombinedLoadApp(){
             playerMovement(1,1,10);
     }
 
+    function handleDropdownChange(event){
+        setSelectedLoad(event.target.value);
+    }
+    
     function handleSubmit(data){
         setBeamProperties(data)
         setIsBeamIni(true)
@@ -285,6 +290,7 @@ function CombinedLoadApp(){
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
                     <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
+                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
                 <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
