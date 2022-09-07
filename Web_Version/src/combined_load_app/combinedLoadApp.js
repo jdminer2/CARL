@@ -351,13 +351,14 @@ function dataMakerForLoads(loads, beamProperties){
         }else{
             let d = loads[load].length
             let s = []
-            for(let i = 0 ;i <=d; i ++){
+            for(let i = 0 ;i < d; i ++){
                 s.push("_")
             }
             s = s.join("")
-            data.push({x: loads[load].location , y:15, label: s, style: {fontSize: 10}})
-            data.push({x: loads[load].location , y: 20, label: load.toString(), style: {fontSize: 10}})
-            data.push({x: loads[load].location , y: 25, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10}})
+            // Font size 11.1 makes the underscores line up with the gridlines.
+            data.push({x: loads[load].location , y:15, label: s, style: {fontSize: 11.1, dominantBaseline: "text-after-edge", textAnchor: "left"}})
+            data.push({x: loads[load].location , y: 20, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "left"}})
+            data.push({x: loads[load].location , y: 25, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "left"}})
         }
     }
     return data;
