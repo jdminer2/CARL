@@ -8,7 +8,7 @@ import {
     NavBtn,
     NavBtnLink,
 } from './NavbarElements';
-import Menu from '@mui/material';
+import Menu from '@mui/material/Menu';
 
 
 /** This is the top green bar that allows the user to navigate all the pages */
