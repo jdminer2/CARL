@@ -1,8 +1,5 @@
 import React from 'react';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
+import {FormControl, InputLabel, MenuItem, Select} from '@mui/material';
 
 /**
  * This component receives a list of loads from a multi-load page through props.loadList,
@@ -13,10 +10,10 @@ import Select from '@mui/material/Select';
  * Usage could look like:
  * <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
  */
-const LoadSelectionOptions = (props) => {
+const LoadSelector = (props) => {
     const menuItemList = [];
     for(let load in props.loadList)
-        menuItemList.push(<MenuItem value={load}>{load}</MenuItem>);
+        menuItemList.push(<MenuItem key={load} value={load}>{load}</MenuItem>);
 
     return (
         <FormControl>
@@ -34,4 +31,4 @@ const LoadSelectionOptions = (props) => {
         </FormControl>
     );
 }
-export default LoadSelectionOptions;
+export default LoadSelector;

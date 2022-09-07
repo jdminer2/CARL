@@ -1,12 +1,6 @@
 import '../App.css'
 import React, { useEffect, useState} from 'react';
-import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import TextField from "@mui/material/TextField";
-import DialogActions from "@mui/material/DialogActions";
+import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField} from '@mui/material'
 import LoadSelector from '../components/LoadSelector';
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis";
 import {inv, multiply} from "mathjs";
@@ -44,8 +38,7 @@ function CombinedLoadApp(){
     useEffect(()=>{if(loadUpdated === false){return;}
         setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,beamProperties)},[loadUpdated,dataMakerForLoads])
 
-
-
+    // Function to pick the first unoccupied load name like load1, load2, load3...
     function loadNamer(){
         var n = 1;
         var name = ""
@@ -289,6 +282,20 @@ function CombinedLoadApp(){
                     <YAxis/>
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
                     <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
+                    {/* Display distributed loads. */}
+                    {Object.entries(loads).map((load) => {
+                        console.log(load[0]);
+                        console.log(load[1]);
+                        if(load[1].type==="d")
+                            return (
+                                <LineSeries 
+                                    opacity={0.5}
+                                    strokeWidth={3}
+                                    data={[{x:load[1].location,y:5},{x:(load[1].location+load[1].length),y:5}]}
+                                    onSeriesClick={(event) => {setSelectedLoad(load[0])}}
+                                />
+                            );
+                    })}
                 </XYPlot>
                 <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
                 <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
@@ -349,14 +356,6 @@ function dataMakerForLoads(loads, beamProperties){
             data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }else{
-            let d = loads[load].length
-            let s = []
-            for(let i = 0 ;i < d; i ++){
-                s.push("_")
-            }
-            s = s.join("")
-            // Font size 11.1 makes the underscores line up with the gridlines.
-            data.push({x: loads[load].location , y:15, label: s, style: {fontSize: 11.1, dominantBaseline: "text-after-edge", textAnchor: "left"}})
             data.push({x: loads[load].location , y: 20, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "left"}})
             data.push({x: loads[load].location , y: 25, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "left"}})
         }
