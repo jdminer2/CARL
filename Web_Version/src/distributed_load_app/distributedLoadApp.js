@@ -27,7 +27,7 @@ function DistributedLoadApp(){
     const [error, setError] = useState(null);
     const [infoUpdated,setInfoUpdated] = useState(false);
     const [isLoadInitialized, setIsLoadInitialized] = useState(false);
-    const [loadData, setLoadData] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,loacationOfLoad:25})
+    const [loadData, setLoadData] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,locationOfLoad:25,lengthOfLoad:50})
     const [loadLocation , setLoadLocation] = useState(25.0);
     const [loadLength,setLoadLength] = useState(50)
 
@@ -66,8 +66,9 @@ function DistributedLoadApp(){
             function handleSubmit(data){
                 setLoadData(data)
                 setIsLoadInitialized(true);
-                setLoadLocation(parseFloat(data.loacationOfLoad))
-                // setTestUrl("{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loadData.loacationOfLoad +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
+                setLoadLocation(parseFloat(data.locationOfLoad));
+                setLoadLength(parseInt(data.lengthOfLoad));
+                // setTestUrl("{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loadData.locationOfLoad +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
                 // console.log(testUrl)
             }
             if(!isLoadInitialized){
@@ -159,7 +160,15 @@ function DistributedLoadApp(){
                             <input
                                 defaultValue={25}
                                 type="text"
-                                onChange={(e) => {data.loacationOfLoad = e.target.value}}
+                                onChange={(e) => {data.locationOfLoad = e.target.value}}
+                            />
+                        </label>
+                        <div></div>
+                        <label>Length of Load:
+                            <input
+                                defaultValue={50}
+                                type="text"
+                                onChange={(e) => {data.lengthOfLoad = e.target.value}}
                             />
                         </label>
                         <div></div>
