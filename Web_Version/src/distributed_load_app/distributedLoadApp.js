@@ -190,8 +190,13 @@ function DistributedLoadApp(){
                         <HorizontalGridLines/>
                         <XAxis title = {"Load Location"}/>
                         <YAxis/>
+                        {/* Display the beam */}
                         <LineSeries data={[{x:0,y:0},{x:100,y:0}]}/>
-                        <LineSeries data={[{x:loadLocation,y:5},{x:(loadLocation+loadLength),y:5}]}/>
+                        <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                        {/* Display the load */}
+                        <LineSeries data={[{x:loadLocation,y:8},{x:(loadLocation+loadLength),y:8}]} color="#79c7e3" />
+                        <LabelSeries data={getDistributedLoadMiniArrows(loadLocation, loadLength)} />
                         {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
                         {/*<LineSeries data={disLoadMovData()} curve={'curveMonotoneX'}/>*/}
                     </XYPlot>
@@ -238,6 +243,16 @@ function DistributedLoadApp(){
     }
 
 }
+
+function getDistributedLoadMiniArrows(pos, len){
+    // Load will have more arrows the longer it is: at least every 5 units, and one on each end. They are all evenly spaced.
+    let arrowsArray=[];
+    let numArrows = Math.floor(len / 5) + 1;
+    for(let i = 0; i <= numArrows; i++)
+        arrowsArray.push({x: pos + (i / numArrows) * len, y: -3, label: "\u2193",  style: {fontSize: 25, font: "verdana", fill: "#79c7e3", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+    return arrowsArray;
+}
+
 function deflectionCalculation(e,d,w,L){
     var R1 = reactionR1(e,d,w,L)[0]
     var cs = constantCalculation(R1,e,d,w,L);

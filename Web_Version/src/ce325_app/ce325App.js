@@ -205,8 +205,12 @@ function Ce325App(){
                     <HorizontalGridLines/>
                     <XAxis title = {"ACTUAL DISPLACEMENT"}/>
                     <YAxis/>
+                    {/* Display the player */}
                     <LineSeries data = {[{x:playerLoc ,y: 0},{x:playerLoc,y: 20}]} stroke = "black"/>
+                    {/* Display the beam */}
                     <LineSeries data = {[{x : 0, y : 0},{x : loadData.length ,y : 0}]} />
+                    <LabelSeries data={[{x: 0, y: -8, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: 100, y: -8, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                 </XYPlot>
                 <Button variant="contained" sx={{margin: 0.5}} id={"single_325_left_btn"} onClick={()=>{playerMovement(playerLoc-1)}}><span>&#8592;</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"single_325_right_btn"} onClick={()=>{playerMovement(playerLoc+1)}}><span>&#8594;</span></Button>

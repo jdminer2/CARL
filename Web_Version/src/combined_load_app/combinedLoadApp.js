@@ -372,9 +372,6 @@ function CombinedLoadApp(){
  * 
  * This function also creates arrow text characters to indicate the positions of loads.
  * This function is not responsible for displaying the line part of the distributed loads, but it does give the arrows.
- * @param {*} loads 
- * @param {*} beamProperties 
- * @returns 
  */
 function dataMakerForLoads(loads, beamProperties){
     var data = []
@@ -383,25 +380,40 @@ function dataMakerForLoads(loads, beamProperties){
         // Centralized Loads
         if(loads[load].type === "c"){
             // Put load name.
-            data.push({x: loads[load].location, y: 35, loadID: load, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: loads[load].location, y: 35, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put load stats (mass, position).
-            data.push({x: loads[load].location, y: 30, loadID: load, label: "m=" + loads[load].mass + ", x=" + loads[load].location, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: loads[load].location, y: 30, label: "m=" + loads[load].mass + ", x=" + loads[load].location, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put a big arrow.
-            data.push({x: loads[load].location, y: -5, loadID: load, label: "\u2193", style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: loads[load].location, y: -5, label: "\u2193", loadID: load, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         // Distributed Loads
         }else{
             // Put load name.
-            data.push({x: loads[load].location+loads[load].length/2, y: 25, loadID: load, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: loads[load].location+loads[load].length/2, y: 25, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put load stats (mass, position, length).
-            data.push({x: loads[load].location+loads[load].length/2, y: 20, loadID: load, label: "m=" + loads[load].mass + ", x=" + loads[load].location +", L=" + loads[load].length, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            // Put small arrows under distributed load line. Load will have more arrows the longer it is: at least every 5 units, and one on each end. They are all evenly spaced.
-            let numArrows = Math.floor(loads[load].length / 5) + 1;
-            for(let i = 0; i <= numArrows; i++)
-                data.push({x: loads[load].location + (i/numArrows) * loads[load].length, y: -3, loadID: load, label: "\u2193",  style: {fontSize: 25, font: "verdana", fill: loads[load].color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: loads[load].location+loads[load].length/2, y: 20, label: "m=" + loads[load].mass + ", x=" + loads[load].location +", L=" + loads[load].length, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            // Put small arrows under distributed load line. 
+            getDistributedLoadMiniArrows(data, loads[load].location, loads[load].length, loads[load].color, load);
         }
     }
     return data;
 }
+
+/**
+ * Function for adding mini arrows under the distributed loads.
+ * Loads will have at least one arrow per 5 units, and always have an arrow on each end. 
+ * There is also an arrow on each end of the load, and the arrows match the color and loadID of the load.
+ * 
+ * array is the data array for a LabelSeries that will display these arrows.
+ * pos and len are the position and length of the load.
+ * color is the color of the load line, so that the arrows can match that color.
+ * loadID is the name of the load that these arrows belong to. It is part of allowing users to click on these arrows to select the load to move/delete it.
+ */
+function getDistributedLoadMiniArrows(array, pos, len, color, loadID){
+    let numArrows = Math.floor(len / 5) + 1;
+    for(let i = 0; i <= numArrows; i++)
+        array.push({x: pos + (i/numArrows) * len, y: -3, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", fill: color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+}
+
 function shearForceData(loads, beamProperties){
     var length = beamProperties.length;
     var x = 0

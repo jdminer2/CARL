@@ -294,7 +294,7 @@ function MultipleLoadApp(){
         for(let load in loads){
             var ycord = calcPlayerLoc(loads[load].location,mData)// calculate y with a function for dynamic
             var xcord = loads[load].location
-            data.push({x: xcord, y: ycord+5000000, label: "\u2193", style: {fontSize: 35, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: xcord, y: ycord+5000000, label: "\u2193", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }
         return data;
     }
@@ -457,8 +457,12 @@ function MultipleLoadApp(){
                     <XAxis title = {"ACTUAL DISPLACEMENT"}/>
                     <YAxis/>
                     {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
-                    <LabelSeries data={dataMakerForLoadsDynamic()} allowOffsetToBeReversed={false} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
+                    {/* Display the beam */}
                     <LineSeries data={updateMdata(mData)} curve={'curveMonotoneX'}/>
+                    <LabelSeries data={[{x: 0, y: -8 * (100000000/100), label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: 100, y: -8 * (100000000/100), label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                    {/* Display the loads */}
+                    <LabelSeries data={dataMakerForLoadsDynamic()} allowOffsetToBeReversed={false} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
                 <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
                 <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
@@ -531,7 +535,7 @@ function dataMakerForLoads(loads, beamProperties){
     var length = beamProperties.length
     for(let load in loads){
         var ycord = 0// calculate y with a function for dynamic
-        data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
     }

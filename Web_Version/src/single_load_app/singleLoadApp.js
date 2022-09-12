@@ -360,8 +360,12 @@ function SingleLoadApp(){
                         <HorizontalGridLines/>
                         <XAxis title = {"ACTUAL DISPLACEMENT"}/>
                         <YAxis/>
-                        <LineSeries data = {[{x:(playerLoc),y: calcPlayerLoc(playerLoc,updateMdata(mData))},{x:(playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>
+                        {/* Display beam */}
                         <LineSeries data={updateMdata(mData)} curve={'curveMonotoneX'}/>
+                        <LabelSeries data={[{x: 0, y: -8 * (ymin*mulScale/-100), label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: 100, y: -8* (ymin*mulScale/-100), label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                        {/* Display player */}
+                        <LineSeries data = {[{x:(playerLoc),y: calcPlayerLoc(playerLoc,updateMdata(mData))},{x:(playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>
                     </XYPlot>
                     <Button variant="contained" sx={{margin: 0.5}} id={"single_left_btn"} onClick={()=>{playerMovement(playerLoc-1,2,mi,true,0.5)}}><span>&#8592;</span></Button>
                     <Button variant="contained" sx={{margin: 0.5}} id={"single_jump_btn"} onClick={()=>{playerMovement(playerLoc,10,mi,true,0.5)}}>JUMP</Button>
