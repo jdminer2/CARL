@@ -13,14 +13,14 @@ function CombinedLoadApp(){
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8, loacationOfLoad:20})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
-    const [loads,setLoads] = useState({load1: {mass:10.0, location:50.0, type:"d", length:25, color:"#12345680"}, load2: {mass:10.0, location: 20.0, type: "c", length: 0}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 25}, load5: {mass: 10.0, location: 30.0, type: "c", length: 25}})
+    const [loads,setLoads] = useState({load1: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load2: {mass:10.0, location: 20.0, type: "c", length: 0}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 25}, load5: {mass: 10.0, location: 30.0, type: "c", length: 25}})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newMass, setNewMass] = useState(10.0)
     const [newLocation, setNewLocation] = useState(10)
     const [newLoadType, setNewLoadType] = useState("c")
     const [newLoadLength, setNewLoadLength] = useState(25)
-    const [newLoadName, setNewLoadName] = useState("newLoad")
+    const [newLoadName, setNewLoadName] = useState("load6")
     const [open, setOpen] = React.useState(false);
     const handleClickOpen = () => {
         setOpen(true);
@@ -288,14 +288,18 @@ function CombinedLoadApp(){
                     </Dialog>
                 </div>
 
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
+                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
                     <XAxis title = {"Load location"}/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
-                    <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
-                    {/* Display distributed loads. */}
+                    {/* Display the beam. */}
+                    <LineSeries data = {[{x: 0, y: 0}, {x: 100, y: 0}]} />
+                    <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                    {/* Display the loads. */}
+                    <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
+                    {/* Display the line part of distributed loads. */}
                     {Object.entries(loads).map((load) => {
                         console.log(load[0]);
                         console.log(load[1]);
@@ -304,7 +308,7 @@ function CombinedLoadApp(){
                                 <LineSeries 
                                     color={load[1].color}
                                     strokeWidth={3}
-                                    data={[{x:load[1].location,y:8},{x:(load[1].location+load[1].length),y:8}]}
+                                    data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 8}]}
                                     onSeriesClick={(event) => {setSelectedLoad(load[0])}}
                                 />
                             );
@@ -383,18 +387,17 @@ function dataMakerForLoads(loads, beamProperties){
             // Put load stats (mass, position).
             data.push({x: loads[load].location, y: 30, loadID: load, label: "m=" + loads[load].mass + ", x=" + loads[load].location, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put a big arrow.
-            data.push({x: loads[load].location, y: -5, loadID: load, label: "\u2193", style: {fontSize: 45, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: loads[load].location, y: -5, loadID: load, label: "\u2193", style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         // Distributed Loads
         }else{
             // Put load name.
             data.push({x: loads[load].location+loads[load].length/2, y: 25, loadID: load, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put load stats (mass, position, length).
             data.push({x: loads[load].location+loads[load].length/2, y: 20, loadID: load, label: "m=" + loads[load].mass + ", x=" + loads[load].location +", L=" + loads[load].length, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            // Put a small arrow every 5 units from the left-end.
-            for(let i = loads[load].location; i < loads[load].location+loads[load].length; i += 5)
-                data.push({x: i, y: -3, loadID: load, label: "\u2193",  style: {fontSize: 25, dominantBaseline: "text-after-edge", textAnchor: "middle", fill: loads[load].color}})
-            // Put a small arrow at the right-end.
-            data.push({x: loads[load].location + loads[load].length, y: -3, loadID: load, label: "\u2193", color: loads[load].color, style: {fontSize: 25, dominantBaseline: "text-after-edge", textAnchor: "middle", fill: loads[load].color}})
+            // Put small arrows under distributed load line. Load will have more arrows the longer it is: at least every 5 units, and one on each end. They are all evenly spaced.
+            let numArrows = Math.floor(loads[load].length / 5) + 1;
+            for(let i = 0; i <= numArrows; i++)
+                data.push({x: loads[load].location + (i/numArrows) * loads[load].length, y: -3, loadID: load, label: "\u2193",  style: {fontSize: 25, font: "verdana", fill: loads[load].color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }
     }
     return data;
