@@ -10,10 +10,10 @@ function CombinedLoadApp(){
 
     const butStyle = {background: "black", height:window.innerHeight/12,
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
-    const [beamProperties,setBeamProperties] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,loacationOfLoad:20})
+    const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8, loacationOfLoad:20})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
-    const [loads,setLoads] = useState({load1 : {mass:10.0,location:50.0,type:"d",length:25}, load2 : {mass:10.0, location: 20.0,type:"c",length:0}, load3 : {mass:15.0, location: 60.0,type:"d",length:25}, load4 : {mass: 20.0, location: 70.0,type:"c",length:25} , load5 : {mass: 10.0, location: 30.0,type:"c",length:25} })
+    const [loads,setLoads] = useState({load1: {mass:10.0, location:50.0, type:"d", length:25, color:"#12345680"}, load2: {mass:10.0, location: 20.0, type: "c", length: 0}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 25}, load5: {mass: 10.0, location: 30.0, type: "c", length: 25}})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newMass, setNewMass] = useState(10.0)
@@ -26,12 +26,25 @@ function CombinedLoadApp(){
         setOpen(true);
     };
 
+    /**
+     * Function is executed upon closing the Add A Load menu either by Canceling or Confirming.
+     * This function creates a new load.
+     */
     const handleClose = (event) => {
+        // If closed via cancel button, do nothing.
         if(event === "cancel"){
             setOpen(false);
             return;
         }
-        loads[newLoadName] = {mass: newMass, location: newLocation,type:newLoadType,length:(newLoadType === "c")?0:newLoadLength};
+        // If closed via confirm button, create a new load.
+        // Pick a random color, in the range #000000 to #9F9F9F, always opacity 50%.
+        let newR = Math.floor(Math.random() * 160).toString(16);
+        let newG = Math.floor(Math.random() * 160).toString(16);
+        let newB = Math.floor(Math.random() * 160).toString(16);
+        let newColor = "#" + newR + newG + newB + "80";
+        // Make the load.
+        loads[newLoadName] = {mass: newMass, location: newLocation, type: newLoadType, length: (newLoadType === "c")?0:newLoadLength, color: newColor};
+        setSelectedLoad(newLoadName);
         setLoadUpdated(true);
         setOpen(false);
     };
@@ -69,7 +82,7 @@ function CombinedLoadApp(){
         console.log("got called in load switcher")
         console.log(d)
         for(let load in loads){
-            if(loads[load].location === d.x){
+            if(load === d.loadID){
                 console.log("load was selected")
                 setSelectedLoad(load)
                 break;
@@ -230,7 +243,7 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="mass"
-                                defaultValue={10}
+                                defaultValue={newMass}
                                 type="number"
                                 onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
                                 fullWidth
@@ -241,7 +254,7 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="Location"
                                 type="number"
-                                defaultValue={10}
+                                defaultValue={newLocation}
                                 onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
                                 fullWidth
                                 variant="standard"
@@ -251,7 +264,7 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="TYPE(enter c for concentrated or d for distributed)"
                                 type="text"
-                                defaultValue={"c"}
+                                defaultValue={newLoadType}
                                 onChange={(val)=>{setNewLoadType(val.target.value.toString())}}
                                 fullWidth
                                 variant="standard"
@@ -261,7 +274,7 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="Length (only if distributed)"
                                 type="number"
-                                defaultValue={25}
+                                defaultValue={newLoadLength}
                                 onChange={(val)=>{setNewLoadLength(parseFloat(val.target.value))}}
                                 fullWidth
                                 variant="standard"
@@ -289,9 +302,9 @@ function CombinedLoadApp(){
                         if(load[1].type==="d")
                             return (
                                 <LineSeries 
-                                    opacity={0.5}
+                                    color={load[1].color}
                                     strokeWidth={3}
-                                    data={[{x:load[1].location,y:5},{x:(load[1].location+load[1].length),y:5}]}
+                                    data={[{x:load[1].location,y:8},{x:(load[1].location+load[1].length),y:8}]}
                                     onSeriesClick={(event) => {setSelectedLoad(load[0])}}
                                 />
                             );
@@ -346,18 +359,42 @@ function CombinedLoadApp(){
         </div>
     )
 }
-function dataMakerForLoads(loads, beamProperties){
 
+/**
+ * Function for load labels for the Load Location plot.
+ * For centralized loads it puts load name, mass, and position.
+ * For distributed loads it puts load name, mass, position, and length. 
+ * Distributed load labels are lower than centralized load labels to reduce the amount of overlapping text.
+ * 
+ * This function also creates arrow text characters to indicate the positions of loads.
+ * This function is not responsible for displaying the line part of the distributed loads, but it does give the arrows.
+ * @param {*} loads 
+ * @param {*} beamProperties 
+ * @returns 
+ */
+function dataMakerForLoads(loads, beamProperties){
     var data = []
     for(let load in loads){
         console.log("load is : " + load.type)
+        // Centralized Loads
         if(loads[load].type === "c"){
-            data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            // Put load name.
+            data.push({x: loads[load].location, y: 35, loadID: load, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            // Put load stats (mass, position).
+            data.push({x: loads[load].location, y: 30, loadID: load, label: "m=" + loads[load].mass + ", x=" + loads[load].location, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            // Put a big arrow.
+            data.push({x: loads[load].location, y: -5, loadID: load, label: "\u2193", style: {fontSize: 45, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        // Distributed Loads
         }else{
-            data.push({x: loads[load].location , y: 20, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "left"}})
-            data.push({x: loads[load].location , y: 25, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "left"}})
+            // Put load name.
+            data.push({x: loads[load].location+loads[load].length/2, y: 25, loadID: load, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            // Put load stats (mass, position, length).
+            data.push({x: loads[load].location+loads[load].length/2, y: 20, loadID: load, label: "m=" + loads[load].mass + ", x=" + loads[load].location +", L=" + loads[load].length, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            // Put a small arrow every 5 units from the left-end.
+            for(let i = loads[load].location; i < loads[load].location+loads[load].length; i += 5)
+                data.push({x: i, y: -3, loadID: load, label: "\u2193",  style: {fontSize: 25, dominantBaseline: "text-after-edge", textAnchor: "middle", fill: loads[load].color}})
+            // Put a small arrow at the right-end.
+            data.push({x: loads[load].location + loads[load].length, y: -3, loadID: load, label: "\u2193", color: loads[load].color, style: {fontSize: 25, dominantBaseline: "text-after-edge", textAnchor: "middle", fill: loads[load].color}})
         }
     }
     return data;
