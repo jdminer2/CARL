@@ -61,7 +61,7 @@ function CantileverBeamApp(){
     };
     // handle loads empty case
     useEffect(()=>{if(loadUpdated === false){return;}
-        setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,beamProperties)},[loadUpdated,dataMakerForLoads])
+        setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
 
 
     // Function to pick the first available load name of the form load1, load2, load3...
@@ -305,7 +305,7 @@ function CantileverBeamApp(){
                     <LineSeries data = {[{x : 0, y : 10}, {x : -2, y : 10}]} color = "#12939A"/>
                     <LineSeries data = {[{x : 0, y : -10}, {x : -2, y : -10}]} color = "#12939A"/>
                     {/* Display Loads */}
-                    <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
+                    <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
                 {/* Display drop-down load selector */}
                 <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
@@ -368,15 +368,22 @@ function updateMdata(data){
     return d
 }
 // This function converts data about loads so a LabelSeries can display it. This includes the labels above each load, and the arrow character representing each load.
-function dataMakerForLoads(loads, beamProperties){
+function dataMakerForLoads(loads, selectedLoad, beamProperties){
 
     var data = []
     var length = beamProperties.length
     for(let load in loads){
         var ycord = 0// calculate y with a function for dynamic
-        data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        // Load label
+        data.push({x: loads[load].location , y: 35, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        let label;
+        if(load === selectedLoad)
+            label = "m="+loads[load].mass+", x="+ loads[load].location;
+        else
+            label = loads[load].mass+", "+ loads[load].location;
+        data.push({x: loads[load].location , y: 28, label: label , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        // Arrow icon
+        data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
     }
     return data;
 }

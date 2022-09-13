@@ -81,6 +81,7 @@ function MultipleLoadApp(){
             setIsLoaded(true)
         })
     }
+    // Function for cancelling or confirming in the Add A Load menu.
     const handleClose = (event) => {
         if(event === "cancel"){
             setOpen(false);
@@ -164,7 +165,7 @@ function MultipleLoadApp(){
     }
     useInterval(updateGraph, -1);
 
-
+    // Gets the first available load name of the form load1, load2, load3...
     function loadNamer(){
         var n = 1;
         var name = ""
@@ -194,6 +195,7 @@ function MultipleLoadApp(){
         // playerMovement(0,1,10)
     }
 
+    // If you click on a load, it selects that load.
     function loadSwitcher(d,event){
         console.log("got called in load switcher")
         console.log(d)
@@ -285,6 +287,7 @@ function MultipleLoadApp(){
         setIsBeamIni(true)
     }
 
+    // Display loads on the dynamic plot
     function dataMakerForLoadsDynamic(){
         if(mData===undefined){
             return null;
@@ -294,7 +297,8 @@ function MultipleLoadApp(){
         for(let load in loads){
             var ycord = calcPlayerLoc(loads[load].location,mData)// calculate y with a function for dynamic
             var xcord = loads[load].location
-            data.push({x: xcord, y: ycord+5000000, label: "\u2193", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: xcord, y: ycord+20000000, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: xcord, y: ycord, label: "\u2193", style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }
         return data;
     }
@@ -451,6 +455,7 @@ function MultipleLoadApp(){
                     </Dialog>
                 </div>
                 {/*change y min and scale*/}
+                {/* Dynamic beam display */}
                 <XYPlot height={window.innerHeight * 0.7} width={window.innerWidth/2} yDomain ={[-100000000,100000000]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
@@ -470,13 +475,18 @@ function MultipleLoadApp(){
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_delete_btn"}onClick={()=>{deleteLoad()}}>delete</Button>
+                {/* Static beam display */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
                     <XAxis title = {"Load location"}/>
                     <YAxis/>
+                    {/* Display the beam */}
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
-                    <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
+                    <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                    {/* Display the loads */}
+                    <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
             </div>
             <div>
@@ -529,15 +539,20 @@ function updateMdata(data){
     }
     return d
 }
-function dataMakerForLoads(loads, beamProperties){
+function dataMakerForLoads(loads, selectedLoad, beamProperties){
 
     var data = []
     var length = beamProperties.length
     for(let load in loads){
         var ycord = 0// calculate y with a function for dynamic
-        data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         data.push({x: loads[load].location , y: 40, label: load.toString(), style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        data.push({x: loads[load].location , y: 50, label: loads[load].mass+","+ loads[load].location , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        let label;
+        if(load === selectedLoad)
+            label = "m="+loads[load].mass+", x="+ loads[load].location;
+        else
+            label = loads[load].mass+", "+ loads[load].location;
+        data.push({x: loads[load].location , y: 30, label: label , style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: loads[load].location , y: 0, label: "\u2193", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
     }
     return data;
 }

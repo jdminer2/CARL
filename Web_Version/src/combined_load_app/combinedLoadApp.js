@@ -49,7 +49,7 @@ function CombinedLoadApp(){
         setOpen(false);
     };
     useEffect(()=>{if(loadUpdated === false){return;}
-        setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,beamProperties)},[loadUpdated,dataMakerForLoads])
+        setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
 
     // Function to pick the first unoccupied load name like load1, load2, load3...
     function loadNamer(){
@@ -78,6 +78,7 @@ function CombinedLoadApp(){
         setLoadUpdated(true)
     }
 
+    // Function for when you click on a load, selects that load.
     function loadSwitcher(d,event){
         console.log("got called in load switcher")
         console.log(d)
@@ -115,15 +116,18 @@ function CombinedLoadApp(){
             playerMovement(1,1,10);
     }
 
+    // Function for using the load selector dropdown
     function handleDropdownChange(event){
         setSelectedLoad(event.target.value);
     }
     
+    // Function for submitting the first inputs form
     function handleSubmit(data){
         setBeamProperties(data)
         setIsBeamIni(true)
     }
 
+    // Display the first inputs form
     if(!isBeamIni){
         var data = beamProperties;
         return(<form onSubmit={()=> {handleSubmit(data)}}>
@@ -220,9 +224,11 @@ function CombinedLoadApp(){
         <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <div>
+                    {/* Add A Load button */}
                     <Button variant="outlined" onClick={handleClickOpen}>
                         Add a load
                     </Button>
+                    {/* Add A Load menu */}
                     <Dialog open={open} onClose={handleClose}>
                         <DialogTitle>Add A load</DialogTitle>
                         <DialogContent>
@@ -288,6 +294,7 @@ function CombinedLoadApp(){
                     </Dialog>
                 </div>
 
+                {/* Main Plot */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
@@ -298,7 +305,7 @@ function CombinedLoadApp(){
                     <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
                                         {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                     {/* Display the loads. */}
-                    <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
+                    <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
                     {/* Display the line part of distributed loads. */}
                     {Object.entries(loads).map((load) => {
                         console.log(load[0]);
@@ -314,8 +321,10 @@ function CombinedLoadApp(){
                             );
                     })}
                 </XYPlot>
+                {/* Load Selection dropdown */}
                 <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
                 <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
+                {/* Control buttons */}
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
@@ -323,6 +332,7 @@ function CombinedLoadApp(){
 
             </div>
             <div>
+                {/* Side plots */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[3, 3]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
@@ -373,24 +383,32 @@ function CombinedLoadApp(){
  * This function also creates arrow text characters to indicate the positions of loads.
  * This function is not responsible for displaying the line part of the distributed loads, but it does give the arrows.
  */
-function dataMakerForLoads(loads, beamProperties){
+function dataMakerForLoads(loads, selectedLoad, beamProperties){
     var data = []
     for(let load in loads){
         console.log("load is : " + load.type)
         // Centralized Loads
         if(loads[load].type === "c"){
-            // Put load name.
+            // Put load label.
             data.push({x: loads[load].location, y: 35, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            // Put load stats (mass, position).
-            data.push({x: loads[load].location, y: 30, label: "m=" + loads[load].mass + ", x=" + loads[load].location, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            let label;
+            if(load === selectedLoad)
+                label = "m=" + loads[load].mass + ", x=" + loads[load].location;
+            else
+                label = loads[load].mass + ", " + loads[load].location;
+            data.push({x: loads[load].location, y: 30, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put a big arrow.
             data.push({x: loads[load].location, y: -5, label: "\u2193", loadID: load, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         // Distributed Loads
         }else{
-            // Put load name.
+            // Put load label.
             data.push({x: loads[load].location+loads[load].length/2, y: 25, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            // Put load stats (mass, position, length).
-            data.push({x: loads[load].location+loads[load].length/2, y: 20, label: "m=" + loads[load].mass + ", x=" + loads[load].location +", L=" + loads[load].length, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            let label;
+            if(load === selectedLoad)
+                label = "m=" + loads[load].mass + ", x=" + loads[load].location +", L=" + loads[load].length;
+            else
+                label = loads[load].mass + ", " + loads[load].location + ", " + loads[load].length;
+            data.push({x: loads[load].location+loads[load].length/2, y: 20, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put small arrows under distributed load line. 
             getDistributedLoadMiniArrows(data, loads[load].location, loads[load].length, loads[load].color, load);
         }
