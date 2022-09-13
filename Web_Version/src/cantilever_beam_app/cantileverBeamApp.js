@@ -48,6 +48,7 @@ function CantileverBeamApp(){
 
     var loadData = beamProperties
 
+    // Function for cancelling/confirming in the Add A Load menu.
     const handleClose = (event) => {
         if(event === "cancel"){
             setOpen(false);
@@ -63,7 +64,7 @@ function CantileverBeamApp(){
         setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,beamProperties)},[loadUpdated,dataMakerForLoads])
 
 
-
+    // Function to pick the first available load name of the form load1, load2, load3...
     function loadNamer(){
         var n = 1;
         var name = ""
@@ -93,6 +94,7 @@ function CantileverBeamApp(){
         // playerMovement(0,1,10)
     }
 
+    // This function determines which load was clicked, and selects it.
     function loadSwitcher(d,event){
         console.log("got called in load switcher")
         console.log(d)
@@ -139,6 +141,7 @@ function CantileverBeamApp(){
         setIsBeamIni(true)
     }
 
+    {/* Display starting inputs form */}
     if(!isBeamIni){
         var data = beamProperties;
         return(<form onSubmit={()=> {handleSubmit(data)}}>
@@ -235,9 +238,11 @@ function CantileverBeamApp(){
         <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <div>
+                    {/* Display Add A Load button */}
                     <Button variant="outlined" onClick={handleClickOpen}>
                         Add a load
                     </Button>
+                    {/* Display Add A Load menu */}
                     <Dialog open={open} onClose={handleClose}>
                         <DialogTitle>Add A load</DialogTitle>
                         <DialogContent>
@@ -282,16 +287,30 @@ function CantileverBeamApp(){
                     </Dialog>
                 </div>
 
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
+                {/* Display main plot */}
+                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} xDomain = {[0, 100]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
                     <XAxis title = {"Load location"}/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    {/* Display Beam */}
+                    <LineSeries data = {[{x : 0, y : 0},{x : 100, y : 0}]} color = "#12939A"/>
+                    {/* Display the anchor next to the beam */}
+                    <LineSeries data = {[{x : 0, y : -10}, {x : 0, y : 10}]} color = "#12939A"/>
+                    <LineSeries data = {[{x : 0, y : 10}, {x : -2, y : 6}]} color = "#12939A"/>
+                    <LineSeries data = {[{x : 0, y : 6}, {x : -2, y : 2}]} color = "#12939A"/>
+                    <LineSeries data = {[{x : 0, y : 2}, {x : -2, y : -2}]} color = "#12939A"/>
+                    <LineSeries data = {[{x : 0, y : -2}, {x : -2, y : -6}]} color = "#12939A"/>
+                    <LineSeries data = {[{x : 0, y : -6}, {x : -2, y : -10}]} color = "#12939A"/>
+                    <LineSeries data = {[{x : 0, y : 10}, {x : -2, y : 10}]} color = "#12939A"/>
+                    <LineSeries data = {[{x : 0, y : -10}, {x : -2, y : -10}]} color = "#12939A"/>
+                    {/* Display Loads */}
                     <LabelSeries data={dataMakerForLoads(loads,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
+                {/* Display drop-down load selector */}
                 <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
                 <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
+                {/* Display control buttons */}
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
@@ -299,6 +318,7 @@ function CantileverBeamApp(){
 
             </div>
             <div>
+                {/* Display side plots */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
                     {/*<h1>Shear Force Diagram</h1>*/}
                     <VerticalGridLines/>
@@ -347,6 +367,7 @@ function updateMdata(data){
     }
     return d
 }
+// This function converts data about loads so a LabelSeries can display it. This includes the labels above each load, and the arrow character representing each load.
 function dataMakerForLoads(loads, beamProperties){
 
     var data = []
