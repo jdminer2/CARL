@@ -32,6 +32,9 @@ const Navbar = () => {
                 <Bars onClick={handleBarsClick}/>
                 {/* List of options*/}
                 <NavMenu>
+                    <NavLink to='/' activeStyle>
+                        Home
+                    </NavLink>
                     <NavLink to='/distributed_load' activeStyle>
                         Distributed Load
                     </NavLink>
@@ -59,6 +62,9 @@ const Navbar = () => {
                 onClose={handleCloseMenu}
                 onClick={handleCloseMenu}
             >
+                <NavLink to='/' activeStyle>
+                    Home
+                </NavLink>
                 <NavLink to='/distributed_load' activeStyle>
                     Distributed Load
                 </NavLink>
