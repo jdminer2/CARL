@@ -94,7 +94,16 @@ function CombinedLoadApp(){
         if(!(selectedLoad in loads)){
             return
         }
-        loads[selectedLoad].location += disp;
+        // Prevent player from moving out of bounds.
+        let newLoc = loads[selectedLoad].location + disp;
+        let loadLength = 0;
+        if(loads[selectedLoad].type === "d")
+            loadLength = loads[selectedLoad].length;
+        if(newLoc < 0)
+            newLoc = 0;
+        else if(newLoc + loadLength > beamProperties.length)
+            newLoc = beamProperties.length - loadLength;
+        loads[selectedLoad].location = newLoc;
         setLoadUpdated(true)
     }
 

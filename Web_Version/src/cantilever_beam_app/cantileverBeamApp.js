@@ -110,7 +110,13 @@ function CantileverBeamApp(){
         if(!(selectedLoad in loads)){
             return
         }
-        loads[selectedLoad].location += disp;
+        // Prevent player from moving out of bounds.
+        let newLoc = loads[selectedLoad].location + disp;
+        if(newLoc < 0)
+            newLoc = 0;
+        else if(newLoc > beamProperties.length)
+            newLoc = beamProperties.length;
+        loads[selectedLoad].location = newLoc;
         setLoadUpdated(true)
     }
 

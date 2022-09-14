@@ -37,6 +37,11 @@ function DistributedLoadApp(){
     // },[infoUpdated])
 
     function loadMovement(newLoc){
+        // Prevent player from moving out of bounds.
+        if(newLoc < 0)
+            newLoc = 0;
+        else if(newLoc + loadLength > loadData.length)
+            newLoc = loadData.length - loadLength;
         setLoadLocation(newLoc);
     }
 

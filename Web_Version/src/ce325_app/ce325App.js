@@ -28,11 +28,12 @@ function Ce325App(){
     const printDivRef = useRef();
 
     function playerMovement(loc){
-        if(loc <= loadData.length && loc >= 0) {
-            setPlayerLoc(loc);
-        }else{
-            console.log("Max or min length reached")
-        }
+        // Prevent player from moving out of bounds.
+        if(loc < 0)
+            loc = 0;
+        else if(loc > loadData.length)
+            loc = loadData.length;
+        setPlayerLoc(loc);
     }
 
     /**

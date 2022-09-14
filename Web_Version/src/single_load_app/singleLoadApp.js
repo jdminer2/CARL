@@ -94,6 +94,11 @@ function SingleLoadApp(){
             ival = Math.min(ival+20,items.message.length -1)
             setIsLoaded(false)
         }
+        // Prevent player from moving out of bounds.
+        if(loc < 0)
+            loc = 0;
+        else if(loc > loadData.length)
+            loc = loadData.length;
         setPlayerLoc(loc);
         // const turl = "{'length': 100, 'elasticity': 1.0, 'inertia': 1.0, 'density': 1.0, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 210000000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad':"+ loc +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': " + mag + ", 'timelimit' : "+tl+", 'q' : '[" +items.q[ival]+"]', 'mt' : "+ival+"}"
         const turl = "{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loc  +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': " + mag + ", 'timelimit' : "+tl+", 'q' : '[" +items.q[ival]+"]', 'mt' : "+ival+"}"

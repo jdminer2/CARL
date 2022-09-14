@@ -74,7 +74,7 @@ function MultipleLoadApp(){
         //     return;
         // }
         socket.on('message',message => {
-            console.log("came here")
+            //console.log("came here")
             setItems(message)
             setI(0)
             setButClicked(false)
@@ -117,7 +117,7 @@ function MultipleLoadApp(){
         var m = (y2-y1)/(x2-x1)
         var c = y1 - (m*x1)
         var py = (m*px) + c
-        console.log(py)
+        //console.log(py)
         return py
     }
 
@@ -127,7 +127,7 @@ function MultipleLoadApp(){
             return;
         }
         if(!isLoaded){
-            console.log("not loaded yet")
+            //console.log("not loaded yet")
             // console.log(items)
             if(!onceLoaded){
                 return
@@ -171,7 +171,7 @@ function MultipleLoadApp(){
         var name = ""
         while(true){
             name = "load" + n;
-            console.log(name in loads)
+            //console.log(name in loads)
             if(name in loads){
                 n += 1;
                 continue;
@@ -197,11 +197,11 @@ function MultipleLoadApp(){
 
     // If you click on a load, it selects that load.
     function loadSwitcher(d,event){
-        console.log("got called in load switcher")
-        console.log(d)
+        //console.log("got called in load switcher")
+        //console.log(d)
         for(let load in loads){
             if(loads[load].location === d.x){
-                console.log("load was selected")
+                //console.log("load was selected")
                 setSelectedLoad(load)
                 break;
             }
@@ -209,19 +209,25 @@ function MultipleLoadApp(){
     }
     function playerMovement(disp,mag,tl){
         if(!isLoaded){
-            console.log("not loaded items is : ")
-            console.log(items)
+            //console.log("not loaded items is : ")
+            //console.log(items)
             return;
         }
         if(!(selectedLoad in loads)){
             return
         }
         setIsLoaded(false)
-        loads[selectedLoad].location += disp;
+        // Prevent player from moving out of bounds.
+        let newLoc = loads[selectedLoad].location + disp;
+        if(newLoc < 0)
+            newLoc = 0;
+        else if(newLoc > beamProperties.length)
+            newLoc = beamProperties.length;
+        loads[selectedLoad].location = newLoc;
         setLoadUpdated(true)
         var turl = makeUrl(mag,tl);
         setButClicked(true)
-        console.log(turl)
+        //console.log(turl)
         setTestUrl(turl)
     }
     function makeUrl(mag,tl){
@@ -237,8 +243,8 @@ function MultipleLoadApp(){
         for(let mass in masses){
             forces.push(mass*loadData.gravity)
         }
-        console.log("testing state")
-        console.log(items)
+        //console.log("testing state")
+        //console.log(items)
         const turl = "{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': ["+ masses +"], 'gravity': "+ loadData.gravity +", 'force': ["+ forces +"], 'locationOfLoad': ["+ loc  +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': " + mag + ", 'timelimit' : "+tl+", 'q' : '[" +items.q[ival]+"]', 'mt' : "+ival+"}"
         return turl
     }
