@@ -30,7 +30,7 @@ function CantileverBeamApp(){
     const butStyle = {background: "black", height:window.innerHeight/12,
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
     const maxLoads = 3;
-    const [beamProperties,setBeamProperties] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,loacationOfLoad:20})
+    const [beamProperties,setBeamProperties] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [isLoadInitialized, setIsLoadInitialized] = useState(false)
@@ -224,11 +224,11 @@ function CantileverBeamApp(){
                 />
             </label>
             <div></div>
-            <label>Location of Load:
+            <label>Location of Load (L1):
                 <input
                     defaultValue={20}
                     type="text"
-                    onChange={(e) => {data.loacationOfLoad = e.target.value}}
+                    onChange={(e) => {loads[selectedLoad].location = Number(e.target.value)}}
                 />
             </label>
             <div></div>

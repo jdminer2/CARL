@@ -10,7 +10,7 @@ function CombinedLoadApp(){
 
     const butStyle = {background: "black", height:window.innerHeight/12,
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
-    const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8, loacationOfLoad:20})
+    const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [loads,setLoads] = useState({load1: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load2: {mass:10.0, location: 20.0, type: "c", length: 0}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 25}, load5: {mass: 10.0, location: 30.0, type: "c", length: 25}})
@@ -213,11 +213,11 @@ function CombinedLoadApp(){
                 />
             </label>
             <div></div>
-            <label>Location of Load:
+            <label>Location of Load (L1):
                 <input
                     defaultValue={20}
                     type="text"
-                    onChange={(e) => {data.loacationOfLoad = e.target.value}}
+                    onChange={(e) => {loads[selectedLoad].location = Number(e.target.value)}}
                 />
             </label>
             <div></div>

@@ -178,7 +178,7 @@ function Ce325App(){
                         />
                     </label>
                     <div></div>
-                    <label>Location of Load (L1):
+                    <label>Location of Load:
                         <input
                             defaultValue={20}
                             type="text"
