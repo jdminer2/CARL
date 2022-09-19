@@ -26,18 +26,19 @@ function SingleLoadApp(){
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
     const [error, setError] = useState(null);
     const [isLoadInitialized, setIsLoadInitialized] = useState(false)
-    const [loadData, setLoadData] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,loacationOfLoad:20})
+    const [loadData, setLoadData] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,locationOfLoad:20})
     const printDivRef = useRef();
     const [isLoaded, setIsLoaded] = useState(false);
     const [items, setItems] = useState([]);
     const [playerLoc , setPlayerLoc] = useState(48)
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [nextItems,setNextItems] = useState(undefined)
-    const [testUrl, setTestUrl] = useState("{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loadData.loacationOfLoad +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
+    const [testUrl, setTestUrl] = useState("{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loadData.locationOfLoad +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
     // const [testUrl, setTestUrl] = useState("{'length': 100, 'elasticity': 1.0, 'inertia': 1.0, 'density': 1.0, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 210000000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 20, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
     const [butClicked, setButClicked] = useState(false)
     const [tPing, setTping] = useState(2);
     const [ticker, setTicker] = useState(1)
+    const [errorWarning, setErrorWarning] = useState("");
     const [mData, setData] = useState([{x: 0, y: 0},
         {x: 1, y: 0},
         {x: 2, y: 0},
@@ -129,6 +130,144 @@ function SingleLoadApp(){
             playerMovement(playerLoc+1,2,mi,true,0.5)
     }
 
+    /**
+     * This function checks the initial form inputs to ensure that they are valid. 
+     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
+     * Load location must be less than or equal to beam length.
+     * This function also converts the string inputs into number inputs.
+     */
+    function checkValues(){
+        // Check that length is a number > 0.
+        if(parseFloat(loadData.length) != loadData.length){
+            setErrorWarning("Beam length must be a number.");
+            return;
+        }
+        loadData.length = Number(loadData.length);
+        if(loadData.length <= 0) {
+            setErrorWarning("Beam length must be greater than 0.");
+            return;
+        }
+
+        // Check that elasticity is a number >= 0
+        if(parseFloat(loadData.elasticity) != loadData.elasticity){
+            setErrorWarning("Elasticity must be a number.");
+            return;
+        }
+        loadData.elasticity = Number(loadData.elasticity);
+        if(loadData.elasticity < 0) {
+            setErrorWarning("Elasticity must be at least 0.");
+            return;
+        }
+
+        // Check that inertia is a number >= 0.
+        if(parseFloat(loadData.inertia) != loadData.inertia){
+            setErrorWarning("Inertia must be a number.");
+            return;
+        }
+        loadData.inertia = Number(loadData.inertia);
+        if(loadData.inertia < 0) {
+            setErrorWarning("Inertia must be at least 0.");
+            return;
+        }
+
+        // Check that density is a number >= 0.
+        if(parseFloat(loadData.density) != loadData.density){
+            setErrorWarning("Density must be a number.");
+            return;
+        }
+        loadData.density = Number(loadData.density);
+        if(loadData.density < 0) {
+            setErrorWarning("Density must be at least 0.");
+            return;
+        }
+
+        // Check that area is a number >= 0.
+        if(parseFloat(loadData.area) != loadData.area){
+            setErrorWarning("Area must be a number.");
+            return;
+        }
+        loadData.area = Number(loadData.area);
+        if(loadData.area < 0) {
+            setErrorWarning("Area must be at least 0.");
+            return;
+        }
+
+
+        // Check that damping ratio is a number >= 0.
+        if(parseFloat(loadData.dampingRatio) != loadData.dampingRatio){
+            setErrorWarning("Damping ratio must be a number.");
+            return;
+        }
+        loadData.dampingRatio = Number(loadData.dampingRatio);
+        if(loadData.dampingRatio < 0) {
+            setErrorWarning("Damping ratio must be at least 0.");
+            return;
+        }
+
+
+        // Check that rA is a number >= 0.
+        if(parseFloat(loadData.rA) != loadData.rA){
+            setErrorWarning("rA must be a number.");
+            return;
+        }
+        loadData.rA = Number(loadData.rA);
+        if(loadData.rA < 0) {
+            setErrorWarning("rA must be at least 0.");
+            return;
+        }
+
+        // Check that EI is a number > 0.
+        if(parseFloat(loadData.EI) != loadData.EI){
+            setErrorWarning("EI must be a number.");
+            return;
+        }
+        loadData.EI = Number(loadData.EI);
+        if(loadData.EI <= 0) {
+            setErrorWarning("EI must be greater than 0.");
+            return;
+        }
+
+        // Check that mass is a number >= 0.
+        if(parseFloat(loadData.mass) != loadData.mass){
+            setErrorWarning("Mass must be a number.");
+            return;
+        }
+        loadData.mass = Number(loadData.mass);
+        if(loadData.mass < 0) {
+            setErrorWarning("Mass must be at least 0.");
+            return;
+        }
+
+        // Check that gravity is a number >= 0.
+        if(parseFloat(loadData.gravity) != loadData.gravity){
+            setErrorWarning("Gravity must be a number.");
+            return;
+        }
+        loadData.gravity = Number(loadData.gravity);
+        if(loadData.gravity < 0) {
+            setErrorWarning("Gravity must be at least 0.");
+            return;
+        }
+
+        // Check that location of load is a number >= 0 and <= beam length.
+        if(parseFloat(loadData.locationOfLoad) != loadData.locationOfLoad) {
+            setErrorWarning("Location of load must be a number.");
+            return;
+        }
+        loadData.locationOfLoad = Number(loadData.locationOfLoad);
+        if(loadData.locationOfLoad < 0) {
+            setErrorWarning("Location of load must be at least 0.");
+            return;
+        }
+        if(loadData.locationOfLoad > loadData.length){
+            setErrorWarning("Location of load cannot be greater than beam length.");
+            return;
+        }
+
+        // No errors.
+        setErrorWarning("");
+    }
+    
     useInterval(updateGraph, 1);
     // useEffect(() => {
     //     const interval = setInterval(emitPing, 2000);
@@ -204,18 +343,22 @@ function SingleLoadApp(){
         return <div>Error: {error.message}</div>;
     }else {
         if(!isLoadInitialized){
-            function handleSubmit(data){
-                setLoadData(data)
-                setIsLoadInitialized(true);
-                setPlayerLoc(data.loacationOfLoad)
-                setTestUrl("{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loadData.loacationOfLoad +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
-                console.log(testUrl)
+            function handleSubmit(data, e){
+                if(errorWarning === "") {
+                    setLoadData(data)
+                    setIsLoadInitialized(true);
+                    setPlayerLoc(data.locationOfLoad)
+                    setTestUrl("{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loadData.locationOfLoad +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
+                    console.log(testUrl)
+                }
+                else
+                    e.preventDefault();
             }
             if(!isLoadInitialized){
                 var data = loadData;
                 return (
-                    <form onSubmit={() => {
-                        handleSubmit(data)
+                    <form onSubmit={(e) => {
+                        handleSubmit(data, e)
                     }}>
                         <div>
                             <label>Length of Beam:
@@ -224,6 +367,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.length = e.target.value
+                                        checkValues(data);
                                     }}
                                 />
                             </label>
@@ -235,6 +379,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.elasticity = e.target.value
+                                        checkValues(data);
                                     }}
                                 />
                             </label>
@@ -246,6 +391,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.inertia = e.target.value
+                                        checkValues(data);
                                     }}
                                 />
                             </label>
@@ -257,6 +403,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.density = e.target.value
+                                        checkValues(data);
                                     }}
                                 />
                             </label>
@@ -268,6 +415,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.area = e.target.value
+                                        checkValues(data);
                                     }}
                                 />
                             </label>
@@ -279,6 +427,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.dampingRatio = e.target.value
+                                        checkValues(data);
                                     }}
                                 />
                             </label>
@@ -290,6 +439,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.rA = e.target.value
+                                        checkValues(data);
                                     }}
                                 />
                             </label>
@@ -301,6 +451,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.EI = e.target.value
+                                        checkValues(data);
                                     }}
                                 />
                             </label>
@@ -312,6 +463,7 @@ function SingleLoadApp(){
                                 type="text"
                                 onChange={(e) => {
                                     data.mass = e.target.value
+                                    checkValues(data);
                                 }}
                             />
                         </label>
@@ -322,6 +474,7 @@ function SingleLoadApp(){
                                 type="text"
                                 onChange={(e) => {
                                     data.gravity = e.target.value
+                                    checkValues(data);
                                 }}
                             />
                         </label>
@@ -331,10 +484,14 @@ function SingleLoadApp(){
                                 defaultValue={20}
                                 type="text"
                                 onChange={(e) => {
-                                    data.loacationOfLoad = e.target.value
+                                    data.locationOfLoad = e.target.value
+                                    checkValues(data);
                                 }}
                             />
                         </label>
+                        <div></div>
+                        {/* Text display for invalid inputs. */}
+                        <div><span style={{fontWeight: 'bold'}}>{errorWarning}</span></div>
                         <div></div>
                         <input type="submit" value="analyze" autoFocus/>
                         <div></div>
