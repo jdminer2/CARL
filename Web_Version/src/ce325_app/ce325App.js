@@ -25,6 +25,7 @@ function Ce325App(){
 
 
     const [playerLoc , setPlayerLoc] = useState(48)
+    const [errorWarning, setErrorWarning] = useState("");
     const printDivRef = useRef();
 
     function playerMovement(loc){
@@ -51,23 +52,164 @@ function Ce325App(){
             playerMovement(playerLoc+1)
     }
 
+    /**
+     * This function checks the initial form inputs to ensure that they are valid. 
+     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
+     * Load location must be less than or equal to beam length.
+     * This function also converts the string inputs into number inputs.
+     */
+     function validateInputs(){
+        // Check that length is a number > 0.
+        if(parseFloat(loadData.length) != loadData.length){
+            setErrorWarning("Length of Beam must be a number.");
+            return;
+        }
+        loadData.length = Number(loadData.length);
+        if(loadData.length <= 0) {
+            setErrorWarning("Length of Beam must be greater than 0.");
+            return;
+        }
+
+        // Check that elasticity is a number >= 0
+        if(parseFloat(loadData.elasticity) != loadData.elasticity){
+            setErrorWarning("Elasticity must be a number.");
+            return;
+        }
+        loadData.elasticity = Number(loadData.elasticity);
+        if(loadData.elasticity < 0) {
+            setErrorWarning("Elasticity must be at least 0.");
+            return;
+        }
+
+        // Check that inertia is a number >= 0.
+        if(parseFloat(loadData.inertia) != loadData.inertia){
+            setErrorWarning("Inertia must be a number.");
+            return;
+        }
+        loadData.inertia = Number(loadData.inertia);
+        if(loadData.inertia < 0) {
+            setErrorWarning("Inertia must be at least 0.");
+            return;
+        }
+
+        // Check that density is a number >= 0.
+        if(parseFloat(loadData.density) != loadData.density){
+            setErrorWarning("Density must be a number.");
+            return;
+        }
+        loadData.density = Number(loadData.density);
+        if(loadData.density < 0) {
+            setErrorWarning("Density must be at least 0.");
+            return;
+        }
+
+        // Check that area is a number >= 0.
+        if(parseFloat(loadData.area) != loadData.area){
+            setErrorWarning("Area must be a number.");
+            return;
+        }
+        loadData.area = Number(loadData.area);
+        if(loadData.area < 0) {
+            setErrorWarning("Area must be at least 0.");
+            return;
+        }
+
+
+        // Check that damping ratio is a number >= 0.
+        if(parseFloat(loadData.dampingRatio) != loadData.dampingRatio){
+            setErrorWarning("Damping Ratio must be a number.");
+            return;
+        }
+        loadData.dampingRatio = Number(loadData.dampingRatio);
+        if(loadData.dampingRatio < 0) {
+            setErrorWarning("Damping Ratio must be at least 0.");
+            return;
+        }
+
+
+        // Check that rA is a number >= 0.
+        if(parseFloat(loadData.rA) != loadData.rA){
+            setErrorWarning("rA must be a number.");
+            return;
+        }
+        loadData.rA = Number(loadData.rA);
+        if(loadData.rA < 0) {
+            setErrorWarning("rA must be at least 0.");
+            return;
+        }
+
+        // Check that EI is a number > 0.
+        if(parseFloat(loadData.EI) != loadData.EI){
+            setErrorWarning("EI must be a number.");
+            return;
+        }
+        loadData.EI = Number(loadData.EI);
+        if(loadData.EI <= 0) {
+            setErrorWarning("EI must be greater than 0.");
+            return;
+        }
+
+        // Check that mass is a number >= 0.
+        if(parseFloat(loadData.mass) != loadData.mass){
+            setErrorWarning("Mass must be a number.");
+            return;
+        }
+        loadData.mass = Number(loadData.mass);
+        if(loadData.mass < 0) {
+            setErrorWarning("Mass must be at least 0.");
+            return;
+        }
+
+        // Check that gravity is a number >= 0.
+        if(parseFloat(loadData.gravity) != loadData.gravity){
+            setErrorWarning("Gravity must be a number.");
+            return;
+        }
+        loadData.gravity = Number(loadData.gravity);
+        if(loadData.gravity < 0) {
+            setErrorWarning("Gravity must be at least 0.");
+            return;
+        }
+
+        // Check that location of load is a number >= 0 and <= beam length.
+        if(parseFloat(loadData.locationOfLoad) != loadData.locationOfLoad) {
+            setErrorWarning("Location of Load must be a number.");
+            return;
+        }
+        loadData.locationOfLoad = Number(loadData.locationOfLoad);
+        if(loadData.locationOfLoad < 0) {
+            setErrorWarning("Location of Load must be at least 0.");
+            return;
+        }
+        if(loadData.locationOfLoad > loadData.length){
+            setErrorWarning("Location of Load must be less than or equal to Length of Beam.");
+            return;
+        }
+
+        // No errors.
+        setErrorWarning("");
+    }
+
     const handlePrint = useReactToPrint({
         content: () => printDivRef.current
     });
 
     // // eslint-disable-next-line react-hooks/exhaustive-deps
     if(!isLoadInitialized) {
-        function handleSubmit(data) {
-            setLoadData(data)
-            setIsLoadInitialized(true);
-            setPlayerLoc(data.loacationOfLoad)
+        function handleSubmit(data, e) {
+            if(errorWarning === "") {
+                setLoadData(data)
+                setIsLoadInitialized(true);
+                setPlayerLoc(data.loacationOfLoad)
+            } else
+                e.preventDefault();
         }
 
         if (!isLoadInitialized) {
             var data = loadData;
             return (
-                <form onSubmit={() => {
-                    handleSubmit(data)
+                <form onSubmit={(e) => {
+                    handleSubmit(data, e)
                 }}>
                     <div>
                         <label>Length of Beam:
@@ -76,6 +218,7 @@ function Ce325App(){
                                 type="text"
                                 onChange={(e) => {
                                     data.length = e.target.value
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -87,6 +230,7 @@ function Ce325App(){
                                 type="text"
                                 onChange={(e) => {
                                     data.elasticity = e.target.value
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -98,6 +242,7 @@ function Ce325App(){
                                 type="text"
                                 onChange={(e) => {
                                     data.inertia = e.target.value
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -109,6 +254,7 @@ function Ce325App(){
                                 type="text"
                                 onChange={(e) => {
                                     data.density = e.target.value
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -120,6 +266,7 @@ function Ce325App(){
                                 type="text"
                                 onChange={(e) => {
                                     data.area = e.target.value
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -131,6 +278,7 @@ function Ce325App(){
                                 type="text"
                                 onChange={(e) => {
                                     data.dampingRatio = e.target.value
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -142,6 +290,7 @@ function Ce325App(){
                                 type="text"
                                 onChange={(e) => {
                                     data.rA = e.target.value
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -153,6 +302,7 @@ function Ce325App(){
                                 type="text"
                                 onChange={(e) => {
                                     data.EI = e.target.value
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -164,6 +314,7 @@ function Ce325App(){
                             type="text"
                             onChange={(e) => {
                                 data.mass = e.target.value
+                                validateInputs();
                             }}
                         />
                     </label>
@@ -174,6 +325,7 @@ function Ce325App(){
                             type="text"
                             onChange={(e) => {
                                 data.gravity = e.target.value
+                                validateInputs();
                             }}
                         />
                     </label>
@@ -183,12 +335,16 @@ function Ce325App(){
                             defaultValue={20}
                             type="text"
                             onChange={(e) => {
-                                data.loacationOfLoad = e.target.value
+                                data.locationOfLoad = e.target.value
+                                validateInputs();
                             }}
                         />
                     </label>
                     <div></div>
-                    <input type="submit" value="analyze" autoFocus/>
+                    {/* Text display for invalid inputs. */}
+                    <div><span style={{fontWeight: 'bold'}}>{errorWarning}</span></div>
+                        <div></div>
+                        <input type="submit" value="analyze" autoFocus/>
                     <div></div>
                     {/* eslint-disable-next-line no-undef */}
                     <div><img src={require("../resources/images/Single_load_schematic.png")} height={window.innerHeight/3} width={window.innerWidth/2.5}/></div>

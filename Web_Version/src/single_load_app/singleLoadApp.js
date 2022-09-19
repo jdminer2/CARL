@@ -136,15 +136,15 @@ function SingleLoadApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-    function checkValues(){
+    function validateInputs(){
         // Check that length is a number > 0.
         if(parseFloat(loadData.length) != loadData.length){
-            setErrorWarning("Beam length must be a number.");
+            setErrorWarning("Length of Beam must be a number.");
             return;
         }
         loadData.length = Number(loadData.length);
         if(loadData.length <= 0) {
-            setErrorWarning("Beam length must be greater than 0.");
+            setErrorWarning("Length of Beam must be greater than 0.");
             return;
         }
 
@@ -195,12 +195,12 @@ function SingleLoadApp(){
 
         // Check that damping ratio is a number >= 0.
         if(parseFloat(loadData.dampingRatio) != loadData.dampingRatio){
-            setErrorWarning("Damping ratio must be a number.");
+            setErrorWarning("Damping Ratio must be a number.");
             return;
         }
         loadData.dampingRatio = Number(loadData.dampingRatio);
         if(loadData.dampingRatio < 0) {
-            setErrorWarning("Damping ratio must be at least 0.");
+            setErrorWarning("Damping Ratio must be at least 0.");
             return;
         }
 
@@ -251,16 +251,16 @@ function SingleLoadApp(){
 
         // Check that location of load is a number >= 0 and <= beam length.
         if(parseFloat(loadData.locationOfLoad) != loadData.locationOfLoad) {
-            setErrorWarning("Location of load must be a number.");
+            setErrorWarning("Location of Load must be a number.");
             return;
         }
         loadData.locationOfLoad = Number(loadData.locationOfLoad);
         if(loadData.locationOfLoad < 0) {
-            setErrorWarning("Location of load must be at least 0.");
+            setErrorWarning("Location of Load must be at least 0.");
             return;
         }
         if(loadData.locationOfLoad > loadData.length){
-            setErrorWarning("Location of load cannot be greater than beam length.");
+            setErrorWarning("Location of Load must be less than or equal to Length of Beam.");
             return;
         }
 
@@ -350,8 +350,7 @@ function SingleLoadApp(){
                     setPlayerLoc(data.locationOfLoad)
                     setTestUrl("{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loadData.locationOfLoad +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
                     console.log(testUrl)
-                }
-                else
+                } else
                     e.preventDefault();
             }
             if(!isLoadInitialized){
@@ -367,7 +366,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.length = e.target.value
-                                        checkValues(data);
+                                        validateInputs();
                                     }}
                                 />
                             </label>
@@ -379,7 +378,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.elasticity = e.target.value
-                                        checkValues(data);
+                                        validateInputs();
                                     }}
                                 />
                             </label>
@@ -391,7 +390,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.inertia = e.target.value
-                                        checkValues(data);
+                                        validateInputs();
                                     }}
                                 />
                             </label>
@@ -403,7 +402,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.density = e.target.value
-                                        checkValues(data);
+                                        validateInputs();
                                     }}
                                 />
                             </label>
@@ -415,7 +414,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.area = e.target.value
-                                        checkValues(data);
+                                        validateInputs();
                                     }}
                                 />
                             </label>
@@ -427,7 +426,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.dampingRatio = e.target.value
-                                        checkValues(data);
+                                        validateInputs();
                                     }}
                                 />
                             </label>
@@ -439,7 +438,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.rA = e.target.value
-                                        checkValues(data);
+                                        validateInputs();
                                     }}
                                 />
                             </label>
@@ -451,7 +450,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.EI = e.target.value
-                                        checkValues(data);
+                                        validateInputs();
                                     }}
                                 />
                             </label>
@@ -463,7 +462,7 @@ function SingleLoadApp(){
                                 type="text"
                                 onChange={(e) => {
                                     data.mass = e.target.value
-                                    checkValues(data);
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -474,7 +473,7 @@ function SingleLoadApp(){
                                 type="text"
                                 onChange={(e) => {
                                     data.gravity = e.target.value
-                                    checkValues(data);
+                                    validateInputs();
                                 }}
                             />
                         </label>
@@ -485,7 +484,7 @@ function SingleLoadApp(){
                                 type="text"
                                 onChange={(e) => {
                                     data.locationOfLoad = e.target.value
-                                    checkValues(data);
+                                    validateInputs();
                                 }}
                             />
                         </label>

@@ -48,6 +48,7 @@ function MultipleLoadApp(){
     //temp
     const lengthOfBeam = 100.0;
     const [open, setOpen] = React.useState(false);
+    const [errorWarning, setErrorWarning] = useState("");
     const handleClickOpen = () => {
         setOpen(true);
     };
@@ -284,13 +285,143 @@ function MultipleLoadApp(){
             playerMovement(1,1,10);
     }
 
+    /**
+         * This function checks the initial form inputs to ensure that they are valid. 
+         * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
+         * Load location must be less than or equal to beam length.
+         * This function also converts the string inputs into number inputs.
+         */
+    function validateInputs(){
+        // Check that length is a number > 0.
+        if(parseFloat(beamProperties.length) != beamProperties.length){
+            setErrorWarning("Length of Beam must be a number.");
+            return;
+        }
+        beamProperties.length = Number(beamProperties.length);
+        if(beamProperties.length <= 0) {
+            setErrorWarning("Length of Beam must be greater than 0.");
+            return;
+        }
+
+        // Check that elasticity is a number >= 0
+        if(parseFloat(beamProperties.elasticity) != beamProperties.elasticity){
+            setErrorWarning("Elasticity must be a number.");
+            return;
+        }
+        beamProperties.elasticity = Number(beamProperties.elasticity);
+        if(beamProperties.elasticity < 0) {
+            setErrorWarning("Elasticity must be at least 0.");
+            return;
+        }
+
+        // Check that inertia is a number >= 0.
+        if(parseFloat(beamProperties.inertia) != beamProperties.inertia){
+            setErrorWarning("Inertia must be a number.");
+            return;
+        }
+        beamProperties.inertia = Number(beamProperties.inertia);
+        if(beamProperties.inertia < 0) {
+            setErrorWarning("Inertia must be at least 0.");
+            return;
+        }
+
+        // Check that density is a number >= 0.
+        if(parseFloat(beamProperties.density) != beamProperties.density){
+            setErrorWarning("Density must be a number.");
+            return;
+        }
+        beamProperties.density = Number(beamProperties.density);
+        if(beamProperties.density < 0) {
+            setErrorWarning("Density must be at least 0.");
+            return;
+        }
+
+        // Check that area is a number >= 0.
+        if(parseFloat(beamProperties.area) != beamProperties.area){
+            setErrorWarning("Area must be a number.");
+            return;
+        }
+        beamProperties.area = Number(beamProperties.area);
+        if(beamProperties.area < 0) {
+            setErrorWarning("Area must be at least 0.");
+            return;
+        }
+
+
+        // Check that damping ratio is a number >= 0.
+        if(parseFloat(beamProperties.dampingRatio) != beamProperties.dampingRatio){
+            setErrorWarning("Damping Ratio must be a number.");
+            return;
+        }
+        beamProperties.dampingRatio = Number(beamProperties.dampingRatio);
+        if(beamProperties.dampingRatio < 0) {
+            setErrorWarning("Damping Ratio must be at least 0.");
+            return;
+        }
+
+
+        // Check that rA is a number >= 0.
+        if(parseFloat(beamProperties.rA) != beamProperties.rA){
+            setErrorWarning("rA must be a number.");
+            return;
+        }
+        beamProperties.rA = Number(beamProperties.rA);
+        if(beamProperties.rA < 0) {
+            setErrorWarning("rA must be at least 0.");
+            return;
+        }
+
+        // Check that EI is a number > 0.
+        if(parseFloat(beamProperties.EI) != beamProperties.EI){
+            setErrorWarning("EI must be a number.");
+            return;
+        }
+        beamProperties.EI = Number(beamProperties.EI);
+        if(beamProperties.EI <= 0) {
+            setErrorWarning("EI must be greater than 0.");
+            return;
+        }
+
+        // Check that gravity is a number >= 0.
+        if(parseFloat(beamProperties.gravity) != beamProperties.gravity){
+            setErrorWarning("Gravity must be a number.");
+            return;
+        }
+        beamProperties.gravity = Number(beamProperties.gravity);
+        if(beamProperties.gravity < 0) {
+            setErrorWarning("Gravity must be at least 0.");
+            return;
+        }
+
+        // Check that location of load is a number >= 0 and <= beam length.
+        if(parseFloat(loads[selectedLoad].location) != loads[selectedLoad].location) {
+            setErrorWarning("Location of Load (L1) must be a number.");
+            return;
+        }
+        loads[selectedLoad].location = Number(loads[selectedLoad].location);
+        if(loads[selectedLoad].location < 0) {
+            setErrorWarning("Location of Load (L1) must be at least 0.");
+            return;
+        }
+        if(loads[selectedLoad].location > beamProperties.length){
+            setErrorWarning("Location of Load (L1) must be less than or equal to Length of Beam.");
+            return;
+        }
+
+        // No errors.
+        setErrorWarning("");
+    }
+
     function handleDropdownChange(event){
         setSelectedLoad(event.target.value);
     }
 
-    function handleSubmit(data){
-        setBeamProperties(data)
-        setIsBeamIni(true)
+    function handleSubmit(data, e){
+        if(errorWarning === "") {
+            setBeamProperties(data)
+            setIsBeamIni(true)
+        } else
+            e.preventDefault();
     }
 
     // Display loads on the dynamic plot
@@ -315,13 +446,16 @@ function MultipleLoadApp(){
 
     if(!isBeamIni){
         var data = beamProperties;
-        return(<form onSubmit={()=> {handleSubmit(data)}}>
+        return(<form onSubmit={(e)=> {handleSubmit(data, e)}}>
             <div></div>
-            <label>Length of beam:
+            <label>Length of Beam:
                 <input
                     defaultValue={100}
                     type="text"
-                    onChange={(e) => {data.length = e.target.value}}
+                    onChange={(e) => {
+                        data.length = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -329,7 +463,10 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={1.0}
                     type="text"
-                    onChange={(e) => {data.elasticity = e.target.value}}
+                    onChange={(e) => {
+                        data.elasticity = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -337,7 +474,10 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={1.0}
                     type="text"
-                    onChange={(e) => {data.inertia = e.target.value}}
+                    onChange={(e) => {
+                        data.inertia = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -345,7 +485,10 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={1.0}
                     type="text"
-                    onChange={(e) => {data.density = e.target.value}}
+                    onChange={(e) => {
+                        data.density = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -353,7 +496,10 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={1.0}
                     type="text"
-                    onChange={(e) => {data.area = e.target.value}}
+                    onChange={(e) => {
+                        data.area = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -361,7 +507,10 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={0.02}
                     type="text"
-                    onChange={(e) => {data.dampingRatio = e.target.value}}
+                    onChange={(e) => {
+                        data.dampingRatio = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -369,7 +518,10 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={85000.0}
                     type="text"
-                    onChange={(e) => {data.rA = e.target.value}}
+                    onChange={(e) => {
+                        data.rA = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -377,7 +529,10 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={210000000000.0}
                     type="text"
-                    onChange={(e) => {data.EI = e.target.value}}
+                    onChange={(e) => {
+                        data.EI = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -385,7 +540,10 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={9.8}
                     type="text"
-                    onChange={(e) => {data.gravity = e.target.value}}
+                    onChange={(e) => {
+                        data.gravity = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
             <div></div>
@@ -393,9 +551,15 @@ function MultipleLoadApp(){
                 <input
                     defaultValue={20}
                     type="text"
-                    onChange={(e) => {loads[selectedLoad].location = Number(e.target.value)}}
+                    onChange={(e) => {
+                        loads[selectedLoad].location = e.target.value
+                        validateInputs();
+                    }}
                 />
             </label>
+            <div></div>
+            {/* Text display for invalid inputs. */}
+            <div><span style={{fontWeight: 'bold'}}>{errorWarning}</span></div> 
             <div></div>
             <input type="submit" value="analyze" autoFocus/>
             <div></div>
