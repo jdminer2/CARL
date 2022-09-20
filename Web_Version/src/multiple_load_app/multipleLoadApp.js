@@ -38,9 +38,7 @@ function MultipleLoadApp(){
     const [loads,setLoads] = useState({load1 : {mass:10.0,location:20.0}, load2 : {mass:10.0, location: 50.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newMass, setNewMass] = useState(10.0)
-    const [newLocation, setNewLocation] = useState(10)
-    const [newLoadName, setNewLoadName] = useState("newLoad")
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10})
     const [butClicked, setButClicked] = useState(false)
     const [tPing, setTping] = useState(2);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -52,9 +50,12 @@ function MultipleLoadApp(){
     const [errorWarning, setErrorWarning] = useState("");
     const handleClickOpenAdd = () => {
         setOpenAdd(true);
+        setNewLoadData({name:loadNamer(), mass:10.0, location:10});
     };
     const handleClickOpenEdit = () => {
         setOpenEdit(true);
+        // Current stats of the load to be edited.
+        setNewLoadData({name:selectedLoad, mass:loads[selectedLoad].mass, location:loads[selectedLoad].location});
     };
     const [error, setError] = useState(null);
     const [mData, setData] = useState([{x: 0, y: 0},
@@ -88,26 +89,42 @@ function MultipleLoadApp(){
     }
     // Function for cancelling or confirming in the Add Load menu.
     const handleCloseAdd = (event) => {
-        if(event === "cancel"){
+        // Check if choice is not confirm
+        if(event !== "confirm"){
             setOpenAdd(false);
+            setErrorWarning("");
             return;
         }
-        // confirm came in
-        loads[newLoadName] = {mass: newMass, location: newLocation};
+        // Check if errors are present
+        validateInputsAddEdit(true);
+        if(errorWarning !== "")
+            return;
+        // Ready to add
+        loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location};
+        setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
         setOpenAdd(false);
-        setSelectedLoad(newLoadName);
+        setErrorWarning("");
     };
     // Function for cancelling or confirming in the Edit Load menu.
     const handleCloseEdit = (event) => {
-        if(event === "cancel"){
+        // Check if choice is not confirm
+        if(event !== "confirm"){
             setOpenEdit(false);
+            setErrorWarning("");
             return;
         }
-        // confirm came in
-        loads[selectedLoad] = {mass: newMass, location: newLocation};
+        // Check if errors are present
+        validateInputsAddEdit(false);
+        if(errorWarning !== "")
+            return;
+        // Ready to edit
+        delete loads[selectedLoad];
+        loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location};
+        setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
         setOpenEdit(false);
+        setErrorWarning("");
     };
     // handle loads empty case
     useEffect(()=>{if(loadUpdated === false){return;}
@@ -195,7 +212,6 @@ function MultipleLoadApp(){
             }
             break;
         }
-        setNewLoadName(name);
         return name;
     }
 
@@ -302,12 +318,12 @@ function MultipleLoadApp(){
     }
 
     /**
-         * This function checks the initial form inputs to ensure that they are valid. 
-         * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
-         * Load location must be less than or equal to beam length.
-         * This function also converts the string inputs into number inputs.
-         */
-    function validateInputs(){
+     * This function checks the initial form inputs to ensure that they are valid. 
+     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
+     * Load location must be less than or equal to beam length.
+     * This function also converts the string inputs into number inputs.
+     */
+    function validateInputsInitial(){
         // Check that length is a number > 0.
         if(parseFloat(beamProperties.length) != beamProperties.length){
             setErrorWarning("Length of Beam must be a number.");
@@ -428,14 +444,58 @@ function MultipleLoadApp(){
         setErrorWarning("");
     }
 
+    /**
+     * This function checks the initial form inputs to ensure that they are valid. 
+     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
+     * Load location must be less than or equal to beam length.
+     * This function also converts the string inputs into number inputs.
+     */
+     function validateInputsAddEdit(adding){
+        // Check that name is not in use, unless when editing if the name is the same as the original name.
+        if((newLoadData.name in loads) && (adding || newLoadData.name !== selectedLoad)) {
+            setErrorWarning("Name of Load is already in use.");
+            return;
+        }
+
+        // Check that mass is a number >= 0.
+        if(parseFloat(newLoadData.mass) != newLoadData.mass){
+            setErrorWarning("Mass must be a number.");
+            return;
+        }
+        newLoadData.mass = Number(newLoadData.mass);
+        if(newLoadData.mass < 0) {
+            setErrorWarning("Mass must be at least 0.");
+            return;
+        }
+
+        // Check that location is a number >= 0 and <= beam length.
+        if(parseFloat(newLoadData.location) != newLoadData.location){
+            setErrorWarning("Location must be a number.");
+            return;
+        }
+        newLoadData.location = Number(newLoadData.location);
+        if(newLoadData.location < 0) {
+            setErrorWarning("Location must be at least 0.");
+            return;
+        }
+        if(newLoadData.location > beamProperties.length) {
+            setErrorWarning("Location must be less than or equal to Length of Beam.");
+            return;
+        }
+
+        // No errors.
+        setErrorWarning("");
+    }
+
     function handleDropdownChange(event){
         setSelectedLoad(event.target.value);
     }
 
     function handleSubmit(data, e){
+        validateInputsInitial();
         if(errorWarning === "") {
-            setBeamProperties(data)
-            setIsBeamIni(true)
+            setBeamProperties(data);
+            setIsBeamIni(true);
         } else
             e.preventDefault();
     }
@@ -470,7 +530,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.length = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -481,7 +541,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.elasticity = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -492,7 +552,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.inertia = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -503,7 +563,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.density = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -514,7 +574,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.area = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -525,7 +585,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.dampingRatio = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -536,7 +596,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.rA = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -547,7 +607,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.EI = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -558,7 +618,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.gravity = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -569,7 +629,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         loads[selectedLoad].location = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -582,7 +642,7 @@ function MultipleLoadApp(){
         </form>)
     }
     if(items.message === undefined){
-        return (<div>{'undefined'}</div>)
+        return (<div>{'Waiting for response'}</div>)
     }
     if(mData === undefined){
         return(<div>{'undefined'}</div>)
@@ -601,7 +661,7 @@ function MultipleLoadApp(){
                         Edit Load
                     </Button>
                     {/* Add Load menu */}
-                    <Dialog open={openAdd} onClose={handleCloseAdd}>
+                    <Dialog open={openAdd} onClose={handleCloseAdd} >
                         <DialogTitle>Add Load</DialogTitle>
                         <DialogContent>
                             <DialogContentText>
@@ -611,9 +671,12 @@ function MultipleLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Name of Load"
-                                defaultValue={newLoadName}
+                                defaultValue={newLoadData.name}
                                 type="text"
-                                onChange={(val)=>{setNewLoadName(val.target.value)}}
+                                onChange={(val)=>{
+                                    newLoadData.name = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -621,9 +684,12 @@ function MultipleLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="mass"
-                                defaultValue={10}
+                                defaultValue={newLoadData.mass}
                                 type="number"
-                                onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
+                                onChange={(val)=>{
+                                    newLoadData.mass = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -632,12 +698,16 @@ function MultipleLoadApp(){
                                 margin="dense"
                                 label="Location"
                                 type="number"
-                                defaultValue={10}
-                                onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
+                                defaultValue={newLoadData.location}
+                                onChange={(val)=>{
+                                    newLoadData.location = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
                         </DialogContent>
+                        <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{errorWarning}</DialogContentText>
                         <DialogActions>
                             <Button onClick={()=>{handleCloseAdd("cancel")}}>Cancel</Button>
                             <Button onClick={()=>{handleCloseAdd("confirm")}}>Confirm</Button>
@@ -654,9 +724,12 @@ function MultipleLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Name of Load"
-                                defaultValue={newLoadName}
+                                defaultValue={newLoadData.name}
                                 type="text"
-                                onChange={(val)=>{setNewLoadName(val.target.value)}}
+                                onChange={(val)=>{
+                                    newLoadData.name = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -664,9 +737,12 @@ function MultipleLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="mass"
-                                defaultValue={10}
+                                defaultValue={newLoadData.mass}
                                 type="number"
-                                onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
+                                onChange={(val)=>{
+                                    newLoadData.mass = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -675,11 +751,15 @@ function MultipleLoadApp(){
                                 margin="dense"
                                 label="Location"
                                 type="number"
-                                defaultValue={10}
-                                onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
+                                defaultValue={newLoadData.location}
+                                onChange={(val)=>{
+                                    newLoadData.location = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
+                            <DialogContentText>{errorWarning}</DialogContentText>
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={()=>{handleCloseEdit("cancel")}}>Cancel</Button>
