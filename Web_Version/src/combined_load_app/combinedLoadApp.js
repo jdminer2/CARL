@@ -21,20 +21,24 @@ function CombinedLoadApp(){
     const [newLoadType, setNewLoadType] = useState("c")
     const [newLoadLength, setNewLoadLength] = useState(25)
     const [newLoadName, setNewLoadName] = useState("load6")
-    const [open, setOpen] = React.useState(false);
+    const [openAdd, setOpenAdd] = React.useState(false);
+    const [openEdit, setOpenEdit] = React.useState(false);
     const [errorWarning, setErrorWarning] = useState("");
-    const handleClickOpen = () => {
-        setOpen(true);
+    const handleClickOpenAdd = () => {
+        setOpenAdd(true);
+    };
+    const handleClickOpenEdit = () => {
+        setOpenEdit(true);
     };
 
     /**
-     * Function is executed upon closing the Add A Load menu either by Canceling or Confirming.
+     * Function is executed upon closing the Add Load menu either by Canceling or Confirming.
      * This function creates a new load.
      */
-    const handleClose = (event) => {
+    const handleCloseAdd = (event) => {
         // If closed via cancel button, do nothing.
         if(event === "cancel"){
-            setOpen(false);
+            setOpenAdd(false);
             return;
         }
         // If closed via confirm button, create a new load.
@@ -47,8 +51,23 @@ function CombinedLoadApp(){
         loads[newLoadName] = {mass: newMass, location: newLocation, type: newLoadType, length: (newLoadType === "c")?0:newLoadLength, color: newColor};
         setSelectedLoad(newLoadName);
         setLoadUpdated(true);
-        setOpen(false);
+        setOpenAdd(false);
     };
+    /**
+     * Function is executed upon closing the Edit Load menu either by Canceling or Confirming.
+     * This function modifies an existing load.
+     */
+   const handleCloseEdit = (event) => {
+       // If closed via cancel button, do nothing.
+       if(event === "cancel"){
+           setOpenEdit(false);
+           return;
+       }
+       // If closed via confirm button, replace new load stats except color.
+       loads[selectedLoad] = {mass: newMass, location: newLocation, type: newLoadType, length: (newLoadType === "c")?0:newLoadLength, color: loads[selectedLoad].color};
+       setLoadUpdated(true);
+       setOpenEdit(false);
+   };
     useEffect(()=>{if(loadUpdated === false){return;}
         setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
 
@@ -397,13 +416,17 @@ function CombinedLoadApp(){
         <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <div>
-                    {/* Add A Load button */}
-                    <Button variant="outlined" onClick={handleClickOpen}>
-                        Add a load
+                    {/* Add Load button */}
+                    <Button variant="outlined" onClick={handleClickOpenAdd}>
+                        Add Load
                     </Button>
-                    {/* Add A Load menu */}
-                    <Dialog open={open} onClose={handleClose}>
-                        <DialogTitle>Add A load</DialogTitle>
+                    {/* Edit Load button */}
+                    <Button variant="outlined" onClick={handleClickOpenEdit}>
+                        Edit Load
+                    </Button>
+                    {/* Add Load menu */}
+                    <Dialog open={openAdd} onClose={handleCloseAdd}>
+                        <DialogTitle>Add Load</DialogTitle>
                         <DialogContent>
                             <DialogContentText>
                                 Please enter load properties (Don't fill in the length if load is Concentrated)
@@ -461,8 +484,72 @@ function CombinedLoadApp(){
 
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={()=>{handleClose("cancel")}}>Cancel</Button>
-                            <Button onClick={()=>{handleClose("confirm")}}>Confirm</Button>
+                            <Button onClick={()=>{handleCloseAdd("cancel")}}>Cancel</Button>
+                            <Button onClick={()=>{handleCloseAdd("confirm")}}>Confirm</Button>
+                        </DialogActions>
+                    </Dialog>
+                    {/* Edit Load menu */}
+                    <Dialog open={openEdit} onClose={handleCloseEdit}>
+                        <DialogTitle>Edit Load</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>
+                                Please enter load properties (Don't fill in the length if load is Concentrated)
+                            </DialogContentText>
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="Name of Load"
+                                defaultValue={newLoadName}
+                                type="text"
+                                onChange={(val)=>{setNewLoadName(val.target.value)}}
+                                fullWidth
+                                variant="standard"
+                            />
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="mass"
+                                defaultValue={newMass}
+                                type="number"
+                                onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
+                                fullWidth
+                                variant="standard"
+                            />
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="Location"
+                                type="number"
+                                defaultValue={newLocation}
+                                onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
+                                fullWidth
+                                variant="standard"
+                            />
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="TYPE(enter c for concentrated or d for distributed)"
+                                type="text"
+                                defaultValue={newLoadType}
+                                onChange={(val)=>{setNewLoadType(val.target.value.toString())}}
+                                fullWidth
+                                variant="standard"
+                            />
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="Length (only if distributed)"
+                                type="number"
+                                defaultValue={newLoadLength}
+                                onChange={(val)=>{setNewLoadLength(parseFloat(val.target.value))}}
+                                fullWidth
+                                variant="standard"
+                            />
+
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={()=>{handleCloseEdit("cancel")}}>Cancel</Button>
+                            <Button onClick={()=>{handleCloseEdit("confirm")}}>Confirm</Button>
                         </DialogActions>
                     </Dialog>
                 </div>

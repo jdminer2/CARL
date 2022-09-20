@@ -41,24 +41,40 @@ function CantileverBeamApp(){
     const [newMass, setNewMass] = useState(10.0)
     const [newLocation, setNewLocation] = useState(10)
     const [newLoadName, setNewLoadName] = useState("newLoad")
-    const [open, setOpen] = React.useState(false);
+    const [openAdd, setOpenAdd] = React.useState(false);
+    const [openEdit, setOpenEdit] = React.useState(false);
     const [errorWarning, setErrorWarning] = useState("");
-    const handleClickOpen = () => {
-        setOpen(true);
+    const handleClickOpenAdd = () => {
+        setOpenAdd(true);
     };
+    const handleClickOpenEdit = () => {
+        setOpenEdit(true);
+    };
+
 
     var loadData = beamProperties
 
-    // Function for cancelling/confirming in the Add A Load menu.
-    const handleClose = (event) => {
+    // Function for cancelling/confirming in the Add Load menu.
+    const handleCloseAdd = (event) => {
         if(event === "cancel"){
-            setOpen(false);
+            setOpenAdd(false);
             return;
         }
         // confirm came in
         loads[newLoadName] = {mass: newMass, location: newLocation};
         setLoadUpdated(true);
-        setOpen(false);
+        setOpenAdd(false);
+    };
+    // Function for cancelling/confirming in the Edit Load menu.
+    const handleCloseEdit = (event) => {
+        if(event === "cancel"){
+            setOpenEdit(false);
+            return;
+        }
+        // confirm came in
+        loads[selectedLoad] = {mass: newMass, location: newLocation};
+        setLoadUpdated(true);
+        setOpenEdit(false);
     };
     // handle loads empty case
     useEffect(()=>{if(loadUpdated === false){return;}
@@ -410,13 +426,17 @@ function CantileverBeamApp(){
         <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <div>
-                    {/* Display Add A Load button */}
-                    <Button variant="outlined" onClick={handleClickOpen}>
-                        Add a load
+                    {/* Display Add Load button */}
+                    <Button variant="outlined" onClick={handleClickOpenAdd}>
+                        Add Load
                     </Button>
-                    {/* Display Add A Load menu */}
-                    <Dialog open={open} onClose={handleClose}>
-                        <DialogTitle>Add A load</DialogTitle>
+                    {/* Display Edit Load button */}
+                    <Button variant="outlined" onClick={handleClickOpenEdit}>
+                        Edit Load
+                    </Button>
+                    {/* Display Add Load menu */}
+                    <Dialog open={openAdd} onClose={handleCloseAdd}>
+                        <DialogTitle>Add Load</DialogTitle>
                         <DialogContent>
                             <DialogContentText>
                                 Please enter load properties
@@ -453,8 +473,51 @@ function CantileverBeamApp(){
                             />
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={()=>{handleClose("cancel")}}>Cancel</Button>
-                            <Button onClick={()=>{handleClose("confirm")}}>Confirm</Button>
+                            <Button onClick={()=>{handleCloseAdd("cancel")}}>Cancel</Button>
+                            <Button onClick={()=>{handleCloseAdd("confirm")}}>Confirm</Button>
+                        </DialogActions>
+                    </Dialog>
+                    {/* Display Edit Load menu */}
+                    <Dialog open={openEdit} onClose={handleCloseEdit}>
+                        <DialogTitle>Edit Load</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>
+                                Please enter load properties
+                            </DialogContentText>
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="Name of Load"
+                                defaultValue={newLoadName}
+                                type="text"
+                                onChange={(val)=>{setNewLoadName(val.target.value)}}
+                                fullWidth
+                                variant="standard"
+                            />
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="mass"
+                                defaultValue={10}
+                                type="number"
+                                onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
+                                fullWidth
+                                variant="standard"
+                            />
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="Location"
+                                type="number"
+                                defaultValue={10}
+                                onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
+                                fullWidth
+                                variant="standard"
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={()=>{handleCloseEdit("cancel")}}>Cancel</Button>
+                            <Button onClick={()=>{handleCloseEdit("confirm")}}>Confirm</Button>
                         </DialogActions>
                     </Dialog>
                 </div>
