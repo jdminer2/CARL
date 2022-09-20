@@ -13,21 +13,24 @@ function CombinedLoadApp(){
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
-    const [loads,setLoads] = useState({load1: {mass:10.0, location: 20.0, type: "c", length: 0}, load2: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 25}, load5: {mass: 10.0, location: 30.0, type: "c", length: 25}})
+    const [loads,setLoads] = useState({load1: {mass:10.0, location: 20.0, type: "c", length: 0}, load2: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 0}, load5: {mass: 10.0, location: 30.0, type: "c", length: 0}})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newMass, setNewMass] = useState(10.0)
-    const [newLocation, setNewLocation] = useState(10)
-    const [newLoadType, setNewLoadType] = useState("c")
-    const [newLoadLength, setNewLoadLength] = useState(25)
-    const [newLoadName, setNewLoadName] = useState("load6")
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10, type:"c", length:0, color:"#00000080"})
     const [openAdd, setOpenAdd] = React.useState(false);
     const [openEdit, setOpenEdit] = React.useState(false);
     const [errorWarning, setErrorWarning] = useState("");
     const handleClickOpenAdd = () => {
+        setNewLoadData({name:loadNamer(), mass:10.0, location:10, type:"c", length:0});
+        // Pick a random color, in the range #000000 to #9F9F9F, always opacity 50%.
+        let newR = Math.floor(Math.random() * 160).toString(16);
+        let newG = Math.floor(Math.random() * 160).toString(16);
+        let newB = Math.floor(Math.random() * 160).toString(16);
+        newLoadData.color = "#" + newR + newG + newB + "80";
         setOpenAdd(true);
     };
     const handleClickOpenEdit = () => {
+        setNewLoadData({name:selectedLoad, ...loads[selectedLoad]});
         setOpenEdit(true);
     };
 
@@ -36,40 +39,47 @@ function CombinedLoadApp(){
      * This function creates a new load.
      */
     const handleCloseAdd = (event) => {
-        // If closed via cancel button, do nothing.
-        if(event === "cancel"){
+        // If closed via cancel button or clicking outside, do nothing.
+        if(event !== "confirm"){
             setOpenAdd(false);
+            setErrorWarning("");
             return;
         }
+        // Check if errors are present
+        validateInputsAddEdit(true);
+        if(errorWarning !== "")
+            return;
         // If closed via confirm button, create a new load.
-        // Pick a random color, in the range #000000 to #9F9F9F, always opacity 50%.
-        let newR = Math.floor(Math.random() * 160).toString(16);
-        let newG = Math.floor(Math.random() * 160).toString(16);
-        let newB = Math.floor(Math.random() * 160).toString(16);
-        let newColor = "#" + newR + newG + newB + "80";
-        // Make the load.
-        loads[newLoadName] = {mass: newMass, location: newLocation, type: newLoadType, length: (newLoadType === "c")?0:newLoadLength, color: newColor};
-        setSelectedLoad(newLoadName);
+        loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
+        setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
         setOpenAdd(false);
+        setErrorWarning("");
     };
     /**
      * Function is executed upon closing the Edit Load menu either by Canceling or Confirming.
      * This function modifies an existing load.
      */
-   const handleCloseEdit = (event) => {
-       // If closed via cancel button, do nothing.
-       if(event === "cancel"){
-           setOpenEdit(false);
-           return;
-       }
-       // If closed via confirm button, replace new load stats except color.
-       loads[selectedLoad] = {mass: newMass, location: newLocation, type: newLoadType, length: (newLoadType === "c")?0:newLoadLength, color: loads[selectedLoad].color};
-       setLoadUpdated(true);
-       setOpenEdit(false);
-   };
-    useEffect(()=>{if(loadUpdated === false){return;}
-        setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
+    const handleCloseEdit = (event) => {
+        // If closed via cancel button or clicking outside, do nothing.
+        if(event !== "confirm"){
+            setOpenEdit(false);
+            setErrorWarning("");
+            return;
+        }
+        // Check if errors are present
+        validateInputsAddEdit(false);
+        if(errorWarning !== "")
+            return;
+        // If closed via confirm button, replace new load stats except color.
+        delete loads[selectedLoad];
+        loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
+        setLoadUpdated(true);
+        setOpenEdit(false);
+        setErrorWarning("");
+    };
+        useEffect(()=>{if(loadUpdated === false){return;}
+            setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
 
     // Function to pick the first unoccupied load name like load1, load2, load3...
     function loadNamer(){
@@ -84,7 +94,6 @@ function CombinedLoadApp(){
             }
             break;
         }
-        setNewLoadName(name);
         return name;
     }
 
@@ -151,7 +160,7 @@ function CombinedLoadApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-     function validateInputs(){
+     function validateInputsInitial(){
         // Check that length is a number > 0.
         if(parseFloat(beamProperties.length) != beamProperties.length){
             setErrorWarning("Length of Beam must be a number.");
@@ -272,6 +281,74 @@ function CombinedLoadApp(){
         setErrorWarning("");
     }
 
+    /**
+     * This function checks the initial form inputs to ensure that they are valid. 
+     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
+     * Load location must be less than or equal to beam length.
+     * This function also converts the string inputs into number inputs.
+     */
+     function validateInputsAddEdit(adding){
+        // Check that name is not in use, unless when editing if the name is the same as the original name.
+        if((newLoadData.name in loads) && (adding || newLoadData.name !== selectedLoad)) {
+            setErrorWarning("Name of Load is already in use.");
+            return;
+        }
+
+        // Check that mass is a number >= 0.
+        if(parseFloat(newLoadData.mass) != newLoadData.mass){
+            setErrorWarning("Mass must be a number.");
+            return;
+        }
+        newLoadData.mass = Number(newLoadData.mass);
+        if(newLoadData.mass < 0) {
+            setErrorWarning("Mass must be at least 0.");
+            return;
+        }
+
+        // Check that location is a number >= 0 and <= beam length.
+        if(parseFloat(newLoadData.location) != newLoadData.location){
+            setErrorWarning("Location must be a number.");
+            return;
+        }
+        newLoadData.location = Number(newLoadData.location);
+        if(newLoadData.location < 0) {
+            setErrorWarning("Location must be at least 0.");
+            return;
+        }
+
+        // Check that type is either c or d.
+        if(newLoadData.type !== "c" && newLoadData.type !== "d") {
+            setErrorWarning("Type must be 'c' or 'd'.");
+            return;
+        }
+
+        // Check that length is a number >= 0.
+        if(parseFloat(newLoadData.length) != newLoadData.length){
+            setErrorWarning("Length must be a number.");
+            return;
+        }
+        newLoadData.length = Number(newLoadData.length);
+        if(newLoadData.length < 0) {
+            setErrorWarning("Length must be at least 0.");
+            return;
+        }
+
+        // If type is c, length must be 0.
+        if(newLoadData.length != 0 && newLoadData.type === "c") {
+            setErrorWarning("Centralized loads cannot have nonzero length.");
+            return;
+        }
+
+        // Location + Length (this is the location of the right end of the load) must be <= beam length.
+        if(newLoadData.location + newLoadData.length > beamProperties.length) {
+            setErrorWarning("Location + Length must be less than or equal to Length of Beam.");
+            return;
+        }
+
+        // No errors.
+        setErrorWarning("");
+    }
+
     // Function for using the load selector dropdown
     function handleDropdownChange(event){
         setSelectedLoad(event.target.value);
@@ -279,9 +356,10 @@ function CombinedLoadApp(){
     
     // Function for submitting the first inputs form
     function handleSubmit(data, e){
+        validateInputsInitial();
         if(errorWarning === "") {
-            setBeamProperties(data)
-            setIsBeamIni(true)
+            setBeamProperties(data);
+            setIsBeamIni(true);
         } else
             e.preventDefault();
     }
@@ -297,7 +375,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.length = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -308,7 +386,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.elasticity = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -319,7 +397,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.inertia = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -330,7 +408,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.density = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -341,7 +419,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.area = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -352,7 +430,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.dampingRatio = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -363,7 +441,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.rA = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -374,7 +452,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.EI = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -385,7 +463,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.gravity = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -396,7 +474,7 @@ function CombinedLoadApp(){
                     type="text"
                     onChange={(e) => {
                         loads[selectedLoad].location = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -435,9 +513,12 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Name of Load"
-                                defaultValue={newLoadName}
+                                defaultValue={newLoadData.name}
                                 type="text"
-                                onChange={(val)=>{setNewLoadName(val.target.value)}}
+                                onChange={(val)=>{
+                                    newLoadData.name = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -445,9 +526,12 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="mass"
-                                defaultValue={newMass}
+                                defaultValue={newLoadData.mass}
                                 type="number"
-                                onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
+                                onChange={(val)=>{
+                                    newLoadData.mass = val.target.value;
+                                    validateInputsAddEdit(true);    
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -456,8 +540,11 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="Location"
                                 type="number"
-                                defaultValue={newLocation}
-                                onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
+                                defaultValue={newLoadData.location}
+                                onChange={(val)=>{
+                                    newLoadData.location = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -466,8 +553,11 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="TYPE(enter c for concentrated or d for distributed)"
                                 type="text"
-                                defaultValue={newLoadType}
-                                onChange={(val)=>{setNewLoadType(val.target.value.toString())}}
+                                defaultValue={newLoadData.type}
+                                onChange={(val)=>{
+                                    newLoadData.type = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -476,13 +566,17 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="Length (only if distributed)"
                                 type="number"
-                                defaultValue={newLoadLength}
-                                onChange={(val)=>{setNewLoadLength(parseFloat(val.target.value))}}
+                                defaultValue={newLoadData.length}
+                                onChange={(val)=>{
+                                    newLoadData.length = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
 
                         </DialogContent>
+                        <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{errorWarning}</DialogContentText>
                         <DialogActions>
                             <Button onClick={()=>{handleCloseAdd("cancel")}}>Cancel</Button>
                             <Button onClick={()=>{handleCloseAdd("confirm")}}>Confirm</Button>
@@ -499,9 +593,12 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Name of Load"
-                                defaultValue={newLoadName}
+                                defaultValue={newLoadData.name}
                                 type="text"
-                                onChange={(val)=>{setNewLoadName(val.target.value)}}
+                                onChange={(val)=>{
+                                    newLoadData.name = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -509,9 +606,12 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="mass"
-                                defaultValue={newMass}
+                                defaultValue={newLoadData.mass}
                                 type="number"
-                                onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
+                                onChange={(val)=>{
+                                    newLoadData.mass = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -520,8 +620,11 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="Location"
                                 type="number"
-                                defaultValue={newLocation}
-                                onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
+                                defaultValue={newLoadData.location}
+                                onChange={(val)=>{
+                                    newLoadData.location = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -530,8 +633,11 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="TYPE(enter c for concentrated or d for distributed)"
                                 type="text"
-                                defaultValue={newLoadType}
-                                onChange={(val)=>{setNewLoadType(val.target.value.toString())}}
+                                defaultValue={newLoadData.type}
+                                onChange={(val)=>{
+                                    newLoadData.type = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -540,13 +646,17 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="Length (only if distributed)"
                                 type="number"
-                                defaultValue={newLoadLength}
-                                onChange={(val)=>{setNewLoadLength(parseFloat(val.target.value))}}
+                                defaultValue={newLoadData.length}
+                                onChange={(val)=>{
+                                    newLoadData.length = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
 
                         </DialogContent>
+                        <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{errorWarning}</DialogContentText>
                         <DialogActions>
                             <Button onClick={()=>{handleCloseEdit("cancel")}}>Cancel</Button>
                             <Button onClick={()=>{handleCloseEdit("confirm")}}>Confirm</Button>

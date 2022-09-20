@@ -53,9 +53,9 @@ function MultipleLoadApp(){
         setNewLoadData({name:loadNamer(), mass:10.0, location:10});
     };
     const handleClickOpenEdit = () => {
-        setOpenEdit(true);
         // Current stats of the load to be edited.
         setNewLoadData({name:selectedLoad, mass:loads[selectedLoad].mass, location:loads[selectedLoad].location});
+        setOpenEdit(true);
     };
     const [error, setError] = useState(null);
     const [mData, setData] = useState([{x: 0, y: 0},
@@ -761,6 +761,7 @@ function MultipleLoadApp(){
                             />
                             <DialogContentText>{errorWarning}</DialogContentText>
                         </DialogContent>
+                        <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{errorWarning}</DialogContentText>
                         <DialogActions>
                             <Button onClick={()=>{handleCloseEdit("cancel")}}>Cancel</Button>
                             <Button onClick={()=>{handleCloseEdit("confirm")}}>Confirm</Button>
