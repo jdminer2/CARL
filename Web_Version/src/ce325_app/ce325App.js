@@ -21,7 +21,7 @@ function Ce325App(){
     const butStyle = {background: "black", height:window.innerHeight/12,
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
     const [isLoadInitialized, setIsLoadInitialized] = useState(false)
-    const [loadData, setLoadData] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,loacationOfLoad:20})
+    const [loadData, setLoadData] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,locationOfLoad:20})
 
 
     const [playerLoc , setPlayerLoc] = useState(48)
@@ -200,7 +200,7 @@ function Ce325App(){
             if(errorWarning === "") {
                 setLoadData(data)
                 setIsLoadInitialized(true);
-                setPlayerLoc(data.loacationOfLoad)
+                setPlayerLoc(data.locationOfLoad)
             } else
                 e.preventDefault();
         }

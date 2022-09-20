@@ -35,7 +35,7 @@ function CantileverBeamApp(){
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [isLoadInitialized, setIsLoadInitialized] = useState(false)
     // edit this to add or edit add a load
-    const [loads,setLoads] = useState({load1 : {mass:10.0,location:50.0}, load2 : {mass:10.0, location: 20.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
+    const [loads,setLoads] = useState({load1 : {mass:10.0,location:20.0}, load2 : {mass:10.0, location: 50.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newMass, setNewMass] = useState(10.0)
