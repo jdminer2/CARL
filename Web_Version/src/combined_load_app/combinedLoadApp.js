@@ -141,6 +141,9 @@ function CombinedLoadApp(){
      * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
      */
     function handleKeyDown(event){
+        // Don't mess with anything while forms are open.
+        if(openAdd || openEdit)
+            return;
         // Prevent arrow keys from scrolling the screen.
         if([37,38,39,40].includes(event.keyCode))
             event.preventDefault();
