@@ -38,7 +38,7 @@ function CantileverBeamApp(){
     const [loads,setLoads] = useState({load1 : {mass:10.0,location:20.0}, load2 : {mass:10.0, location: 50.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newLoadData, setNewLoadData] = useState({name:"load6", mass:10.0, location:10})
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10})
     const [openAdd, setOpenAdd] = React.useState(false);
     const [openEdit, setOpenEdit] = React.useState(false);
     const [errorWarning, setErrorWarning] = useState("");
@@ -79,7 +79,7 @@ function CantileverBeamApp(){
             return;
         }
         validateInputsAddEdit(false);
-        if(errorWarning !== "");
+        if(errorWarning !== "")
             return;
         // confirm came in
         delete loads[selectedLoad];
@@ -100,14 +100,13 @@ function CantileverBeamApp(){
         var name = ""
         while(true){
             name = "load" + n;
-            console.log(name in loads)
+            //console.log(name in loads)
             if(name in loads){
                 n += 1;
                 continue;
             }
             break;
         }
-        setNewLoadName(name);
         return name;
     }
 
@@ -297,7 +296,7 @@ function CantileverBeamApp(){
 
     function validateInputsAddEdit(isAdding){
         // Check that name is not in use, unless when editing if the name is the same as the original name.
-        if((newLoadData.name in loads) && (adding || newLoadData.name !== selectedLoad)) {
+        if((newLoadData.name in loads) && (isAdding || newLoadData.name !== selectedLoad)) {
             setErrorWarning("Name of Load is already in use.");
             return;
         }
