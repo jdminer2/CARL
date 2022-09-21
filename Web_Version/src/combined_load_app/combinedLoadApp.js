@@ -1,6 +1,6 @@
 import '../App.css'
 import React, { useEffect, useState} from 'react';
-import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField} from '@mui/material'
+import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField} from '@mui/material'
 import LoadSelector from '../components/LoadSelector';
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis";
 import {inv, multiply} from "mathjs";
@@ -561,19 +561,21 @@ function CombinedLoadApp(){
                                 fullWidth
                                 variant="standard"
                             />
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Type (enter c for concentrated or d for distributed)"
-                                type="text"
-                                defaultValue={newLoadData.type}
-                                onChange={(val)=>{
-                                    newLoadData.type = val.target.value;
-                                    validateInputsAddEdit(true);
-                                }}
-                                fullWidth
-                                variant="standard"
-                            />
+                            <FormControl>
+                                <FormLabel id="newLoadTypeRadios">Type</FormLabel>
+                                <RadioGroup
+                                    row
+                                    aria-labelledby="newLoadTypeRadios"
+                                    value={newLoadData.type}
+                                    onChange={(val)=>{
+                                        newLoadData.type = val.target.value;
+                                        validateInputsAddEdit(true);
+                                    }}
+                                >
+                                    <FormControlLabel value="c" control={<Radio />} label="Concentrated" />
+                                    <FormControlLabel value="d" control={<Radio />} label="Distributed" />
+                                </RadioGroup>
+                            </FormControl>
                             <TextField
                                 autoFocus
                                 margin="dense"
@@ -642,19 +644,21 @@ function CombinedLoadApp(){
                                 fullWidth
                                 variant="standard"
                             />
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Type (enter c for concentrated or d for distributed)"
-                                type="text"
-                                defaultValue={newLoadData.type}
-                                onChange={(val)=>{
-                                    newLoadData.type = val.target.value;
-                                    validateInputsAddEdit(false);
-                                }}
-                                fullWidth
-                                variant="standard"
-                            />
+                            <FormControl>
+                                <FormLabel id="newLoadTypeRadios">Type</FormLabel>
+                                <RadioGroup
+                                    row
+                                    aria-labelledby="newLoadTypeRadios"
+                                    value={newLoadData.type}
+                                    onChange={(val)=>{
+                                        newLoadData.type = val.target.value;
+                                        validateInputsAddEdit(false);
+                                    }}
+                                >
+                                    <FormControlLabel value="c" control={<Radio />} label="Concentrated" />
+                                    <FormControlLabel value="d" control={<Radio />} label="Distributed" />
+                                </RadioGroup>
+                            </FormControl>
                             <TextField
                                 autoFocus
                                 margin="dense"

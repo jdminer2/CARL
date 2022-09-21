@@ -4,7 +4,7 @@ import { Button, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup } f
 
 const Home = () => {
     const [loadCount,setLoadCount] = useState("single");
-    const [loadType,setLoadType] = useState("centralized");
+    const [loadType,setLoadType] = useState("concentrated");
     const [supportType,setSupportType] = useState("simplySupported");
     return(<div>
         <h1>Welcome to CARL SIMULATOR</h1>
@@ -19,13 +19,13 @@ const Home = () => {
                 onChange={(e) => {
                     setLoadCount(e.target.value);
                     if(loadType==="both")
-                        setLoadType("centralized");
+                        setLoadType("concentrated");
                 }}
             >
                 <FormControlLabel value="single" control={<Radio />} label="Single" />
                 <FormControlLabel value="multiple" control={<Radio />} label="Multiple" />
             </RadioGroup>
-            {/* Select centralized load, distributed load, or, if multiple was selected previously, both load types. */}
+            {/* Select concentrated load, distributed load, or, if multiple was selected previously, both load types. */}
             <FormLabel id="loadTypeSelection">Choose Load Type</FormLabel>
             <RadioGroup
                 row
@@ -34,7 +34,7 @@ const Home = () => {
                 value={loadType}
                 onChange={(e) => setLoadType(e.target.value)}
             >
-                <FormControlLabel value="centralized" control={<Radio />} label="Centralized" />
+                <FormControlLabel value="concentrated" control={<Radio />} label="Concentrated" />
                 <FormControlLabel value="distributed" control={<Radio />} label="Distributed" />
                 {conditionalBothButton()}
             </RadioGroup>
@@ -69,17 +69,17 @@ const Home = () => {
     }
 
     function selectDestination() {
-        // Cantilever: only multiple-centralized-cantilever is available right now.
+        // Cantilever: only multiple-concentrated-cantilever is available right now.
         if(supportType==="cantilever")
             return "./cantilever_beam"
-        // Single-centralized-simplySupported
-        else if(loadCount=="single" && loadType==="centralized")
+        // Single-concentrated-simplySupported
+        else if(loadCount=="single" && loadType==="concentrated")
             return "./single_load"
         // Single-distributed-simplySupported
         else if(loadCount=="single" && loadType==="distributed")
             return "./distributed_load"
-        // Multiple-centralized-simplySupported
-        else if(loadCount=="multiple" && loadType==="centralized")
+        // Multiple-concentrated-simplySupported
+        else if(loadCount=="multiple" && loadType==="concentrated")
             return "./multiple_loads"
         // Multiple-distributed-simplySupported and multiple-both-simplySupported
         else if(loadCount=="multiple")
