@@ -685,7 +685,7 @@ function MultipleLoadApp(){
                                 margin="dense"
                                 label="Mass"
                                 defaultValue={newLoadData.mass}
-                                type="number"
+                                type="text"
                                 onChange={(val)=>{
                                     newLoadData.mass = val.target.value;
                                     validateInputsAddEdit(true);
@@ -697,7 +697,7 @@ function MultipleLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Location"
-                                type="number"
+                                type="text"
                                 defaultValue={newLoadData.location}
                                 onChange={(val)=>{
                                     newLoadData.location = val.target.value;
@@ -738,7 +738,7 @@ function MultipleLoadApp(){
                                 margin="dense"
                                 label="Mass"
                                 defaultValue={newLoadData.mass}
-                                type="number"
+                                type="text"
                                 onChange={(val)=>{
                                     newLoadData.mass = val.target.value;
                                     validateInputsAddEdit(false);
@@ -750,7 +750,7 @@ function MultipleLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Location"
-                                type="number"
+                                type="text"
                                 defaultValue={newLoadData.location}
                                 onChange={(val)=>{
                                     newLoadData.location = val.target.value;

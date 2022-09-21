@@ -528,7 +528,7 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="Mass"
                                 defaultValue={newLoadData.mass}
-                                type="number"
+                                type="text"
                                 onChange={(val)=>{
                                     newLoadData.mass = val.target.value;
                                     validateInputsAddEdit(true);    
@@ -540,7 +540,7 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Location"
-                                type="number"
+                                type="text"
                                 defaultValue={newLoadData.location}
                                 onChange={(val)=>{
                                     newLoadData.location = val.target.value;
@@ -566,7 +566,7 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Length (only if distributed)"
-                                type="number"
+                                type="text"
                                 defaultValue={newLoadData.length}
                                 onChange={(val)=>{
                                     newLoadData.length = val.target.value;
@@ -608,7 +608,7 @@ function CombinedLoadApp(){
                                 margin="dense"
                                 label="Mass"
                                 defaultValue={newLoadData.mass}
-                                type="number"
+                                type="text"
                                 onChange={(val)=>{
                                     newLoadData.mass = val.target.value;
                                     validateInputsAddEdit(false);
@@ -620,7 +620,7 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Location"
-                                type="number"
+                                type="text"
                                 defaultValue={newLoadData.location}
                                 onChange={(val)=>{
                                     newLoadData.location = val.target.value;
@@ -646,7 +646,7 @@ function CombinedLoadApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Length (only if distributed)"
-                                type="number"
+                                type="text"
                                 defaultValue={newLoadData.length}
                                 onChange={(val)=>{
                                     newLoadData.length = val.target.value;
