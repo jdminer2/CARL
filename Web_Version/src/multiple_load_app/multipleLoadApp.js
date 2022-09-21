@@ -645,7 +645,7 @@ function MultipleLoadApp(){
         </form>)
     }
     if(items.message === undefined){
-        return (<div>{'Waiting for response'}</div>)
+        return (<div>{'Waiting for response...'}</div>)
     }
     if(mData === undefined){
         return(<div>{'undefined'}</div>)

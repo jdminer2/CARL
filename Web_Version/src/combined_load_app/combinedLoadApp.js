@@ -20,6 +20,7 @@ function CombinedLoadApp(){
     const [openAdd, setOpenAdd] = React.useState(false);
     const [openEdit, setOpenEdit] = React.useState(false);
     const [errorWarning, setErrorWarning] = useState("");
+    const [hideLengthField, setHideLengthField] = useState(true);
     const handleClickOpenAdd = () => {
         // Pick a random color, in the range #000000 to #9F9F9F, always opacity 50%.
         let newR = Math.floor(Math.random() * 160).toString(16);
@@ -33,11 +34,13 @@ function CombinedLoadApp(){
             newB = "0"+newB;
         let color = "#" + newR + newG + newB + "80";
         setNewLoadData({name:loadNamer(), mass:10.0, location:10, type:"c", length:0, color:color});
+        setHideLengthField(true);
         console.log(newLoadData.color);
         setOpenAdd(true);
     };
     const handleClickOpenEdit = () => {
         setNewLoadData({name:selectedLoad, ...loads[selectedLoad]});
+        setHideLengthField(loads[selectedLoad].type === "c");
         setOpenEdit(true);
     };
 
@@ -57,7 +60,8 @@ function CombinedLoadApp(){
         if(errorWarning !== "")
             return;
         // If closed via confirm button, create a new load.
-        console.log(newLoadData.color);
+        if(newLoadData.type === "c")
+            newLoadData.length = 0;
         loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
         setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
@@ -80,6 +84,8 @@ function CombinedLoadApp(){
         if(errorWarning !== "")
             return;
         // If closed via confirm button, replace new load stats except color.
+        if(newLoadData.type === "c")
+            newLoadData.length = 0;
         delete loads[selectedLoad];
         loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
         setSelectedLoad(newLoadData.name);
@@ -333,6 +339,7 @@ function CombinedLoadApp(){
             setErrorWarning("Type must be 'c' or 'd'.");
             return;
         }
+        setHideLengthField(newLoadData.type === "c");
 
         // Check that length is a number >= 0.
         if(parseFloat(newLoadData.length) != newLoadData.length){
@@ -342,12 +349,6 @@ function CombinedLoadApp(){
         newLoadData.length = Number(newLoadData.length);
         if(newLoadData.length < 0) {
             setErrorWarning("Length must be at least 0.");
-            return;
-        }
-
-        // If type is c, length must be 0.
-        if(newLoadData.length != 0 && newLoadData.type === "c") {
-            setErrorWarning("Concentrated loads cannot have nonzero length.");
             return;
         }
 
@@ -585,6 +586,7 @@ function CombinedLoadApp(){
                                 }}
                                 fullWidth
                                 variant="standard"
+                                disabled={hideLengthField}
                             />
 
                         </DialogContent>
@@ -665,6 +667,7 @@ function CombinedLoadApp(){
                                 }}
                                 fullWidth
                                 variant="standard"
+                                disabled={hideLengthField}
                             />
 
                         </DialogContent>
