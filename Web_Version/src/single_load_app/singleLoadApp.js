@@ -502,7 +502,7 @@ function SingleLoadApp(){
             }
         }
         if(items.message === undefined){
-            return (<div>{'undefined'}</div>)
+            return (<div>{'Waiting for response...'}</div>)
         }
         if(mData === undefined){
             return(<div>{'undefined'}</div>)
