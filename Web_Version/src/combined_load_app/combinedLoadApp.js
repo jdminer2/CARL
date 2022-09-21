@@ -74,6 +74,7 @@ function CombinedLoadApp(){
         // If closed via confirm button, replace new load stats except color.
         delete loads[selectedLoad];
         loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
+        setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
         setOpenEdit(false);
         setErrorWarning("");
@@ -287,9 +288,9 @@ function CombinedLoadApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-     function validateInputsAddEdit(adding){
+     function validateInputsAddEdit(isAdding){
         // Check that name is not in use, unless when editing if the name is the same as the original name.
-        if((newLoadData.name in loads) && (adding || newLoadData.name !== selectedLoad)) {
+        if((newLoadData.name in loads) && (isAdding || newLoadData.name !== selectedLoad)) {
             setErrorWarning("Name of Load is already in use.");
             return;
         }
@@ -305,7 +306,7 @@ function CombinedLoadApp(){
             return;
         }
 
-        // Check that location is a number >= 0 and <= beam length.
+        // Check that location is a number >= 0.
         if(parseFloat(newLoadData.location) != newLoadData.location){
             setErrorWarning("Location must be a number.");
             return;
@@ -335,7 +336,7 @@ function CombinedLoadApp(){
 
         // If type is c, length must be 0.
         if(newLoadData.length != 0 && newLoadData.type === "c") {
-            setErrorWarning("Centralized loads cannot have nonzero length.");
+            setErrorWarning("Concentrated loads cannot have nonzero length.");
             return;
         }
 
@@ -525,7 +526,7 @@ function CombinedLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="mass"
+                                label="Mass"
                                 defaultValue={newLoadData.mass}
                                 type="number"
                                 onChange={(val)=>{
@@ -551,7 +552,7 @@ function CombinedLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="TYPE(enter c for concentrated or d for distributed)"
+                                label="Type (enter c for concentrated or d for distributed)"
                                 type="text"
                                 defaultValue={newLoadData.type}
                                 onChange={(val)=>{
@@ -605,7 +606,7 @@ function CombinedLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="mass"
+                                label="Mass"
                                 defaultValue={newLoadData.mass}
                                 type="number"
                                 onChange={(val)=>{
@@ -631,7 +632,7 @@ function CombinedLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="TYPE(enter c for concentrated or d for distributed)"
+                                label="Type (enter c for concentrated or d for distributed)"
                                 type="text"
                                 defaultValue={newLoadData.type}
                                 onChange={(val)=>{
@@ -746,9 +747,9 @@ function CombinedLoadApp(){
 
 /**
  * Function for load labels for the Load Location plot.
- * For centralized loads it puts load name, mass, and position.
+ * For concentrated loads it puts load name, mass, and position.
  * For distributed loads it puts load name, mass, position, and length. 
- * Distributed load labels are lower than centralized load labels to reduce the amount of overlapping text.
+ * Distributed load labels are lower than concentrated load labels to reduce the amount of overlapping text.
  * 
  * This function also creates arrow text characters to indicate the positions of loads.
  * This function is not responsible for displaying the line part of the distributed loads, but it does give the arrows.
@@ -757,7 +758,7 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
     var data = []
     for(let load in loads){
         console.log("load is : " + load.type)
-        // Centralized Loads
+        // Concentrated Loads
         if(loads[load].type === "c"){
             // Put load label.
             data.push({x: loads[load].location, y: 35, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})

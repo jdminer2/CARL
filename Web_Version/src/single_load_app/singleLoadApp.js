@@ -136,7 +136,7 @@ function SingleLoadApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-    function validateInputs(){
+    function validateInputsInitial(){
         // Check that length is a number > 0.
         if(parseFloat(loadData.length) != loadData.length){
             setErrorWarning("Length of Beam must be a number.");
@@ -366,7 +366,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.length = e.target.value
-                                        validateInputs();
+                                        validateInputsInitial();
                                     }}
                                 />
                             </label>
@@ -378,7 +378,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.elasticity = e.target.value
-                                        validateInputs();
+                                        validateInputsInitial();
                                     }}
                                 />
                             </label>
@@ -390,7 +390,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.inertia = e.target.value
-                                        validateInputs();
+                                        validateInputsInitial();
                                     }}
                                 />
                             </label>
@@ -402,7 +402,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.density = e.target.value
-                                        validateInputs();
+                                        validateInputsInitial();
                                     }}
                                 />
                             </label>
@@ -414,7 +414,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.area = e.target.value
-                                        validateInputs();
+                                        validateInputsInitial();
                                     }}
                                 />
                             </label>
@@ -426,7 +426,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.dampingRatio = e.target.value
-                                        validateInputs();
+                                        validateInputsInitial();
                                     }}
                                 />
                             </label>
@@ -438,7 +438,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.rA = e.target.value
-                                        validateInputs();
+                                        validateInputsInitial();
                                     }}
                                 />
                             </label>
@@ -450,7 +450,7 @@ function SingleLoadApp(){
                                     type="text"
                                     onChange={(e) => {
                                         data.EI = e.target.value
-                                        validateInputs();
+                                        validateInputsInitial();
                                     }}
                                 />
                             </label>
@@ -462,7 +462,7 @@ function SingleLoadApp(){
                                 type="text"
                                 onChange={(e) => {
                                     data.mass = e.target.value
-                                    validateInputs();
+                                    validateInputsInitial();
                                 }}
                             />
                         </label>
@@ -473,7 +473,7 @@ function SingleLoadApp(){
                                 type="text"
                                 onChange={(e) => {
                                     data.gravity = e.target.value
-                                    validateInputs();
+                                    validateInputsInitial();
                                 }}
                             />
                         </label>
@@ -484,7 +484,7 @@ function SingleLoadApp(){
                                 type="text"
                                 onChange={(e) => {
                                     data.locationOfLoad = e.target.value
-                                    validateInputs();
+                                    validateInputsInitial();
                                 }}
                             />
                         </label>

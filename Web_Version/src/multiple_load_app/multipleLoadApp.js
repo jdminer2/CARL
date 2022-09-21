@@ -450,9 +450,9 @@ function MultipleLoadApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-     function validateInputsAddEdit(adding){
+     function validateInputsAddEdit(isAdding){
         // Check that name is not in use, unless when editing if the name is the same as the original name.
-        if((newLoadData.name in loads) && (adding || newLoadData.name !== selectedLoad)) {
+        if((newLoadData.name in loads) && (isAdding || newLoadData.name !== selectedLoad)) {
             setErrorWarning("Name of Load is already in use.");
             return;
         }
@@ -683,7 +683,7 @@ function MultipleLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="mass"
+                                label="Mass"
                                 defaultValue={newLoadData.mass}
                                 type="number"
                                 onChange={(val)=>{
@@ -736,7 +736,7 @@ function MultipleLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="mass"
+                                label="Mass"
                                 defaultValue={newLoadData.mass}
                                 type="number"
                                 onChange={(val)=>{

@@ -38,16 +38,16 @@ function CantileverBeamApp(){
     const [loads,setLoads] = useState({load1 : {mass:10.0,location:20.0}, load2 : {mass:10.0, location: 50.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newMass, setNewMass] = useState(10.0)
-    const [newLocation, setNewLocation] = useState(10)
-    const [newLoadName, setNewLoadName] = useState("newLoad")
+    const [newLoadData, setNewLoadData] = useState({name:"load6", mass:10.0, location:10})
     const [openAdd, setOpenAdd] = React.useState(false);
     const [openEdit, setOpenEdit] = React.useState(false);
     const [errorWarning, setErrorWarning] = useState("");
     const handleClickOpenAdd = () => {
+        setNewLoadData({name:loadNamer(), mass:10.0, location:10});
         setOpenAdd(true);
     };
     const handleClickOpenEdit = () => {
+        setNewLoadData({name:selectedLoad, ...loads[selectedLoad]});
         setOpenEdit(true);
     };
 
@@ -56,25 +56,38 @@ function CantileverBeamApp(){
 
     // Function for cancelling/confirming in the Add Load menu.
     const handleCloseAdd = (event) => {
-        if(event === "cancel"){
+        if(event !== "confirm"){
             setOpenAdd(false);
+            setErrorWarning("");
             return;
         }
+        validateInputsAddEdit(true);
+        if(errorWarning !== "")
+            return;
         // confirm came in
-        loads[newLoadName] = {mass: newMass, location: newLocation};
+        loads[newLoadData.name] = {mass: newLoadData.mass, location: newLoadData.location};
+        setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
         setOpenAdd(false);
+        setErrorWarning("");
     };
     // Function for cancelling/confirming in the Edit Load menu.
     const handleCloseEdit = (event) => {
-        if(event === "cancel"){
+        if(event !== "confirm"){
             setOpenEdit(false);
+            setErrorWarning("");
             return;
         }
+        validateInputsAddEdit(false);
+        if(errorWarning !== "");
+            return;
         // confirm came in
-        loads[selectedLoad] = {mass: newMass, location: newLocation};
+        delete loads[selectedLoad];
+        loads[newLoadData.name] = {mass: newLoadData.mass, location: newLoadData.location};
+        setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
         setOpenEdit(false);
+        setErrorWarning("");
     };
     // handle loads empty case
     useEffect(()=>{if(loadUpdated === false){return;}
@@ -161,7 +174,7 @@ function CantileverBeamApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-     function validateInputs(){
+     function validateInputsInitial(){
         // Check that length is a number > 0.
         if(parseFloat(beamProperties.length) != beamProperties.length){
             setErrorWarning("Length of Beam must be a number.");
@@ -281,7 +294,45 @@ function CantileverBeamApp(){
         // No errors.
         setErrorWarning("");
     }
+
+    function validateInputsAddEdit(isAdding){
+        // Check that name is not in use, unless when editing if the name is the same as the original name.
+        if((newLoadData.name in loads) && (adding || newLoadData.name !== selectedLoad)) {
+            setErrorWarning("Name of Load is already in use.");
+            return;
+        }
+
+        // Check that mass is a number >= 0.
+        if(parseFloat(newLoadData.mass) != newLoadData.mass){
+            setErrorWarning("Mass must be a number.");
+            return;
+        }
+        newLoadData.mass = Number(newLoadData.mass);
+        if(newLoadData.mass < 0) {
+            setErrorWarning("Mass must be at least 0.");
+            return;
+        }
+
+        // Check that location is a number >= 0 and <= beam length.
+        if(parseFloat(newLoadData.location) != newLoadData.location){
+            setErrorWarning("Location must be a number.");
+            return;
+        }
+        newLoadData.location = Number(newLoadData.location);
+        if(newLoadData.location < 0) {
+            setErrorWarning("Location must be at least 0.");
+            return;
+        }
+        if(newLoadData.location > beamProperties.length) {
+            setErrorWarning("Location must be less than or equal to Length of Beam.");
+            return;
+        }
+
+        // No errors.
+        setErrorWarning("");
+    }
     
+
     // Function for using the load selector dropdown
     function handleDropdownChange(event){
         setSelectedLoad(event.target.value);
@@ -289,9 +340,10 @@ function CantileverBeamApp(){
 
     // Function for submitting the first inputs form
     function handleSubmit(data, e){
+        validateInputsInitial();
         if(errorWarning === "") {
-            setBeamProperties(data)
-            setIsBeamIni(true)
+            setBeamProperties(data);
+            setIsBeamIni(true);
         } else
             e.preventDefault();
     }
@@ -307,7 +359,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.length = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -318,7 +370,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.elasticity = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -329,7 +381,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.inertia = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -340,7 +392,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.density = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -351,7 +403,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.area = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -362,7 +414,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.dampingRatio = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -373,7 +425,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.rA = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -384,7 +436,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.EI = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -395,7 +447,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         data.gravity = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -406,7 +458,7 @@ function CantileverBeamApp(){
                     type="text"
                     onChange={(e) => {
                         loads[selectedLoad].location = e.target.value
-                        validateInputs();
+                        validateInputsInitial();
                     }}
                 />
             </label>
@@ -445,19 +497,25 @@ function CantileverBeamApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Name of Load"
-                                defaultValue={newLoadName}
+                                defaultValue={newLoadData.name}
                                 type="text"
-                                onChange={(val)=>{setNewLoadName(val.target.value)}}
+                                onChange={(val)=>{
+                                    newLoadData.name = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="mass"
-                                defaultValue={10}
+                                label="Mass"
+                                defaultValue={newLoadData.mass}
                                 type="number"
-                                onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
+                                onChange={(val)=>{
+                                    newLoadData.mass = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -466,12 +524,16 @@ function CantileverBeamApp(){
                                 margin="dense"
                                 label="Location"
                                 type="number"
-                                defaultValue={10}
-                                onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
+                                defaultValue={newLoadData.location}
+                                onChange={(val)=>{
+                                    newLoadData.location = val.target.value;
+                                    validateInputsAddEdit(true);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
                         </DialogContent>
+                        <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{errorWarning}</DialogContentText>
                         <DialogActions>
                             <Button onClick={()=>{handleCloseAdd("cancel")}}>Cancel</Button>
                             <Button onClick={()=>{handleCloseAdd("confirm")}}>Confirm</Button>
@@ -488,19 +550,25 @@ function CantileverBeamApp(){
                                 autoFocus
                                 margin="dense"
                                 label="Name of Load"
-                                defaultValue={newLoadName}
+                                defaultValue={newLoadData.name}
                                 type="text"
-                                onChange={(val)=>{setNewLoadName(val.target.value)}}
+                                onChange={(val)=>{
+                                    newLoadData.name = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="mass"
-                                defaultValue={10}
+                                label="Mass"
+                                defaultValue={newLoadData.mass}
                                 type="number"
-                                onChange={(val)=>{setNewMass(parseFloat(val.target.value))}}
+                                onChange={(val)=>{
+                                    newLoadData.mass = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
@@ -509,12 +577,16 @@ function CantileverBeamApp(){
                                 margin="dense"
                                 label="Location"
                                 type="number"
-                                defaultValue={10}
-                                onChange={(val)=>{setNewLocation(parseFloat(val.target.value))}}
+                                defaultValue={newLoadData.location}
+                                onChange={(val)=>{
+                                    newLoadData.location = val.target.value;
+                                    validateInputsAddEdit(false);
+                                }}
                                 fullWidth
                                 variant="standard"
                             />
                         </DialogContent>
+                        <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{errorWarning}</DialogContentText>
                         <DialogActions>
                             <Button onClick={()=>{handleCloseEdit("cancel")}}>Cancel</Button>
                             <Button onClick={()=>{handleCloseEdit("confirm")}}>Confirm</Button>
