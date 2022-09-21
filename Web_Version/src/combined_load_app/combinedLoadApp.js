@@ -13,7 +13,7 @@ function CombinedLoadApp(){
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
-    const [loads,setLoads] = useState({load1: {mass:10.0, location: 20.0, type: "c", length: 0}, load2: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 0}, load5: {mass: 10.0, location: 30.0, type: "c", length: 0}})
+    const [loads,setLoads] = useState({load1: {mass:10.0, location: 20.0, type: "c", length: 0, color:"#66666680"}, load2: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 0, color:"#66000080"}, load5: {mass: 10.0, location: 30.0, type: "c", length: 0, color:"#88442280"}})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10, type:"c", length:0, color:"#00000080"})
@@ -21,12 +21,19 @@ function CombinedLoadApp(){
     const [openEdit, setOpenEdit] = React.useState(false);
     const [errorWarning, setErrorWarning] = useState("");
     const handleClickOpenAdd = () => {
-        setNewLoadData({name:loadNamer(), mass:10.0, location:10, type:"c", length:0});
         // Pick a random color, in the range #000000 to #9F9F9F, always opacity 50%.
         let newR = Math.floor(Math.random() * 160).toString(16);
+        if(newR.length < 2)
+            newR = "0"+newR;
         let newG = Math.floor(Math.random() * 160).toString(16);
+        if(newG.length < 2)
+            newG = "0"+newG;
         let newB = Math.floor(Math.random() * 160).toString(16);
-        newLoadData.color = "#" + newR + newG + newB + "80";
+        if(newB.length < 2)
+            newB = "0"+newB;
+        let color = "#" + newR + newG + newB + "80";
+        setNewLoadData({name:loadNamer(), mass:10.0, location:10, type:"c", length:0, color:color});
+        console.log(newLoadData.color);
         setOpenAdd(true);
     };
     const handleClickOpenEdit = () => {
@@ -50,6 +57,7 @@ function CombinedLoadApp(){
         if(errorWarning !== "")
             return;
         // If closed via confirm button, create a new load.
+        console.log(newLoadData.color);
         loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
         setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
@@ -784,6 +792,7 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
                 label = loads[load].mass + ", " + loads[load].location + ", " + loads[load].length;
             data.push({x: loads[load].location+loads[load].length/2, y: 20, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put small arrows under distributed load line. 
+            console.log(loads[load].color);
             getDistributedLoadMiniArrows(data, loads[load].location, loads[load].length, loads[load].color, load);
         }
     }
