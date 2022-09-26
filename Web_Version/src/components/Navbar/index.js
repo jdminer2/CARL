@@ -32,25 +32,25 @@ const Navbar = () => {
                 <Bars onClick={handleBarsClick}/>
                 {/* List of options*/}
                 <NavMenu>
-                    <NavLink to='/' activeStyle>
+                    <NavLink reloadDocument to='/' activeStyle>
                         Home
                     </NavLink>
-                    <NavLink to='/distributed_load' activeStyle>
+                    <NavLink reloadDocument to='/distributed_load' activeStyle>
                         Distributed Load
                     </NavLink>
-                    <NavLink to='/single_load' activeStyle>
+                    <NavLink reloadDocument to='/single_load' activeStyle>
                         Single Load
                     </NavLink>
-                    <NavLink to='/multiple_loads' activeStyle>
+                    <NavLink reloadDocument to='/multiple_loads' activeStyle>
                         Multiple Load
                     </NavLink>
-                    <NavLink to='/ce325'>
+                    <NavLink reloadDocument to='/ce325'>
                         CE 325
                     </NavLink>
-                    <NavLink to='/cantilever_beam'>
+                    <NavLink reloadDocument to='/cantilever_beam'>
                         Cantilever Beam
                     </NavLink>
-                    <NavLink to='/combined_load'>
+                    <NavLink reloadDocument to='/combined_load'>
                         Combined Loads
                     </NavLink>
                 </NavMenu>
@@ -62,25 +62,25 @@ const Navbar = () => {
                 onClose={handleCloseMenu}
                 onClick={handleCloseMenu}
             >
-                <NavLink to='/' activeStyle>
+                <NavLink reloadDocument to='/' activeStyle>
                     Home
                 </NavLink>
-                <NavLink to='/distributed_load' activeStyle>
+                <NavLink reloadDocument to='/distributed_load' activeStyle>
                     Distributed Load
                 </NavLink>
-                <NavLink to='/single_load' activeStyle>
+                <NavLink reloadDocument to='/single_load' activeStyle>
                     Single Load
                 </NavLink>
-                <NavLink to='/multiple_loads' activeStyle>
+                <NavLink reloadDocument to='/multiple_loads' activeStyle>
                     Multiple Load
                 </NavLink>
-                <NavLink to='/ce325'>
+                <NavLink reloadDocument to='/ce325'>
                     CE 325
                 </NavLink>
-                <NavLink to='/cantilever_beam'>
+                <NavLink reloadDocument to='/cantilever_beam'>
                     Cantilever Beam
                 </NavLink>
-                <NavLink to='/combined_load'>
+                <NavLink reloadDocument to='/combined_load'>
                     Combined Loads
                 </NavLink>
             </Menu>
