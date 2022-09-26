@@ -278,7 +278,7 @@ function SingleLoadApp(){
         // No errors.
         setErrorWarning("");
     }
-    
+
     useInterval(updateGraph, 1);
     // useEffect(() => {
     //     const interval = setInterval(emitPing, 2000);
@@ -506,7 +506,7 @@ function SingleLoadApp(){
                         <input type="submit" value="analyze" autoFocus/>
                         <div></div>
                         {/* eslint-disable-next-line no-undef */}
-                        <div><img src={require("../resources/images/Single_load_schematic.png")} height={window.innerHeight/3} width={window.innerWidth/2.5}/></div>
+                        <div><img src={require("../resources/images/Single_load_schematic.png")} height={212.2} width={582.8} align="middle"/></div>
 
                     </form>
                 )
