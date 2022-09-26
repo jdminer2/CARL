@@ -5,13 +5,13 @@
   "dependencies": {
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
-    "@mui/material": "^4.12.4",
+    "@mui/material": "^5.2.6",
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
     "@testing-library/user-event": "^13.5.0",
     "mathjs": "^10.1.1",
-    "react": "^16.14.0",
-    "react-dom": "^16.14.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "react-icons": "^4.3.1",
     "react-router-dom": "^6.1.1",
     "react-scripts": "5.0.0",
@@ -54,5 +54,10 @@
   },
   "engines": {
     "node": "18.x"
+  },
+  "overrides":{
+    "react-vis":{
+      "react":"^17.0.2"
+    }
   }
 }
