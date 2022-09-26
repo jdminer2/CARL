@@ -29,7 +29,7 @@ export default PageName;
 ```
 5. To make the page reachable from the top bar, open ./src/components/Navbar/index.js. There, insert the following in the NavMenu section and in the Menu section:
 ```javascript
-<NavLink to='/new_page' activeStyle>
+<NavLink reloadDocument={currentPage === "new_page"} onClick={()=>{setCurrentPage("new_page")}} to='/new_page' activeStyle>
     New Page
 </NavLink>
 ```
