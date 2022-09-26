@@ -28,6 +28,16 @@ function Ce325App(){
     const [errorWarning, setErrorWarning] = useState("");
     const printDivRef = useRef();
 
+    // This makes the XYPlots scale when the user resizes the window.
+    const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
+    useEffect(() => {
+        window.addEventListener("resize", () =>
+            setWindowSize({height:window.innerHeight, width:window.innerWidth})
+        )
+        return () => 
+            window.removeEventListener("resize", setWindowSize({height:window.innerHeight, width:window.innerWidth}))
+    },[window.innerHeight, window.innerWidth]);
+
     function playerMovement(loc){
         // Prevent player from moving out of bounds.
         if(loc < 0)

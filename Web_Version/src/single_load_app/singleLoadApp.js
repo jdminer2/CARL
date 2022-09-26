@@ -51,6 +51,17 @@ function SingleLoadApp(){
         {x: 9, y: 0}
     ]);
     const [mi, setI] = useState(0)
+
+    // This makes the XYPlots scale when the user resizes the window.
+    const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
+    useEffect(() => {
+        window.addEventListener("resize", () =>
+            setWindowSize({height:window.innerHeight, width:window.innerWidth})
+        )
+        return () => 
+            window.removeEventListener("resize", setWindowSize({height:window.innerHeight, width:window.innerWidth}))
+    },[window.innerHeight, window.innerWidth]);
+
     const handlePrint = useReactToPrint({
         content: () => printDivRef.current
     });

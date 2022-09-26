@@ -39,9 +39,20 @@ function CantileverBeamApp(){
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10})
-    const [openAdd, setOpenAdd] = React.useState(false);
-    const [openEdit, setOpenEdit] = React.useState(false);
+    const [openAdd, setOpenAdd] = useState(false);
+    const [openEdit, setOpenEdit] = useState(false);
     const [errorWarning, setErrorWarning] = useState("");
+
+    // This makes the XYPlots scale when the user resizes the window.
+    const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
+    useEffect(() => {
+        window.addEventListener("resize", () =>
+            setWindowSize({height:window.innerHeight, width:window.innerWidth})
+        )
+        return () => 
+            window.removeEventListener("resize", setWindowSize({height:window.innerHeight, width:window.innerWidth}))
+    },[window.innerHeight, window.innerWidth]);
+
     const handleClickOpenAdd = () => {
         setNewLoadData({name:loadNamer(), mass:10.0, location:10});
         setOpenAdd(true);

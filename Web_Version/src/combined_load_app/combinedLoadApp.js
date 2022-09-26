@@ -17,10 +17,21 @@ function CombinedLoadApp(){
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10, type:"c", length:0, color:"#00000080"})
-    const [openAdd, setOpenAdd] = React.useState(false);
-    const [openEdit, setOpenEdit] = React.useState(false);
+    const [openAdd, setOpenAdd] = useState(false);
+    const [openEdit, setOpenEdit] = useState(false);
     const [errorWarning, setErrorWarning] = useState("");
     const [hideLengthField, setHideLengthField] = useState(true);
+
+    // This makes the XYPlots scale when the user resizes the window.
+    const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
+    useEffect(() => {
+        window.addEventListener("resize", () =>
+            setWindowSize({height:window.innerHeight, width:window.innerWidth})
+        )
+        return () => 
+            window.removeEventListener("resize", setWindowSize({height:window.innerHeight, width:window.innerWidth}))
+    },[window.innerHeight, window.innerWidth]);
+
     const handleClickOpenAdd = () => {
         // Pick a random color, in the range #000000 to #9F9F9F, always opacity 50%.
         let newR = Math.floor(Math.random() * 160).toString(16);
