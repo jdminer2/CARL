@@ -33,16 +33,16 @@ const Navbar = () => {
                 <Bars onClick={handleBarsClick}/>
                 {/* List of options*/}
                 <NavMenu>
-                    <NavLink reloadDocument={currentPage === ""} onClick={()=>{setCurrentPage("")}} to='/' activeStyle>
+                    <NavLink reloadDocument={currentPage === ""} onClick={()=>{setCurrentPage("")}} to='/'>
                         Home
                     </NavLink>
-                    <NavLink reloadDocument={currentPage === "distributed_load"} onClick={()=>{setCurrentPage("distributed_load")}} to='/distributed_load' activeStyle>
+                    <NavLink reloadDocument={currentPage === "distributed_load"} onClick={()=>{setCurrentPage("distributed_load")}} to='/distributed_load'>
                         Distributed Load
                     </NavLink>
-                    <NavLink reloadDocument={currentPage === "single_load"} onClick={()=>{setCurrentPage("single_load")}} to='/single_load' activeStyle>
+                    <NavLink reloadDocument={currentPage === "single_load"} onClick={()=>{setCurrentPage("single_load")}} to='/single_load'>
                         Single Load
                     </NavLink>
-                    <NavLink reloadDocument={currentPage === "multiple_loads"} onClick={()=>{setCurrentPage("multiple_loads")}} to='/multiple_loads' activeStyle>
+                    <NavLink reloadDocument={currentPage === "multiple_loads"} onClick={()=>{setCurrentPage("multiple_loads")}} to='/multiple_loads'>
                         Multiple Load
                     </NavLink>
                     <NavLink reloadDocument={currentPage === "ce325"} onClick={()=>{setCurrentPage("ce325")}} to='/ce325'>
@@ -63,16 +63,16 @@ const Navbar = () => {
                 onClose={handleCloseMenu}
                 onClick={handleCloseMenu}
             >
-                <NavLink reloadDocument={currentPage === ""} onClick={()=>{setCurrentPage("")}} to='/' activeStyle>
+                <NavLink reloadDocument={currentPage === ""} onClick={()=>{setCurrentPage("")}} to='/'>
                     Home
                 </NavLink>
-                <NavLink reloadDocument={currentPage === "distributed_load"} onClick={()=>{setCurrentPage("distributed_load")}} to='/distributed_load' activeStyle>
+                <NavLink reloadDocument={currentPage === "distributed_load"} onClick={()=>{setCurrentPage("distributed_load")}} to='/distributed_load'>
                     Distributed Load
                 </NavLink>
-                <NavLink reloadDocument={currentPage === "single_load"} onClick={()=>{setCurrentPage("single_load")}} to='/single_load' activeStyle>
+                <NavLink reloadDocument={currentPage === "single_load"} onClick={()=>{setCurrentPage("single_load")}} to='/single_load'>
                     Single Load
                 </NavLink>
-                <NavLink reloadDocument={currentPage === "multiple_loads"} onClick={()=>{setCurrentPage("multiple_loads")}} to='/multiple_loads' activeStyle>
+                <NavLink reloadDocument={currentPage === "multiple_loads"} onClick={()=>{setCurrentPage("multiple_loads")}} to='/multiple_loads'>
                     Multiple Load
                 </NavLink>
                 <NavLink reloadDocument={currentPage === "ce325"} onClick={()=>{setCurrentPage("ce325")}} to='/ce325'>
