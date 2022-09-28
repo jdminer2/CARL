@@ -196,22 +196,24 @@ function MultipleLoadApp(){
         if(items.message === undefined){
             return;
         }
-        const data = [
-            {x: 0, y: items.message[mi][0]},
-            {x: 1, y: items.message[mi][1]},
-            {x: 2, y: items.message[mi][2]},
-            {x: 3, y: items.message[mi][3]},
-            {x: 4, y: items.message[mi][4]},
-            {x: 5, y: items.message[mi][5]},
-            {x: 6, y: items.message[mi][6]},
-            {x: 7, y: items.message[mi][7]},
-            {x: 8, y: items.message[mi][8]},
-            {x: 9, y: items.message[mi][9]}
-        ];
 
         if(mi < items.message.length) {
+            const data = [
+                {x: 0, y: items.message[mi][0]},
+                {x: 1, y: items.message[mi][1]},
+                {x: 2, y: items.message[mi][2]},
+                {x: 3, y: items.message[mi][3]},
+                {x: 4, y: items.message[mi][4]},
+                {x: 5, y: items.message[mi][5]},
+                {x: 6, y: items.message[mi][6]},
+                {x: 7, y: items.message[mi][7]},
+                {x: 8, y: items.message[mi][8]},
+                {x: 9, y: items.message[mi][9]}
+            ];
+
             setI(mi + 1);
             setData(data)
+            console.log(mi)
             if(mi === items.message.length - 20){
                 // locations
                 playerMovement(0,2, 10)
