@@ -323,12 +323,12 @@ function SingleLoadApp(){
         }
         if(!isLoaded){
             console.log("not loaded yet")
-            console.log(items)
+            //console.log(items)
             if(!onceLoaded){
                 return
             }
         }
-        console.log(items)
+        //console.log(items)
         if(items.message === undefined){
             return;
         }
@@ -531,7 +531,7 @@ function SingleLoadApp(){
         var ymin = -60000000;
         var mulScale  = 1
         return (
-            <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
+            <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
                 <div className="App">
                     <h1>CARL</h1>
                     <XYPlot height={window.innerHeight * 0.7} width={window.innerWidth/2} yDomain ={[ymin*mulScale,-1 * ymin*mulScale]} margin = {{left : 10}}>

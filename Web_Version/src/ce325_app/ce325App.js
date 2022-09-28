@@ -33,7 +33,7 @@ function Ce325App(){
     useEffect(()=>{
         if(focusRef.current !== null)
             focusRef.current.focus();
-    }, [onceLoaded]);
+    }, [isLoadInitialized]);
 
     // This makes the XYPlots scale when the user resizes the window.
     const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
@@ -371,7 +371,7 @@ function Ce325App(){
         }
     }
     return (
-        <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
+        <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
             <div className="App">
                 <h1>CARL</h1>
                 <XYPlot height={window.innerHeight * 0.7} width={window.innerWidth/2.1} yDomain ={[-100,100]} margin = {{left : 5}}>

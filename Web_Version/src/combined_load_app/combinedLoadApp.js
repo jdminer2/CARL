@@ -703,7 +703,7 @@ function CombinedLoadApp(){
         setOnceLoaded(true)
     }
     return(
-        <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
+        <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <div>
                     {/* Add Load button */}

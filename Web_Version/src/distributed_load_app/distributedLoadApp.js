@@ -37,7 +37,7 @@ function DistributedLoadApp(){
     useEffect(()=>{
         if(focusRef.current !== null)
             focusRef.current.focus();
-    }, [onceLoaded]);
+    }, [isLoadInitialized]);
 
     // This makes the XYPlots scale when the user resizes the window.
     const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
@@ -404,7 +404,7 @@ function DistributedLoadApp(){
         var ymin = -60000000;
         var mulScale  = 1
         return (
-            <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
+            <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
                 <div className="App">
                     <h1>CARL</h1>
                     {/*ydomain changer*/}
