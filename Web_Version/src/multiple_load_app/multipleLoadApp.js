@@ -108,7 +108,7 @@ function MultipleLoadApp(){
             return;
         }
         // Check if errors are present
-        validateInputsAddEdit(true);
+        validateInputsLoadForm(true);
         if(loadFormWarning !== "")
             return;
         // Ready to add
@@ -127,7 +127,7 @@ function MultipleLoadApp(){
             return;
         }
         // Check if errors are present
-        validateInputsAddEdit(false);
+        validateInputsLoadForm(false);
         if(loadFormWarning !== "")
             return;
         // Ready to edit
@@ -351,7 +351,7 @@ function MultipleLoadApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-    function validateInputsInitial(){
+    function validateInputsInitialForm(){
         // Check that length is a number > 0.
         if(parseFloat(beamProperties.length) != beamProperties.length){
             setInitialFormWarning("Length of Beam must be a number.");
@@ -463,7 +463,7 @@ function MultipleLoadApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-     function validateInputsAddEdit(isAdding){
+     function validateInputsLoadForm(isAdding){
         // Check that name is not in use, unless when editing if the name is the same as the original name.
         if((newLoadData.name in loads) && (isAdding || newLoadData.name !== selectedLoad)) {
             setLoadFormWarning("Name of Load is already in use.");
@@ -505,7 +505,7 @@ function MultipleLoadApp(){
     }
 
     function handleSubmit(data, e){
-        validateInputsInitial();
+        validateInputsInitialForm();
         if(initialFormWarning === "") {
             setBeamProperties(data);
             setIsBeamIni(true);
@@ -553,7 +553,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.length = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -564,7 +564,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.elasticity = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -575,7 +575,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.inertia = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -586,7 +586,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.density = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -597,7 +597,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.area = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -608,7 +608,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.dampingRatio = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -619,7 +619,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.rA = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -630,7 +630,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.EI = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -641,7 +641,7 @@ function MultipleLoadApp(){
                     type="text"
                     onChange={(e) => {
                         data.gravity = e.target.value
-                        validateInputsInitial();
+                        validateInputsInitialForm();
                     }}
                 />
             </label>
@@ -674,7 +674,7 @@ function MultipleLoadApp(){
                         type="text"
                         onChange={(val)=>{
                             newLoadData.name = val.target.value;
-                            validateInputsAddEdit(true);
+                            validateInputsLoadForm(true);
                         }}
                         fullWidth
                         variant="standard"
@@ -687,7 +687,7 @@ function MultipleLoadApp(){
                         type="text"
                         onChange={(val)=>{
                             newLoadData.mass = val.target.value;
-                            validateInputsAddEdit(true);
+                            validateInputsLoadForm(true);
                         }}
                         fullWidth
                         variant="standard"
@@ -700,7 +700,7 @@ function MultipleLoadApp(){
                         defaultValue={newLoadData.location}
                         onChange={(val)=>{
                             newLoadData.location = val.target.value;
-                            validateInputsAddEdit(true);
+                            validateInputsLoadForm(true);
                         }}
                         fullWidth
                         variant="standard"
@@ -727,7 +727,7 @@ function MultipleLoadApp(){
                         type="text"
                         onChange={(val)=>{
                             newLoadData.name = val.target.value;
-                            validateInputsAddEdit(false);
+                            validateInputsLoadForm(false);
                         }}
                         fullWidth
                         variant="standard"
@@ -740,7 +740,7 @@ function MultipleLoadApp(){
                         type="text"
                         onChange={(val)=>{
                             newLoadData.mass = val.target.value;
-                            validateInputsAddEdit(false);
+                            validateInputsLoadForm(false);
                         }}
                         fullWidth
                         variant="standard"
@@ -753,7 +753,7 @@ function MultipleLoadApp(){
                         defaultValue={newLoadData.location}
                         onChange={(val)=>{
                             newLoadData.location = val.target.value;
-                            validateInputsAddEdit(false);
+                            validateInputsLoadForm(false);
                         }}
                         fullWidth
                         variant="standard"
@@ -810,7 +810,7 @@ function MultipleLoadApp(){
                                 type="text"
                                 onChange={(val)=>{
                                     newLoadData.name = val.target.value;
-                                    validateInputsAddEdit(true);
+                                    validateInputsLoadForm(true);
                                 }}
                                 fullWidth
                                 variant="standard"
@@ -823,7 +823,7 @@ function MultipleLoadApp(){
                                 type="text"
                                 onChange={(val)=>{
                                     newLoadData.mass = val.target.value;
-                                    validateInputsAddEdit(true);
+                                    validateInputsLoadForm(true);
                                 }}
                                 fullWidth
                                 variant="standard"
@@ -836,7 +836,7 @@ function MultipleLoadApp(){
                                 defaultValue={newLoadData.location}
                                 onChange={(val)=>{
                                     newLoadData.location = val.target.value;
-                                    validateInputsAddEdit(true);
+                                    validateInputsLoadForm(true);
                                 }}
                                 fullWidth
                                 variant="standard"
@@ -863,7 +863,7 @@ function MultipleLoadApp(){
                                 type="text"
                                 onChange={(val)=>{
                                     newLoadData.name = val.target.value;
-                                    validateInputsAddEdit(false);
+                                    validateInputsLoadForm(false);
                                 }}
                                 fullWidth
                                 variant="standard"
@@ -876,7 +876,7 @@ function MultipleLoadApp(){
                                 type="text"
                                 onChange={(val)=>{
                                     newLoadData.mass = val.target.value;
-                                    validateInputsAddEdit(false);
+                                    validateInputsLoadForm(false);
                                 }}
                                 fullWidth
                                 variant="standard"
@@ -889,7 +889,7 @@ function MultipleLoadApp(){
                                 defaultValue={newLoadData.location}
                                 onChange={(val)=>{
                                     newLoadData.location = val.target.value;
-                                    validateInputsAddEdit(false);
+                                    validateInputsLoadForm(false);
                                 }}
                                 fullWidth
                                 variant="standard"
