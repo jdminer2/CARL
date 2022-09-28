@@ -23,6 +23,13 @@ function CombinedLoadApp(){
     const [loadFormWarning, setLoadFormWarning] = useState("");
     const [hideLengthField, setHideLengthField] = useState(true);
 
+    // This helps the window automatically focus on the XYPlot, so users don't need to click on the screen before using keyboard controls to move loads.
+    const focusRef = React.useRef(null);
+    useEffect(()=>{
+        if(focusRef.current !== null)
+            focusRef.current.focus();
+    }, [onceLoaded]);
+
     // This makes the XYPlots scale when the user resizes the window.
     const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
     useEffect(() => {

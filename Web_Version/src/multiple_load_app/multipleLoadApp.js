@@ -50,6 +50,13 @@ function MultipleLoadApp(){
     const [initialFormWarning, setInitialFormWarning] = useState("");
     const [loadFormWarning, setLoadFormWarning] = useState("");
 
+    // This helps the window automatically focus on the XYPlot, so users don't need to click on the screen before using keyboard controls to move loads.
+    const focusRef = React.useRef(null);
+    useEffect(()=>{
+        if(focusRef.current !== null)
+            focusRef.current.focus();
+    }, [onceLoaded]);
+
     // This makes the XYPlots scale when the user resizes the window.
     const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
     useEffect(() => {
@@ -213,7 +220,6 @@ function MultipleLoadApp(){
 
             setI(mi + 1);
             setData(data)
-            console.log(mi)
             if(mi === items.message.length - 20){
                 // locations
                 playerMovement(0,2, 10)
@@ -669,7 +675,6 @@ function MultipleLoadApp(){
                         Please enter load properties
                     </DialogContentText>
                     <TextField
-                        autoFocus
                         margin="dense"
                         label="Name of Load"
                         defaultValue={newLoadData.name}
@@ -682,7 +687,6 @@ function MultipleLoadApp(){
                         variant="standard"
                     />
                     <TextField
-                        autoFocus
                         margin="dense"
                         label="Mass"
                         defaultValue={newLoadData.mass}
@@ -695,7 +699,6 @@ function MultipleLoadApp(){
                         variant="standard"
                     />
                     <TextField
-                        autoFocus
                         margin="dense"
                         label="Location"
                         type="text"
@@ -722,7 +725,6 @@ function MultipleLoadApp(){
                         Please enter load properties
                     </DialogContentText>
                     <TextField
-                        autoFocus
                         margin="dense"
                         label="Name of Load"
                         defaultValue={newLoadData.name}
@@ -735,7 +737,6 @@ function MultipleLoadApp(){
                         variant="standard"
                     />
                     <TextField
-                        autoFocus
                         margin="dense"
                         label="Mass"
                         defaultValue={newLoadData.mass}
@@ -748,7 +749,6 @@ function MultipleLoadApp(){
                         variant="standard"
                     />
                     <TextField
-                        autoFocus
                         margin="dense"
                         label="Location"
                         type="text"
@@ -785,7 +785,7 @@ function MultipleLoadApp(){
         setOnceLoaded(true)
     }
     return(
-        <div className={"rowC"} onKeyDown={handleKeyDown} tabIndex="0">
+        <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <div>
                     <Button variant="outlined" onClick={handleClickOpenAdd}>
@@ -805,7 +805,6 @@ function MultipleLoadApp(){
                                 Please enter load properties
                             </DialogContentText>
                             <TextField
-                                autoFocus
                                 margin="dense"
                                 label="Name of Load"
                                 defaultValue={newLoadData.name}
@@ -818,7 +817,6 @@ function MultipleLoadApp(){
                                 variant="standard"
                             />
                             <TextField
-                                autoFocus
                                 margin="dense"
                                 label="Mass"
                                 defaultValue={newLoadData.mass}
@@ -831,7 +829,6 @@ function MultipleLoadApp(){
                                 variant="standard"
                             />
                             <TextField
-                                autoFocus
                                 margin="dense"
                                 label="Location"
                                 type="text"
@@ -858,7 +855,6 @@ function MultipleLoadApp(){
                                 Please enter load properties
                             </DialogContentText>
                             <TextField
-                                autoFocus
                                 margin="dense"
                                 label="Name of Load"
                                 defaultValue={newLoadData.name}
@@ -871,7 +867,6 @@ function MultipleLoadApp(){
                                 variant="standard"
                             />
                             <TextField
-                                autoFocus
                                 margin="dense"
                                 label="Mass"
                                 defaultValue={newLoadData.mass}
@@ -884,7 +879,6 @@ function MultipleLoadApp(){
                                 variant="standard"
                             />
                             <TextField
-                                autoFocus
                                 margin="dense"
                                 label="Location"
                                 type="text"
