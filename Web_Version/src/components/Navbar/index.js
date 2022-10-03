@@ -15,7 +15,7 @@ import Menu from '@mui/material/Menu';
 const Navbar = () => {
     // Variables for opening and closing dropdown menu
     const [menuAnchor, setMenuAnchor] = React.useState(null);
-    const [currentPage, setCurrentPage] = React.useState("");
+    const [currentPage, setCurrentPage] = React.useState(window.location.pathname.substring(1));
     const open = Boolean(menuAnchor);
 
     // Functions for opening and closing dropdown menu

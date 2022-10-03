@@ -13,10 +13,10 @@ function CombinedLoadApp(){
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
-    const [loads,setLoads] = useState({load1: {mass:10.0, location: 20.0, type: "c", length: 0, color:"#66666680"}, load2: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "c", length: 0, color:"#66000080"}, load5: {mass: 10.0, location: 30.0, type: "c", length: 0, color:"#88442280"}})
+    const [loads,setLoads] = useState({load1: {mass:10.0, location: 20.0, type: "p", length: 0, color:"#66666680"}, load2: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "p", length: 0, color:"#66000080"}, load5: {mass: 10.0, location: 30.0, type: "p", length: 0, color:"#88442280"}})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10, type:"c", length:0, color:"#00000080"})
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10, type:"p", length:0, color:"#00000080"})
     const [openAdd, setOpenAdd] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
     const [initialFormWarning, setInitialFormWarning] = useState("");
@@ -52,14 +52,14 @@ function CombinedLoadApp(){
         if(newB.length < 2)
             newB = "0"+newB;
         let color = "#" + newR + newG + newB + "80";
-        setNewLoadData({name:loadNamer(), mass:10.0, location:10, type:"c", length:0, color:color});
+        setNewLoadData({name:loadNamer(), mass:10.0, location:10, type:"p", length:0, color:color});
         setHideLengthField(true);
         console.log(newLoadData.color);
         setOpenAdd(true);
     };
     const handleClickOpenEdit = () => {
         setNewLoadData({name:selectedLoad, ...loads[selectedLoad]});
-        setHideLengthField(loads[selectedLoad].type === "c");
+        setHideLengthField(loads[selectedLoad].type === "p");
         setOpenEdit(true);
     };
 
@@ -79,7 +79,7 @@ function CombinedLoadApp(){
         if(loadFormWarning !== "")
             return;
         // If closed via confirm button, create a new load.
-        if(newLoadData.type === "c")
+        if(newLoadData.type === "p")
             newLoadData.length = 0;
         loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
         setSelectedLoad(newLoadData.name);
@@ -103,7 +103,7 @@ function CombinedLoadApp(){
         if(loadFormWarning !== "")
             return;
         // If closed via confirm button, replace new load stats except color.
-        if(newLoadData.type === "c")
+        if(newLoadData.type === "p")
             newLoadData.length = 0;
         for(let load in loads) {
             // This is done to preserve the ordering of the loads list.
@@ -352,12 +352,12 @@ function CombinedLoadApp(){
             return;
         }
 
-        // Check that type is either c or d.
-        if(newLoadData.type !== "c" && newLoadData.type !== "d") {
-            setLoadFormWarning("Type must be 'c' or 'd'.");
+        // Check that type is either d or p.
+        if(newLoadData.type !== "d" && newLoadData.type !== "p") {
+            setLoadFormWarning("Type must be Distributed or Point Load.");
             return;
         }
-        setHideLengthField(newLoadData.type === "c");
+        setHideLengthField(newLoadData.type === "p");
 
         // Check that length is a number >= 0.
         if(parseFloat(newLoadData.length) != newLoadData.length){
@@ -400,7 +400,7 @@ function CombinedLoadApp(){
         labels.push(<label style={{fontWeight: "bold"}}>List of Loads</label>)
         labels.push(<div></div>)
         for(let load in loads){
-            labels.push(<label>{load + ": location=" + loads[load].location + ", mass=" + loads[load].mass + ", type=" + (loads[load].type==="c"?"Concentrated":"Distributed" + ", length=" + loads[load].length)}</label>)
+            labels.push(<label>{load + ": location=" + loads[load].location + ", mass=" + loads[load].mass + ", type=" + (loads[load].type==="p"?"Point":"Distributed" + ", length=" + loads[load].length)}</label>)
             labels.push(<div></div>)
         }
         return labels;
@@ -514,13 +514,13 @@ function CombinedLoadApp(){
             <p></p>
             <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
             <div></div>
-            <Button variant="outlined" onClick={handleClickOpenAdd}>
+            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                 Add Load
             </Button>
-            <Button variant="outlined" onClick={handleClickOpenEdit}>
+            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
                 Edit Load
             </Button>
-            <Button variant="outlined" onClick={deleteLoad}>
+            <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
                 Delete Load
             </Button>
             {/* Add Load menu */}
@@ -528,7 +528,7 @@ function CombinedLoadApp(){
                 <DialogTitle>Add Load</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Please enter load properties (Don't fill in the length if load is Concentrated)
+                        Please enter load properties (Don't fill in the length if load type is Point Load)
                     </DialogContentText>
                     <TextField
                         autoFocus
@@ -580,8 +580,8 @@ function CombinedLoadApp(){
                                 validateInputsLoadForm(true);
                             }}
                         >
-                            <FormControlLabel value="c" control={<Radio />} label="Concentrated" />
-                            <FormControlLabel value="d" control={<Radio />} label="Distributed" />
+                            <FormControlLabel value="p" control={<Radio />} label="Point Load" />
+                            <FormControlLabel value="d" control={<Radio />} label="Distributed Load" />
                         </RadioGroup>
                     </FormControl>
                     <TextField
@@ -611,7 +611,7 @@ function CombinedLoadApp(){
                 <DialogTitle>Edit Load</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Please enter load properties (Don't fill in the length if load is Concentrated)
+                        Please enter load properties (Don't fill in the length if load type is Point Load)
                     </DialogContentText>
                     <TextField
                         autoFocus
@@ -663,8 +663,8 @@ function CombinedLoadApp(){
                                 validateInputsLoadForm(false);
                             }}
                         >
-                            <FormControlLabel value="c" control={<Radio />} label="Concentrated" />
-                            <FormControlLabel value="d" control={<Radio />} label="Distributed" />
+                            <FormControlLabel value="p" control={<Radio />} label="Point Load" />
+                            <FormControlLabel value="d" control={<Radio />} label="Distributed Load" />
                         </RadioGroup>
                     </FormControl>
                     <TextField
@@ -707,14 +707,14 @@ function CombinedLoadApp(){
             <div>
                 <div>
                     {/* Add Load button */}
-                    <Button variant="outlined" onClick={handleClickOpenAdd}>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                         Add Load
                     </Button>
                     {/* Edit Load button */}
-                    <Button variant="outlined" onClick={handleClickOpenEdit}>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
                         Edit Load
                     </Button>
-                    <Button variant="outlined" onClick={deleteLoad}>
+                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
                         Delete Load
                     </Button>
                     {/* Add Load menu */}
@@ -722,7 +722,7 @@ function CombinedLoadApp(){
                         <DialogTitle>Add Load</DialogTitle>
                         <DialogContent>
                             <DialogContentText>
-                                Please enter load properties (Don't fill in the length if load is Concentrated)
+                                Please enter load properties (Don't fill in the length if load type is Point Load)
                             </DialogContentText>
                             <TextField
                                 autoFocus
@@ -774,8 +774,8 @@ function CombinedLoadApp(){
                                         validateInputsLoadForm(true);
                                     }}
                                 >
-                                    <FormControlLabel value="c" control={<Radio />} label="Concentrated" />
-                                    <FormControlLabel value="d" control={<Radio />} label="Distributed" />
+                                    <FormControlLabel value="p" control={<Radio />} label="Point Load" />
+                                    <FormControlLabel value="d" control={<Radio />} label="Distributed Load" />
                                 </RadioGroup>
                             </FormControl>
                             <TextField
@@ -805,7 +805,7 @@ function CombinedLoadApp(){
                         <DialogTitle>Edit Load</DialogTitle>
                         <DialogContent>
                             <DialogContentText>
-                                Please enter load properties (Don't fill in the length if load is Concentrated)
+                                Please enter load properties (Don't fill in the length if load type is Point Load)
                             </DialogContentText>
                             <TextField
                                 autoFocus
@@ -857,8 +857,8 @@ function CombinedLoadApp(){
                                         validateInputsLoadForm(false);
                                     }}
                                 >
-                                    <FormControlLabel value="c" control={<Radio />} label="Concentrated" />
-                                    <FormControlLabel value="d" control={<Radio />} label="Distributed" />
+                                    <FormControlLabel value="p" control={<Radio />} label="Point Load" />
+                                    <FormControlLabel value="d" control={<Radio />} label="Distributed Load" />
                                 </RadioGroup>
                             </FormControl>
                             <TextField
@@ -966,9 +966,9 @@ function CombinedLoadApp(){
 
 /**
  * Function for load labels for the Load Location plot.
- * For concentrated loads it puts load name, mass, and position.
+ * For point loads it puts load name, mass, and position.
  * For distributed loads it puts load name, mass, position, and length. 
- * Distributed load labels are lower than concentrated load labels to reduce the amount of overlapping text.
+ * Distributed load labels are lower than point load labels to reduce the amount of overlapping text.
  * 
  * This function also creates arrow text characters to indicate the positions of loads.
  * This function is not responsible for displaying the line part of the distributed loads, but it does give the arrows.
@@ -977,8 +977,8 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
     var data = []
     for(let load in loads){
         console.log("load is : " + load.type)
-        // Concentrated Loads
-        if(loads[load].type === "c"){
+        // Point Loads
+        if(loads[load].type === "p"){
             // Put load label.
             data.push({x: loads[load].location, y: 35, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             let label;
@@ -1037,11 +1037,11 @@ function shearForceData(loads, beamProperties){
     }
     for(let load in loads){
         let myload = loads[load]
-        if(myload.type === "c"){
+        if(myload.type === "p"){
             let p = myload.mass
             let l = length
             let a = myload.location
-            allDataList.push(shearForceDataConcentrated(p,l,a))
+            allDataList.push(shearForceDataPointLoad(p,l,a))
             continue
         }
         let e = myload.location
@@ -1067,7 +1067,7 @@ function shearForceData(loads, beamProperties){
     console.log(finalDataList)
     return finalDataList
 }
-function shearForceDataConcentrated(p,l,a){
+function shearForceDataPointLoad(p,l,a){
     let R1 = p*(l - a)/l
     let dataList = []
     for(let x = 0 ; x <= l;x++){
@@ -1109,11 +1109,11 @@ function movementBendingDiagram(loads, beamProperties){
 
     for(let load in loads){
         let myload = loads[load]
-        if(myload.type === "c"){
+        if(myload.type === "p"){
             let p = myload.mass
             let l = length
             let a = myload.location
-            allDataList.push(movementBendingDiagramConcentrated(p,l,a))
+            allDataList.push(movementBendingDiagramPointLoad(p,l,a))
             continue
         }
         let e = myload.location
@@ -1153,7 +1153,7 @@ function movementBendingDiagramDistributed(e,d,w,L){
     }
     return dataList
 }
-function movementBendingDiagramConcentrated(p,l,a){
+function movementBendingDiagramPointLoad(p,l,a){
     let R1 = p*(l - a)/l
     let R2 = p*a/l
     let dataList = []
@@ -1177,7 +1177,7 @@ function plotReactions(loads,beamProperties){
     let R2 = 0
     for(let load in loads){
         let myload = loads[load]
-        if(myload.type === "c"){
+        if(myload.type === "p"){
             let p = myload.mass
             let l = length
             let a = myload.location
@@ -1210,12 +1210,12 @@ function deflection(loads, beamProperties){
     while(x <=length){
         var y = 0;
         for(let load in loads){
-            if(loads[load].type !== "c"){
+            if(loads[load].type !== "p"){
                 continue
             }
             var p = loads[load].mass;
             var a = loads[load].location
-            var val = deflectionOfSingleLoadConcentrated(p,x,length,a);
+            var val = deflectionOfSingleLoadPointLoad(p,x,length,a);
             y += val;
         }
         dataList.push({x:x,y:-1*y})
@@ -1224,7 +1224,7 @@ function deflection(loads, beamProperties){
     let allDataList = [dataList]
     for(let load in loads){
         let myload = loads[load]
-        if(myload.type === "c"){
+        if(myload.type === "p"){
             continue
         }
         let e = myload.location
@@ -1249,7 +1249,7 @@ function deflection(loads, beamProperties){
 }
 
 
-function deflectionOfSingleLoadConcentrated(p,x,l,a){
+function deflectionOfSingleLoadPointLoad(p,x,l,a){
     var e = 2110000;
     var i = 0.33;
     var val =0;

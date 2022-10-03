@@ -658,13 +658,13 @@ function MultipleLoadApp(){
             <p></p>
             <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
             <div></div>
-            <Button variant="outlined" onClick={handleClickOpenAdd}>
+            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                 Add Load
             </Button>
-            <Button variant="outlined" onClick={handleClickOpenEdit}>
+            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
                 Edit Load
             </Button>
-            <Button variant="outlined" onClick={deleteLoad}>
+            <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
                 Delete Load
             </Button>
             {/* Add Load menu */}
@@ -788,13 +788,13 @@ function MultipleLoadApp(){
         <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <div>
-                    <Button variant="outlined" onClick={handleClickOpenAdd}>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                         Add Load
                     </Button>
-                    <Button variant="outlined" onClick={handleClickOpenEdit}>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
                         Edit Load
                     </Button>
-                    <Button variant="outlined" onClick={deleteLoad}>
+                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
                         Delete Load
                     </Button>
                     {/* Add Load menu */}

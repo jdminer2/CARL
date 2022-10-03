@@ -484,13 +484,13 @@ function CantileverBeamApp(){
             <p></p>
             <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
             <div></div>
-            <Button variant="outlined" onClick={handleClickOpenAdd}>
+            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                 Add Load
             </Button>
-            <Button variant="outlined" onClick={handleClickOpenEdit}>
+            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
                 Edit Load
             </Button>
-            <Button variant="outlined" onClick={deleteLoad}>
+            <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
                 Delete Load
             </Button>
             {/* Add Load menu */}
@@ -617,14 +617,14 @@ function CantileverBeamApp(){
             <div>
                 <div>
                     {/* Display Add Load button */}
-                    <Button variant="outlined" onClick={handleClickOpenAdd}>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                         Add Load
                     </Button>
                     {/* Display Edit Load button */}
-                    <Button variant="outlined" onClick={handleClickOpenEdit}>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
                         Edit Load
                     </Button>
-                    <Button variant="outlined" onClick={deleteLoad}>
+                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
                         Delete Load
                     </Button>
                     {/* Display Add Load menu */}

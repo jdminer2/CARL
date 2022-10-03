@@ -4,7 +4,7 @@ import { Button, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup } f
 
 const Home = () => {
     const [loadCount,setLoadCount] = useState("single");
-    const [loadType,setLoadType] = useState("concentrated");
+    const [loadType,setLoadType] = useState("point");
     const [supportType,setSupportType] = useState("simplySupported");
     return(<div>
         <h1>Welcome to CARL SIMULATOR</h1>
@@ -19,13 +19,13 @@ const Home = () => {
                 onChange={(e) => {
                     setLoadCount(e.target.value);
                     if(loadType==="both")
-                        setLoadType("concentrated");
+                        setLoadType("point");
                 }}
             >
                 <FormControlLabel value="single" control={<Radio />} label="Single" />
                 <FormControlLabel value="multiple" control={<Radio />} label="Multiple" />
             </RadioGroup>
-            {/* Select concentrated load, distributed load, or, if multiple was selected previously, both load types. */}
+            {/* Select point load, distributed load, or, if multiple was selected previously, both load types. */}
             <FormLabel id="loadTypeSelection">Choose Load Type</FormLabel>
             <RadioGroup
                 row
@@ -34,8 +34,8 @@ const Home = () => {
                 value={loadType}
                 onChange={(e) => setLoadType(e.target.value)}
             >
-                <FormControlLabel value="concentrated" control={<Radio />} label="Concentrated" />
-                <FormControlLabel value="distributed" control={<Radio />} label="Distributed" />
+                <FormControlLabel value="point" control={<Radio />} label="Point Load" />
+                <FormControlLabel value="distributed" control={<Radio />} label="Distributed Load" />
                 {conditionalBothButton()}
             </RadioGroup>
             {/* Select simply supported beam or cantilever beam. */}
@@ -69,17 +69,17 @@ const Home = () => {
     }
 
     function selectDestination() {
-        // Cantilever: only multiple-concentrated-cantilever is available right now.
+        // Cantilever: only multiple-point-cantilever is available right now.
         if(supportType==="cantilever")
             return "./cantilever_beam"
-        // Single-concentrated-simplySupported
-        else if(loadCount=="single" && loadType==="concentrated")
+        // Single-point-simplySupported
+        else if(loadCount=="single" && loadType==="point")
             return "./single_load"
         // Single-distributed-simplySupported
         else if(loadCount=="single" && loadType==="distributed")
             return "./distributed_load"
-        // Multiple-concentrated-simplySupported
-        else if(loadCount=="multiple" && loadType==="concentrated")
+        // Multiple-point-simplySupported
+        else if(loadCount=="multiple" && loadType==="point")
             return "./multiple_loads"
         // Multiple-distributed-simplySupported and multiple-both-simplySupported
         else if(loadCount=="multiple")
