@@ -367,11 +367,11 @@ function CantileverBeamApp(){
 
     function loadListCreator(){
         let labels = [];
-        labels.push(<label style={{fontWeight: "bold"}}>List of Loads</label>)
-        labels.push(<div></div>)
+        labels.push(<label key="0" style={{fontWeight: "bold"}}>List of Loads</label>)
+        labels.push(<div key="1"></div>)
         for(let load in loads){
-            labels.push(<label>{load + ": location=" + loads[load].location + ", mass=" + loads[load].mass}</label>)
-            labels.push(<div></div>)
+            labels.push(<label key={"2" + load}>{load + ": location=" + loads[load].location + ", mass=" + loads[load].mass}</label>)
+            labels.push(<div key={"3" + load}></div>)
         }
         return labels;
     }

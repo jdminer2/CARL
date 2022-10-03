@@ -397,11 +397,11 @@ function CombinedLoadApp(){
 
     function loadListCreator(){
         let labels = [];
-        labels.push(<label style={{fontWeight: "bold"}}>List of Loads</label>)
-        labels.push(<div></div>)
+        labels.push(<label key="0" style={{fontWeight: "bold"}}>List of Loads</label>)
+        labels.push(<div key="1"></div>)
         for(let load in loads){
-            labels.push(<label>{load + ": location=" + loads[load].location + ", mass=" + loads[load].mass + ", type=" + (loads[load].type==="p"?"Point":"Distributed" + ", length=" + loads[load].length)}</label>)
-            labels.push(<div></div>)
+            labels.push(<label key={"2"+load}>{load + ": location=" + loads[load].location + ", mass=" + loads[load].mass + ", type=" + (loads[load].type==="p"?"Point":"Distributed" + ", length=" + loads[load].length)}</label>)
+            labels.push(<div key={"3"+load}></div>)
         }
         return labels;
     }
@@ -908,6 +908,7 @@ function CombinedLoadApp(){
                                     strokeWidth={3}
                                     data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 8}]}
                                     onSeriesClick={(event) => {setSelectedLoad(load[0])}}
+                                    key={load.toString()}
                                 />
                             );
                     })}
