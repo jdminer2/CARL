@@ -11,13 +11,18 @@ import {
     LabelSeries
 } from 'react-vis';
 import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormLabel from '@mui/material/FormLabel';
 import LoadSelector from '../components/LoadSelector';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import TextField from '@mui/material/TextField';
+
 import React, { useEffect, useState} from 'react';
 import io from "socket.io-client";
 import {useInterval} from "../useInterval";
@@ -508,7 +513,7 @@ function MultipleLoadApp(){
         setLoadFormWarning("");
     }
 
-    function handleDropdownChange(event){
+    function handleSelectedChange(event){
         setSelectedLoad(event.target.value);
     }
 
@@ -537,14 +542,13 @@ function MultipleLoadApp(){
         return data;
     }
 
-    function loadListCreator(){
+    function loadRadioButtonsCreator(){
         let labels = [];
-        labels.push(<label key="0" style={{fontWeight: "bold"}}>List of Loads</label>)
-        labels.push(<div key="1"></div>)
-        for(let load in loads){
-            labels.push(<label key={"2" + load}>{load + ": location=" + loads[load].location + ", mass=" + loads[load].mass}</label>)
-            labels.push(<div key={"3" + load}></div>)
-        }
+        for(let load in loads)
+            labels.push(<FormControlLabel
+                key={load} value={load} control={<Radio/>}
+                label={load + ": location=" + loads[load].location + ", mass=" + loads[load].mass} 
+            />)
         return labels;
     }
 
@@ -654,10 +658,18 @@ function MultipleLoadApp(){
                 />
             </label>
             <p></p>
-            {loadListCreator()}
-            <p></p>
-            <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
+            <FormLabel id="loadSelection" style={{fontWeight: "bold"}}>List of Loads</FormLabel>
             <div></div>
+            <RadioGroup
+                aria-labelledby="loadSelection"
+                name="loadSelectionRadioBtns"
+                value={selectedLoad}
+                onChange={handleSelectedChange}
+                sx={{display:'inline-flex'}}
+            >
+                {loadRadioButtonsCreator()}
+            </RadioGroup>
+            <p></p>
             <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                 Add Load
             </Button>
@@ -913,7 +925,7 @@ function MultipleLoadApp(){
                     {/* Display the loads */}
                     <LabelSeries data={dataMakerForLoadsDynamic()} allowOffsetToBeReversed={false} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
-                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
+                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
                 <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
