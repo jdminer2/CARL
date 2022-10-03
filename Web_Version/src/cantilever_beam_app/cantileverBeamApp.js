@@ -499,10 +499,10 @@ function CantileverBeamApp(){
             <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                 Add Load
             </Button>
-            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
+            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>
                 Edit Load
             </Button>
-            <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
+            <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>
                 Delete Load
             </Button>
             {/* Add Load menu */}
@@ -633,10 +633,10 @@ function CantileverBeamApp(){
                         Add Load
                     </Button>
                     {/* Display Edit Load button */}
-                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>
                         Edit Load
                     </Button>
-                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
+                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>
                         Delete Load
                     </Button>
                     {/* Display Add Load menu */}
@@ -924,7 +924,7 @@ function movementBendingDiagram(loads, beamProperties){
     // r1 = r1/l;
     // bending calculation
     dataList.push({x:0,y:-1 * r1})
-    var diff = loadList[loadList.length-1].location*loadList[loadList.length-1].mass
+    //var diff = loadList[loadList.length-1].location*loadList[loadList.length-1].mass
     // dynamically want to add data to a list for each load refer this code.
     let tsum = 0;
     for(let i = 0 ; i < loadList.length ; i++){

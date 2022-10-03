@@ -673,10 +673,10 @@ function MultipleLoadApp(){
             <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                 Add Load
             </Button>
-            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
+            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>
                 Edit Load
             </Button>
-            <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
+            <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>
                 Delete Load
             </Button>
             {/* Add Load menu */}
@@ -803,10 +803,10 @@ function MultipleLoadApp(){
                     <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                         Add Load
                     </Button>
-                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit}>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>
                         Edit Load
                     </Button>
-                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad}>
+                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>
                         Delete Load
                     </Button>
                     {/* Add Load menu */}
