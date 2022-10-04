@@ -27,7 +27,7 @@ function DistributedLoadApp(){
     const [error, setError] = useState(null);
     const [infoUpdated,setInfoUpdated] = useState(false);
     const [isLoadInitialized, setIsLoadInitialized] = useState(false);
-    const [loadData, setLoadData] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,locationOfLoad:25,lengthOfLoad:50})
+    const [loadData, setLoadData] = useState({length : 100, elasticity : 1.0, inertia: 1.0, density : 1.0, area: 1.0, dampingRatio:0.02, rA : 85000.0, EI: 210000000000.0,mass:10.0, gravity:9.8,locationOfLoad:50,lengthOfLoad:50})
     const [loadLocation , setLoadLocation] = useState(25.0);
     const [loadLength,setLoadLength] = useState(50)
     const [initialFormWarning, setInitialFormWarning] = useState("");
@@ -199,16 +199,12 @@ function DistributedLoadApp(){
             return;
         }
 
-        // Check that location of load is a number >= 0.
+        // Check that location of load is a number.
         if(parseFloat(loadData.locationOfLoad) != loadData.locationOfLoad) {
             setInitialFormWarning("Location of Load must be a number.");
             return;
         }
         loadData.locationOfLoad = Number(loadData.locationOfLoad);
-        if(loadData.locationOfLoad < 0) {
-            setInitialFormWarning("Location of Load must be at least 0.");
-            return;
-        }
 
         // Check that length of load is a number >= 0.
         if(parseFloat(loadData.lengthOfLoad) != loadData.lengthOfLoad){
@@ -221,9 +217,15 @@ function DistributedLoadApp(){
             return;
         }
 
-        // Check that length + location <= beam length (so the right-edge is in-bounds).
-        if(loadData.locationOfLoad + loadData.lengthOfLoad > loadData.length){
-            setInitialFormWarning("Location of Load + Length of Load must be less than or equal to Length of Beam.");
+        // Check that left and right ends of the load are in-bounds.
+        let leftEnd = loadData.locationOfLoad - loadData.lengthOfLoad / 2;
+        let rightEnd = loadData.locationOfLoad + loadData.lengthOfLoad / 2;
+        if(leftEnd < 0) {
+            setInitialFormWarning("The left end of the load is out of bounds (location is " + leftEnd + ", must be greater than or equal to 0).");
+            return;
+        }
+        if(rightEnd > loadData.length){
+            setInitialFormWarning("The right end of the load is out of bounds (location is " + rightEnd + ", must be less than or equal to Length of Beam).");
             return;
         }
 
@@ -240,7 +242,7 @@ function DistributedLoadApp(){
                 if(initialFormWarning === "") {
                     setLoadData(data)
                     setIsLoadInitialized(true);
-                    setLoadLocation(parseFloat(data.locationOfLoad));
+                    setLoadLocation(parseFloat(data.locationOfLoad - data.lengthOfLoad / 2)); // Convert locationOfLoad from center-position to left-end-position for calculations.
                     setLoadLength(parseInt(data.lengthOfLoad));
                     // setTestUrl("{'length': "+ loadData.length +", 'elasticity': "+ loadData.elasticity +", 'inertia': "+ loadData.inertia +", 'density': "+ loadData.density +", 'area': "+ loadData.area +", 'dampingRatio':"+ loadData.dampingRatio +", 'rA': "+ loadData.rA +", 'EI': "+ loadData.EI +", 'mass': "+ loadData.mass +", 'gravity': "+ loadData.gravity +", 'force': "+ loadData.mass * loadData.gravity +", 'locationOfLoad': "+ loadData.locationOfLoad +", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
                     // console.log(testUrl)
@@ -370,9 +372,9 @@ function DistributedLoadApp(){
                             />
                         </label>
                         <div></div>
-                        <label>Location of Load:
+                        <label>Location of Load (Center):
                             <input
-                                defaultValue={25}
+                                defaultValue={50}
                                 type="text"
                                 onChange={(e) => {
                                     data.locationOfLoad = e.target.value

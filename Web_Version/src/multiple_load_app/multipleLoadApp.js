@@ -43,7 +43,7 @@ function MultipleLoadApp(){
     const [loads,setLoads] = useState({load1 : {mass:10.0,location:20.0}, load2 : {mass:10.0, location: 50.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10})
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:beamProperties.length / 2})
     const [butClicked, setButClicked] = useState(false)
     const [tPing, setTping] = useState(2);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -74,7 +74,7 @@ function MultipleLoadApp(){
 
     const handleClickOpenAdd = () => {
         setOpenAdd(true);
-        setNewLoadData({name:loadNamer(), mass:10.0, location:10});
+        setNewLoadData({name:loadNamer(), mass:10.0, location:beamProperties.length / 2});
     };
     const handleClickOpenEdit = () => {
         // Current stats of the load to be edited.

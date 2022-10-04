@@ -16,7 +16,7 @@ function CombinedLoadApp(){
     const [loads,setLoads] = useState({load1: {mass:10.0, location: 20.0, type: "p", length: 0, color:"#66666680"}, load2: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "p", length: 0, color:"#66000080"}, load5: {mass: 10.0, location: 30.0, type: "p", length: 0, color:"#88442280"}})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10, type:"p", length:0, color:"#00000080"})
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"p", length:0, color:"#00000080"})
     const [openAdd, setOpenAdd] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
     const [initialFormWarning, setInitialFormWarning] = useState("");
@@ -52,13 +52,13 @@ function CombinedLoadApp(){
         if(newB.length < 2)
             newB = "0"+newB;
         let color = "#" + newR + newG + newB + "80";
-        setNewLoadData({name:loadNamer(), mass:10.0, location:10, type:"p", length:0, color:color});
+        setNewLoadData({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"p", length:0, color:color});
         setHideLengthField(true);
         console.log(newLoadData.color);
         setOpenAdd(true);
     };
     const handleClickOpenEdit = () => {
-        setNewLoadData({name:selectedLoad, ...loads[selectedLoad]});
+        setNewLoadData({name:selectedLoad, mass:loads[selectedLoad].mass, location:loads[selectedLoad].location + loads[selectedLoad].length / 2, type:loads[selectedLoad].type, length:loads[selectedLoad].length, color:loads[selectedLoad].color});
         setHideLengthField(loads[selectedLoad].type === "p");
         setOpenEdit(true);
     };
@@ -81,7 +81,7 @@ function CombinedLoadApp(){
         // If closed via confirm button, create a new load.
         if(newLoadData.type === "p")
             newLoadData.length = 0;
-        loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
+        loads[newLoadData.name] = {mass:newLoadData.mass, location:(newLoadData.location - newLoadData.length / 2), type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
         setSelectedLoad(newLoadData.name);
         setLoadUpdated(true);
         setOpenAdd(false);
@@ -118,7 +118,7 @@ function CombinedLoadApp(){
             }
             else {
                 delete loads[load];
-                loads[newLoadData.name] = {mass:newLoadData.mass, location:newLoadData.location, type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
+                loads[newLoadData.name] = {mass:newLoadData.mass, location:(newLoadData.location - newLoadData.length / 2), type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
                 setSelectedLoad(newLoadData.name);
                 setLoadUpdated(true);
                 setOpenEdit(false);
@@ -341,16 +341,12 @@ function CombinedLoadApp(){
             return;
         }
 
-        // Check that location is a number >= 0.
+        // Check that location is a number.
         if(parseFloat(newLoadData.location) != newLoadData.location){
             setLoadFormWarning("Location must be a number.");
             return;
         }
         newLoadData.location = Number(newLoadData.location);
-        if(newLoadData.location < 0) {
-            setLoadFormWarning("Location must be at least 0.");
-            return;
-        }
 
         // Check that type is either d or p.
         if(newLoadData.type !== "d" && newLoadData.type !== "p") {
@@ -370,10 +366,29 @@ function CombinedLoadApp(){
             return;
         }
 
-        // Location + Length (this is the location of the right end of the load) must be <= beam length.
-        if(newLoadData.location + newLoadData.length > beamProperties.length) {
-            setLoadFormWarning("Location + Length must be less than or equal to Length of Beam.");
-            return;
+        // Check that load location is in-bounds, for point load.
+        if(newLoadData.type === "p") {
+            if(newLoadData.location < 0) {
+                setLoadFormWarning("Location must be at least 0.");
+                return;
+            }
+            if(newLoadData.location > beamProperties.length) {
+                setLoadFormWarning("Location must be less than or equal to Length of Beam.");
+                return;
+            }
+        }
+        // Check that left and right ends of the load are in-bounds, for distributed load.
+        else {
+            let leftEnd = newLoadData.location - newLoadData.length / 2;
+            let rightEnd = newLoadData.location + newLoadData.length / 2;
+            if(leftEnd < 0) {
+                setLoadFormWarning("The left end of the load is out of bounds (location is " + leftEnd + ", must be greater than or equal to 0).");
+                return;
+            }
+            if(rightEnd > beamProperties.length){
+                setLoadFormWarning("The right end of the load is out of bounds (location is " + rightEnd + ", must be less than or equal to Length of Beam).");
+                return;
+            }
         }
 
         // No errors.
@@ -400,7 +415,7 @@ function CombinedLoadApp(){
         for(let load in loads)
             labels.push(<FormControlLabel 
                 key={load} value={load} control={<Radio/>} 
-                label={load + ": location=" + loads[load].location + ", mass=" + loads[load].mass + ", type=" + (loads[load].type==="p"?"Point":"Distributed" + ", length=" + loads[load].length)} 
+                label={load + ": location=" + (loads[load].location + loads[load].length / 2) + ", mass=" + loads[load].mass + ", type=" + (loads[load].type==="p"?"Point":"Distributed" + ", length=" + loads[load].length)} 
             />)
         return labels;
     }
@@ -1003,9 +1018,9 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
             data.push({x: loads[load].location+loads[load].length/2, y: 25, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             let label;
             if(load === selectedLoad)
-                label = "m=" + loads[load].mass + ", x=" + loads[load].location +", L=" + loads[load].length;
+                label = "m=" + loads[load].mass + ", x=" + (loads[load].location + loads[load].length / 2) +", L=" + loads[load].length;
             else
-                label = loads[load].mass + ", " + loads[load].location + ", " + loads[load].length;
+                label = loads[load].mass + ", " + (loads[load].location + loads[load].length / 2) + ", " + loads[load].length;
             data.push({x: loads[load].location+loads[load].length/2, y: 20, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put small arrows under distributed load line. 
             console.log(loads[load].color);

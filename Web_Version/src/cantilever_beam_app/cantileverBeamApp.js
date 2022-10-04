@@ -42,7 +42,7 @@ function CantileverBeamApp(){
     const [loads,setLoads] = useState({load1 : {mass:10.0,location:20.0}, load2 : {mass:10.0, location: 50.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:10})
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:beamProperties.length / 2})
     const [openAdd, setOpenAdd] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
     const [initialFormWarning, setInitialFormWarning] = useState("");
@@ -66,7 +66,7 @@ function CantileverBeamApp(){
     },[window.innerHeight, window.innerWidth]);
 
     const handleClickOpenAdd = () => {
-        setNewLoadData({name:loadNamer(), mass:10.0, location:10});
+        setNewLoadData({name:loadNamer(), mass:10.0, location:beamProperties.length / 2});
         setOpenAdd(true);
     };
     const handleClickOpenEdit = () => {
