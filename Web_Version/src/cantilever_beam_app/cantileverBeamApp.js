@@ -122,6 +122,7 @@ function CantileverBeamApp(){
                 setLoadFormWarning("");
             }
         }
+        validateInputsInitialForm();
     };
     // handle loads empty case
     useEffect(()=>{if(loadUpdated === false){return;}
@@ -155,6 +156,7 @@ function CantileverBeamApp(){
         }
         setLoadUpdated(true)
         // playerMovement(0,1,10)
+        validateInputsInitialForm();
     }
 
     // This function determines which load was clicked, and selects it.

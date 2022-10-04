@@ -160,8 +160,7 @@ function MultipleLoadApp(){
                 setLoadFormWarning("");
             }
         }
-            
-        
+        validateInputsInitialForm();
     };
     // handle loads empty case
     useEffect(()=>{if(loadUpdated === false){return;}
@@ -264,6 +263,7 @@ function MultipleLoadApp(){
         }
         setLoadUpdated(true)
         // playerMovement(0,1,10)
+        validateInputsInitialForm();
     }
 
     // If you click on a load, it selects that load.

@@ -125,6 +125,7 @@ function CombinedLoadApp(){
                 setLoadFormWarning("");
             }
         }
+        validateInputsInitialForm();
     };
         useEffect(()=>{if(loadUpdated === false){return;}
             setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
@@ -153,6 +154,7 @@ function CombinedLoadApp(){
             break;
         }
         setLoadUpdated(true)
+        validateInputsInitialForm();
     }
 
     // Function for when you click on a load, selects that load.
