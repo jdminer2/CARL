@@ -221,11 +221,11 @@ function DistributedLoadApp(){
         let leftEnd = loadData.locationOfLoad - loadData.lengthOfLoad / 2;
         let rightEnd = loadData.locationOfLoad + loadData.lengthOfLoad / 2;
         if(leftEnd < 0) {
-            setInitialFormWarning("The left end of the load is out of bounds (location is " + leftEnd + ", must be greater than or equal to 0).");
+            setInitialFormWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).");
             return;
         }
         if(rightEnd > loadData.length){
-            setInitialFormWarning("The right end of the load is out of bounds (location is " + rightEnd + ", must be less than or equal to Length of Beam).");
+            setInitialFormWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).");
             return;
         }
 

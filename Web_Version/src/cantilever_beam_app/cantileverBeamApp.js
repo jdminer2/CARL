@@ -312,6 +312,13 @@ function CantileverBeamApp(){
             return;
         }
 
+        // Check that loads are not invalidated by length of beam change.
+        for(let load in loads)
+            if(loads[load].location > beamProperties.length) {
+                setInitialFormWarning(load + " location must be less than or equal to Length of Beam.");
+                return;
+            }
+        
         // No errors.
         setInitialFormWarning("");
     }

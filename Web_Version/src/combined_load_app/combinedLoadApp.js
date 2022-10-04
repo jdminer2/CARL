@@ -313,6 +313,17 @@ function CombinedLoadApp(){
             return;
         }
 
+        // Check that loads are not invalidated by length of beam change.
+        for(let load in loads)
+            if(loads[load].type === "p" && loads[load].location > beamProperties.length) {
+                setInitialFormWarning(load + " location must be less than or equal to Length of Beam.");
+                return;
+            }
+            else if(loads[load].type === "d" && loads[load].location + loads[load].length / 2 > beamProperties.length) {
+                setInitialFormWarning("Right end of " + load + " is out of bounds (Location is " + (loads[load].location + loads[load].length / 2) + ", must be less than or equal to Length of Beam).");
+                return;
+            }
+
         // No errors.
         setInitialFormWarning("");
     }
@@ -382,11 +393,11 @@ function CombinedLoadApp(){
             let leftEnd = newLoadData.location - newLoadData.length / 2;
             let rightEnd = newLoadData.location + newLoadData.length / 2;
             if(leftEnd < 0) {
-                setLoadFormWarning("The left end of the load is out of bounds (location is " + leftEnd + ", must be greater than or equal to 0).");
+                setLoadFormWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).");
                 return;
             }
             if(rightEnd > beamProperties.length){
-                setLoadFormWarning("The right end of the load is out of bounds (location is " + rightEnd + ", must be less than or equal to Length of Beam).");
+                setLoadFormWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).");
                 return;
             }
         }
