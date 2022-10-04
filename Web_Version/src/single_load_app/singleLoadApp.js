@@ -510,7 +510,7 @@ function SingleLoadApp(){
                         {/* Text display for invalid inputs. */}
                         <div><span style={{fontWeight: 'bold'}}>{initialFormWarning}</span></div>
                         <div></div>
-                        <input type="submit" value="analyze" autoFocus/>
+                        <input type="submit" value="Analyze" autoFocus/>
                         <div></div>
                         {/* eslint-disable-next-line no-undef */}
                         <div><img src={require("../resources/images/Single_load_schematic.png")} height={212.2} width={582.8} align="middle"/></div>
@@ -537,7 +537,7 @@ function SingleLoadApp(){
                     <XYPlot height={window.innerHeight * 0.7} width={window.innerWidth/2} yDomain ={[ymin*mulScale,-1 * ymin*mulScale]} margin = {{left : 10}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
-                        <XAxis title = {"ACTUAL DISPLACEMENT"}/>
+                        <XAxis title = {"Actual Displacement"}/>
                         <YAxis/>
                         {/* Display beam */}
                         <LineSeries data={updateMdata(mData)} curve={'curveMonotoneX'}/>
@@ -552,58 +552,57 @@ function SingleLoadApp(){
                     <Button variant="contained" sx={{margin: 0.5}} id={"perform_print_325_btn"} onClick={()=>{handlePrint()}}><span>Print Plots</span></Button>
                 </div>
                 <div id={"printable_div"} ref={printDivRef}>
-                    <div>Load Location is {playerLoc} </div>
+                    <h1>Plots</h1>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-1 * calculateDispYdomain(loadData.mass,loadData.length,loadData.EI,1) , calculateDispYdomain(loadData.mass,loadData.length,loadData.EI,1)]} margin={{left:100}} >
+                        <XAxis title = {"Deflection Diagram"}/>
+                        <VerticalGridLines/>
+                        <HorizontalGridLines/>
+                        <XAxis/>
+                        <YAxis/>
+                        <LineSeries data={deflection(loadData.mass,playerLoc,loadData.EI,1,loadData.length)} />
+                    </XYPlot>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} >
+                        {/*<h1>Shear Force Diagram</h1>*/}
+                        <VerticalGridLines/>
+                        <HorizontalGridLines/>
+                        <XAxis title = {"Shear Force and Reaction Diagram"}/>
+                        <YAxis/>
+                        {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                        <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
+                        <LineSeries data={shearForceData(playerLoc,loadData.length)} color="red" />
+                        <LabelSeries data={plotReactions(playerLoc,loadData.length)} />
+                    </XYPlot>
 
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-1 * calculateDispYdomain(loadData.mass,loadData.length,loadData.EI,1) , calculateDispYdomain(loadData.mass,loadData.length,loadData.EI,1)]} margin={{left:100}} >
-                    <XAxis title = {"Deflection"}/>
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis/>
-                    <YAxis/>
-                    <LineSeries data={deflection(loadData.mass,playerLoc,loadData.EI,1,loadData.length)} />
-                </XYPlot>
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} >
-                    {/*<h1>Shear Force Diagram</h1>*/}
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis title = {"Shear Diagram and Reaction Force"}/>
-                    <YAxis/>
-                    {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
-                    <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
-                    <LineSeries data={shearForceData(playerLoc,loadData.length)} color="red" />
-                    <LabelSeries data={plotReactions(playerLoc,loadData.length)} />
-                </XYPlot>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2.05} yDomain = {[-3000, 3000]} >
+                        <VerticalGridLines/>
+                        <HorizontalGridLines/>
+                        <XAxis title = {"Bending Moment Diagram"}/>
+                        <XAxis/>
+                        <YAxis/>
+                        <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
+                        <LineSeries data={movementBendingDiagram(playerLoc,loadData.length)} color="black"/>
+                    </XYPlot>
+                    </div>
 
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2.05} yDomain = {[-3000, 3000]} >
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis title = {"Bending Moment Diagram"}/>
-                    <XAxis/>
-                    <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
-                    <LineSeries data={movementBendingDiagram(playerLoc,loadData.length)} color="black"/>
-                </XYPlot>
-                </div>
-
-                {/*<div>*/}
-                {/*    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>*/}
-                {/*        /!*<h1>Shear Force Diagram</h1>*!/*/}
-                {/*        <VerticalGridLines/>*/}
-                {/*        <HorizontalGridLines/>*/}
-                {/*        <XAxis title = {"Shear Force"}/>*/}
-                {/*        <YAxis/>*/}
-                {/*        /!*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*!/*/}
-                {/*        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />*/}
-                {/*        <LineSeries data={shearForceData(playerLoc)}/>*/}
-                {/*    </XYPlot>*/}
-                {/*    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>*/}
-                {/*        <VerticalGridLines/>*/}
-                {/*        <HorizontalGridLines/>*/}
-                {/*        <XAxis title = {"Plot Reactions"}/>*/}
-                {/*        <YAxis/>*/}
-                {/*        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />*/}
-                {/*        <LabelSeries data={plotReactions(playerLoc)} />*/}
-                {/*    </XYPlot>*/}
+                    {/*<div>*/}
+                    {/*    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>*/}
+                    {/*        /!*<h1>Shear Force Diagram</h1>*!/*/}
+                    {/*        <VerticalGridLines/>*/}
+                    {/*        <HorizontalGridLines/>*/}
+                    {/*        <XAxis title = {"Shear Force"}/>*/}
+                    {/*        <YAxis/>*/}
+                    {/*        /!*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*!/*/}
+                    {/*        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />*/}
+                    {/*        <LineSeries data={shearForceData(playerLoc)}/>*/}
+                    {/*    </XYPlot>*/}
+                    {/*    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>*/}
+                    {/*        <VerticalGridLines/>*/}
+                    {/*        <HorizontalGridLines/>*/}
+                    {/*        <XAxis title = {"Plot Reactions"}/>*/}
+                    {/*        <YAxis/>*/}
+                    {/*        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />*/}
+                    {/*        <LabelSeries data={plotReactions(playerLoc)} />*/}
+                    {/*    </XYPlot>*/}
 
                     <XYPlot height={window.innerHeight * 0.18} width={window.innerWidth/2} yDomain ={[-1, 1]} margin = {{left : 10}}>
                         <VerticalGridLines/>

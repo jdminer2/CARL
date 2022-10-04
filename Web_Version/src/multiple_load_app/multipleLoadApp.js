@@ -40,7 +40,7 @@ function MultipleLoadApp(){
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [isLoadInitialized, setIsLoadInitialized] = useState(false)
     // edit this to add or edit add a load
-    const [loads,setLoads] = useState({load1 : {mass:10.0,location:20.0}, load2 : {mass:10.0, location: 50.0}, load3 : {mass:15.0, location: 60.0}, load4 : {mass: 20.0, location: 70.0} , load5 : {mass: 10.0, location: 30.0} })
+    const [loads,setLoads] = useState({})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:beamProperties.length / 2})
@@ -242,7 +242,7 @@ function MultipleLoadApp(){
         var n = 1;
         var name = ""
         while(true){
-            name = "load" + n;
+            name = "Load " + n;
             //console.log(name in loads)
             if(name in loads){
                 n += 1;
@@ -479,7 +479,7 @@ function MultipleLoadApp(){
      function validateInputsLoadForm(isAdding){
         // Check that name is not in use, unless when editing if the name is the same as the original name.
         if((newLoadData.name in loads) && (isAdding || newLoadData.name !== selectedLoad)) {
-            setLoadFormWarning("Name of Load is already in use.");
+            setLoadFormWarning("Name is already in use.");
             return;
         }
 
@@ -547,7 +547,7 @@ function MultipleLoadApp(){
         for(let load in loads)
             labels.push(<FormControlLabel
                 key={load} value={load} control={<Radio/>}
-                label={load + ": location=" + loads[load].location + ", mass=" + loads[load].mass} 
+                label={load + ": Location = " + loads[load].location + ", Mass = " + loads[load].mass} 
             />)
         return labels;
     }
@@ -688,7 +688,7 @@ function MultipleLoadApp(){
                     </DialogContentText>
                     <TextField
                         margin="dense"
-                        label="Name of Load"
+                        label="Name"
                         defaultValue={newLoadData.name}
                         type="text"
                         onChange={(val)=>{
@@ -738,7 +738,7 @@ function MultipleLoadApp(){
                     </DialogContentText>
                     <TextField
                         margin="dense"
-                        label="Name of Load"
+                        label="Name"
                         defaultValue={newLoadData.name}
                         type="text"
                         onChange={(val)=>{
@@ -783,7 +783,7 @@ function MultipleLoadApp(){
             <div></div>
             {/* Text display for invalid inputs. */}
             <div><span style={{fontWeight: 'bold'}}>{initialFormWarning}</span></div> 
-            <input type="submit" value="analyze" autoFocus/>
+            <input type="submit" value="Analyze" autoFocus/>
             <div></div>
         </form>)
     }
@@ -799,6 +799,23 @@ function MultipleLoadApp(){
     return(
         <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
+                <h1>CARL</h1>
+                {/*change y min and scale*/}
+                {/* Dynamic beam display */}
+                <XYPlot height={window.innerHeight * 0.7} width={window.innerWidth/2} yDomain ={[-100000000,100000000]} margin = {{left : 10}}>
+                    <VerticalGridLines/>
+                    <HorizontalGridLines/>
+                    <XAxis title = {"Actual Displacement"}/>
+                    <YAxis/>
+                    {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                    {/* Display the beam */}
+                    <LineSeries data={updateMdata(mData)} curve={'curveMonotoneX'}/>
+                    <LabelSeries data={[{x: 0, y: -8 * (100000000/100), label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: 100, y: -8 * (100000000/100), label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                    {/* Display the loads */}
+                    <LabelSeries data={dataMakerForLoadsDynamic()} allowOffsetToBeReversed={false} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
+                </XYPlot>
+                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
                 <div>
                     <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
                         Add Load
@@ -818,7 +835,7 @@ function MultipleLoadApp(){
                             </DialogContentText>
                             <TextField
                                 margin="dense"
-                                label="Name of Load"
+                                label="Name"
                                 defaultValue={newLoadData.name}
                                 type="text"
                                 onChange={(val)=>{
@@ -868,7 +885,7 @@ function MultipleLoadApp(){
                             </DialogContentText>
                             <TextField
                                 margin="dense"
-                                label="Name of Load"
+                                label="Name"
                                 defaultValue={newLoadData.name}
                                 type="text"
                                 onChange={(val)=>{
@@ -910,31 +927,16 @@ function MultipleLoadApp(){
                         </DialogActions>
                     </Dialog>
                 </div>
-                {/*change y min and scale*/}
-                {/* Dynamic beam display */}
-                <XYPlot height={window.innerHeight * 0.7} width={window.innerWidth/2} yDomain ={[-100000000,100000000]} margin = {{left : 10}}>
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis title = {"ACTUAL DISPLACEMENT"}/>
-                    <YAxis/>
-                    {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
-                    {/* Display the beam */}
-                    <LineSeries data={updateMdata(mData)} curve={'curveMonotoneX'}/>
-                    <LabelSeries data={[{x: 0, y: -8 * (100000000/100), label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: 100, y: -8 * (100000000/100), label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
-                    {/* Display the loads */}
-                    <LabelSeries data={dataMakerForLoadsDynamic()} allowOffsetToBeReversed={false} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
-                </XYPlot>
-                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
-                <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
-                <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
-                <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
-                <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
+                <div>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
+                </div>
                 {/* Static beam display */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Load location"}/>
+                    <XAxis title = {"Load Location"}/>
                     <YAxis/>
                     {/* Display the beam */}
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
@@ -945,11 +947,12 @@ function MultipleLoadApp(){
                 </XYPlot>
             </div>
             <div>
+                <h1>Plots</h1>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
                     {/*<h1>Shear Force Diagram</h1>*/}
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Shear Force"}/>
+                    <XAxis title = {"Shear Force Diagram"}/>
                     <YAxis/>
                     {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
@@ -975,7 +978,7 @@ function MultipleLoadApp(){
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[2, 2]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Deflection"}/>
+                    <XAxis title = {"Deflection Diagram"}/>
                     <XAxis/>
                     <YAxis/>
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />

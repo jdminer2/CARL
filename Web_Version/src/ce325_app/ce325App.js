@@ -361,7 +361,7 @@ function Ce325App(){
                     {/* Text display for invalid inputs. */}
                     <div><span style={{fontWeight: 'bold'}}>{initialFormWarning}</span></div>
                         <div></div>
-                        <input type="submit" value="analyze" autoFocus/>
+                        <input type="submit" value="Analyze" autoFocus/>
                     <div></div>
                     {/* eslint-disable-next-line no-undef */}
                     <div><img src={require("../resources/images/Single_load_schematic.png")} height={212.2} width={582.8} align="middle"/></div>
@@ -377,7 +377,7 @@ function Ce325App(){
                 <XYPlot height={window.innerHeight * 0.7} width={window.innerWidth/2.1} yDomain ={[-100,100]} margin = {{left : 5}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"ACTUAL DISPLACEMENT"}/>
+                    <XAxis title = {"Actual Displacement"}/>
                     <YAxis/>
                     {/* Display the player */}
                     <LineSeries data = {[{x:playerLoc ,y: 0},{x:playerLoc,y: 20}]} stroke = "black"/>
@@ -391,9 +391,9 @@ function Ce325App(){
                 <Button variant="contained" sx={{margin: 0.5}} id={"perform_print_325_btn"} onClick={()=>{handlePrint()}}><span>Print Plots</span></Button>
             </div>
             <div id={"printable_div"} ref={printDivRef}>
-                <div>Load Location is {playerLoc} </div>
+                <h1>Plots</h1>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-1 * calculateDispYdomain(loadData.mass,loadData.length,loadData.EI,1) , calculateDispYdomain(loadData.mass,loadData.length,loadData.EI,1)]} margin={{left:100}} >
-                    <XAxis title = {"Deflection"}/>
+                    <XAxis title = {"Deflection Diagram"}/>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
                     <XAxis/>
@@ -404,7 +404,7 @@ function Ce325App(){
                     {/*<h1>Shear Force Diagram</h1>*/}
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Shear Diagram and Reaction Force"}/>
+                    <XAxis title = {"Shear Force and Reaction Diagram"}/>
                     <YAxis/>
                     {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
                     <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />

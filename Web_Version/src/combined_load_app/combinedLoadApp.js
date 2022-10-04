@@ -13,7 +13,7 @@ function CombinedLoadApp(){
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
-    const [loads,setLoads] = useState({load1: {mass:10.0, location: 20.0, type: "p", length: 0, color:"#66666680"}, load2: {mass:10.0, location:42.0, type:"d", length:25, color:"#12345680"}, load3: {mass: 15.0, location: 60.0, type: "d", length: 25, color: "#40960080"}, load4: {mass: 20.0, location: 70.0, type: "p", length: 0, color:"#66000080"}, load5: {mass: 10.0, location: 30.0, type: "p", length: 0, color:"#88442280"}})
+    const [loads,setLoads] = useState({})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
     const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"p", length:0, color:"#00000080"})
@@ -134,7 +134,7 @@ function CombinedLoadApp(){
         var n = 1;
         var name = ""
         while(true){
-            name = "load" + n;
+            name = "Load " + n;
             console.log(name in loads)
             if(name in loads){
                 n += 1;
@@ -326,7 +326,7 @@ function CombinedLoadApp(){
      function validateInputsLoadForm(isAdding){
         // Check that name is not in use, unless when editing if the name is the same as the original name.
         if((newLoadData.name in loads) && (isAdding || newLoadData.name !== selectedLoad)) {
-            setLoadFormWarning("Name of Load is already in use.");
+            setLoadFormWarning("Name is already in use.");
             return;
         }
 
@@ -415,7 +415,7 @@ function CombinedLoadApp(){
         for(let load in loads)
             labels.push(<FormControlLabel 
                 key={load} value={load} control={<Radio/>} 
-                label={load + ": location=" + (loads[load].location + loads[load].length / 2) + ", mass=" + loads[load].mass + ", type=" + (loads[load].type==="p"?"Point":"Distributed" + ", length=" + loads[load].length)} 
+                label={load + ": Location = " + (loads[load].location + loads[load].length / 2) + ", Mass = " + loads[load].mass + ", Type = " + (loads[load].type==="p"?"Point":"Distributed" + ", Length = " + loads[load].length)} 
             />)
         return labels;
     }
@@ -550,12 +550,12 @@ function CombinedLoadApp(){
                 <DialogTitle>Add Load</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Please enter load properties (Don't fill in the length if load type is Point Load)
+                        Please enter load properties
                     </DialogContentText>
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Name of Load"
+                        label="Name"
                         defaultValue={newLoadData.name}
                         type="text"
                         onChange={(val)=>{
@@ -592,7 +592,7 @@ function CombinedLoadApp(){
                         variant="standard"
                     />
                     <FormControl>
-                        <FormLabel id="newLoadTypeRadios">Type</FormLabel>
+                        <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
                         <RadioGroup
                             row
                             aria-labelledby="newLoadTypeRadios"
@@ -609,7 +609,7 @@ function CombinedLoadApp(){
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Length (only if distributed)"
+                        label="Length (Distributed Load)"
                         type="text"
                         defaultValue={newLoadData.length}
                         onChange={(val)=>{
@@ -633,12 +633,12 @@ function CombinedLoadApp(){
                 <DialogTitle>Edit Load</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Please enter load properties (Don't fill in the length if load type is Point Load)
+                        Please enter load properties
                     </DialogContentText>
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Name of Load"
+                        label="Name"
                         defaultValue={newLoadData.name}
                         type="text"
                         onChange={(val)=>{
@@ -675,11 +675,12 @@ function CombinedLoadApp(){
                         variant="standard"
                     />
                     <FormControl>
-                        <FormLabel id="newLoadTypeRadios">Type</FormLabel>
+                        <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
                         <RadioGroup
                             row
                             aria-labelledby="newLoadTypeRadios"
                             value={newLoadData.type}
+                            label="Type"
                             onChange={(val)=>{
                                 newLoadData.type = val.target.value;
                                 validateInputsLoadForm(false);
@@ -692,7 +693,7 @@ function CombinedLoadApp(){
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Length (only if distributed)"
+                        label="Length (Distributed Load)"
                         type="text"
                         defaultValue={newLoadData.length}
                         onChange={(val)=>{
@@ -716,7 +717,7 @@ function CombinedLoadApp(){
             {/* Text display for invalid inputs. */}
             <div><span style={{fontWeight: 'bold'}}>{initialFormWarning}</span></div> 
             <div></div>     
-            <input type="submit" value="analyze" autoFocus/>
+            <input type="submit" value="Analyze" autoFocus/>
             <div></div>
         </form>);
     }
@@ -727,6 +728,37 @@ function CombinedLoadApp(){
     return(
         <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
+                <h1>CARL</h1>
+                {/* Main Plot */}
+                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
+                    <VerticalGridLines/>
+                    <HorizontalGridLines/>
+                    <XAxis title = {"Load Location"}/>
+                    <YAxis/>
+                    {/* Display the beam. */}
+                    <LineSeries data = {[{x: 0, y: 0}, {x: 100, y: 0}]} />
+                    <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                    {/* Display the loads. */}
+                    <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
+                    {/* Display the line part of distributed loads. */}
+                    {Object.entries(loads).map((load) => {
+                        console.log(load[0]);
+                        console.log(load[1]);
+                        if(load[1].type==="d")
+                            return (
+                                <LineSeries 
+                                    color={load[1].color}
+                                    strokeWidth={3}
+                                    data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 8}]}
+                                    onSeriesClick={(event) => {setSelectedLoad(load[0])}}
+                                    key={load.toString()}
+                                />
+                            );
+                    })}
+                </XYPlot>
+                {/* Load Selection dropdown */}
+                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
                 <div>
                     {/* Add Load button */}
                     <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
@@ -744,12 +776,12 @@ function CombinedLoadApp(){
                         <DialogTitle>Add Load</DialogTitle>
                         <DialogContent>
                             <DialogContentText>
-                                Please enter load properties (Don't fill in the length if load type is Point Load)
+                                Please enter load properties
                             </DialogContentText>
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="Name of Load"
+                                label="Name"
                                 defaultValue={newLoadData.name}
                                 type="text"
                                 onChange={(val)=>{
@@ -786,11 +818,12 @@ function CombinedLoadApp(){
                                 variant="standard"
                             />
                             <FormControl>
-                                <FormLabel id="newLoadTypeRadios">Type</FormLabel>
+                                <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
                                 <RadioGroup
                                     row
                                     aria-labelledby="newLoadTypeRadios"
                                     value={newLoadData.type}
+                                    label="Type"
                                     onChange={(val)=>{
                                         newLoadData.type = val.target.value;
                                         validateInputsLoadForm(true);
@@ -803,7 +836,7 @@ function CombinedLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="Length (only if distributed)"
+                                label="Length (Distributed Load)"
                                 type="text"
                                 defaultValue={newLoadData.length}
                                 onChange={(val)=>{
@@ -827,12 +860,12 @@ function CombinedLoadApp(){
                         <DialogTitle>Edit Load</DialogTitle>
                         <DialogContent>
                             <DialogContentText>
-                                Please enter load properties (Don't fill in the length if load type is Point Load)
+                                Please enter load properties
                             </DialogContentText>
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="Name of Load"
+                                label="Name"
                                 defaultValue={newLoadData.name}
                                 type="text"
                                 onChange={(val)=>{
@@ -869,11 +902,12 @@ function CombinedLoadApp(){
                                 variant="standard"
                             />
                             <FormControl>
-                                <FormLabel id="newLoadTypeRadios">Type</FormLabel>
+                                <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
                                 <RadioGroup
                                     row
                                     aria-labelledby="newLoadTypeRadios"
                                     value={newLoadData.type}
+                                    label="Type"
                                     onChange={(val)=>{
                                         newLoadData.type = val.target.value;
                                         validateInputsLoadForm(false);
@@ -886,7 +920,7 @@ function CombinedLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="Length (only if distributed)"
+                                label="Length (Distributed Load)"
                                 type="text"
                                 defaultValue={newLoadData.length}
                                 onChange={(val)=>{
@@ -906,50 +940,20 @@ function CombinedLoadApp(){
                         </DialogActions>
                     </Dialog>
                 </div>
-
-                {/* Main Plot */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis title = {"Load location"}/>
-                    <YAxis/>
-                    {/* Display the beam. */}
-                    <LineSeries data = {[{x: 0, y: 0}, {x: 100, y: 0}]} />
-                    <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
-                    {/* Display the loads. */}
-                    <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
-                    {/* Display the line part of distributed loads. */}
-                    {Object.entries(loads).map((load) => {
-                        console.log(load[0]);
-                        console.log(load[1]);
-                        if(load[1].type==="d")
-                            return (
-                                <LineSeries 
-                                    color={load[1].color}
-                                    strokeWidth={3}
-                                    data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 8}]}
-                                    onSeriesClick={(event) => {setSelectedLoad(load[0])}}
-                                    key={load.toString()}
-                                />
-                            );
-                    })}
-                </XYPlot>
-                {/* Load Selection dropdown */}
-                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
-                <div><span>{"*** selected : " + selectedLoad.toString() + " ***"}</span></div>
-                {/* Control buttons */}
-                <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
-                <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
-                <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
-
+                <div>
+                    {/* Control buttons */}
+                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
+                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
+                </div>
             </div>
             <div>
+                <h1>Plots</h1>
                 {/* Side plots */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[3, 3]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Deflection"}/>
+                    <XAxis title = {"Deflection Diagram"}/>
                     <XAxis/>
                     <YAxis/>
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
@@ -969,7 +973,7 @@ function CombinedLoadApp(){
                     {/*<h1>Shear Force Diagram</h1>*/}
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Sheer Force"}/>
+                    <XAxis title = {"Shear Force Diagram"}/>
                     <YAxis/>
                     <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
                     <LineSeries data={shearForceData(loads, beamProperties)}/>

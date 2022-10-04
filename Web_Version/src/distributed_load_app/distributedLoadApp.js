@@ -397,7 +397,7 @@ function DistributedLoadApp(){
                         {/* Text display for invalid inputs. */}
                         <div><span style={{fontWeight: 'bold'}}>{initialFormWarning}</span></div>
                         <div></div>
-                        <input type="submit" value="analyze" autoFocus/>
+                        <input type="submit" value="Analyze" autoFocus/>
                         <div></div>
                     </form>
                 )
@@ -446,7 +446,7 @@ function DistributedLoadApp(){
 
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
-                        <XAxis  title = {"Sheer Force Diagram"} />
+                        <XAxis  title = {"Shear Force Diagram"} />
                         <YAxis/>
                         <LineSeries data={[{x:0,y:0},{x:100,y:0}]}/>
                         <LineSeries data={shearForceData(loadLocation,loadLength,2,100)} curve={'curveMonotoneX'}/>
@@ -455,7 +455,7 @@ function DistributedLoadApp(){
                     <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-5000,5000]} margin = {{left : 10}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
-                        <XAxis  title = {"Bending moment"} />
+                        <XAxis  title = {"Bending Moment Diagram"} />
                         <YAxis/>
                         <LineSeries data={[{x:0,y:0},{x:100,y:0}]}/>
                         <LineSeries data={bendingMomentDiagram(loadLocation,loadLength,2,100)} curve={'curveMonotoneX'}/>
