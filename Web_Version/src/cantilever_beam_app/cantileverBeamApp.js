@@ -638,13 +638,13 @@ function CantileverBeamApp(){
             <div>
                 <h1>CARL</h1>
                 {/* Display main plot */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} xDomain = {[0, 100]} margin = {{left : 10}}>
+                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} xDomain = {[0, beamProperties.length]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
                     <XAxis title = {"Load Location"}/>
                     <YAxis/>
                     {/* Display Beam */}
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100, y : 0}]} color = "#12939A"/>
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length, y : 0}]} color = "#12939A"/>
                     {/* Display the anchor next to the beam */}
                     <LineSeries data = {[{x : 0, y : -10}, {x : 0, y : 10}]} color = "#12939A"/>
                     <LineSeries data = {[{x : 0, y : 10}, {x : -2, y : 6}]} color = "#12939A"/>
@@ -794,7 +794,7 @@ function CantileverBeamApp(){
                     <HorizontalGridLines/>
                     <XAxis title = {"Shear Force Diagram"}/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={shearForceData(loads, beamProperties)}/>
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
@@ -802,7 +802,7 @@ function CantileverBeamApp(){
                     <HorizontalGridLines/>
                     <XAxis title = {"Plot Reactions"}/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LabelSeries data={plotReactions(loads, beamProperties)} />
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-6500, 6500]} margin = {{left : 10}}>
@@ -811,7 +811,7 @@ function CantileverBeamApp(){
                     <XAxis title = {"Bending Moment Diagram"}/>
                     <XAxis/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={movementBendingDiagram(loads,beamProperties)}/>
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[35, 35]} margin = {{left : 10}}>
@@ -820,7 +820,7 @@ function CantileverBeamApp(){
                     <XAxis title = {"Deflection Diagram"}/>
                     <XAxis/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={deflection(loads, beamProperties)} curve={'curveMonotoneX'}/>
                 </XYPlot>
 
@@ -829,10 +829,10 @@ function CantileverBeamApp(){
         </div>
     )
 }
-function updateMdata(data){
+function updateMdata(data, length){
     let d = []
     for(let o in data){
-        d.push( {x:data[o].x * 100/9 , y:data[o].y})
+        d.push( {x:data[o].x * length/9 , y:data[o].y})
     }
     return d
 }

@@ -297,7 +297,7 @@ function SingleLoadApp(){
         socket.emit('pong', Date.now())
     }
     function calcPlayerLoc(loc, data){
-        var px  = (9/100)*loc
+        var px  = (9/loadData.length)*loc
         if(px === 9.0){
             return 0.0;
         }
@@ -540,9 +540,9 @@ function SingleLoadApp(){
                         <XAxis title = {"Actual Displacement"}/>
                         <YAxis/>
                         {/* Display beam */}
-                        <LineSeries data={updateMdata(mData)} curve={'curveMonotoneX'}/>
+                        <LineSeries data={updateMdata(mData, loadData.length)} curve={'curveMonotoneX'}/>
                         <LabelSeries data={[{x: 0, y: -8 * (ymin*mulScale/-100), label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: 100, y: -8* (ymin*mulScale/-100), label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                        {x: loadData.length, y: -8* (ymin*mulScale/-100), label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                         {/* Display player */}
                         <LineSeries data = {[{x:(playerLoc),y: calcPlayerLoc(playerLoc,updateMdata(mData))},{x:(playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>
                     </XYPlot>
@@ -567,7 +567,7 @@ function SingleLoadApp(){
                         <HorizontalGridLines/>
                         <XAxis title = {"Shear Force and Reaction Diagram"}/>
                         <YAxis/>
-                        {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                        {/*<LineSeries data = {[{x:((9/loadData.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/loadData.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
                         <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
                         <LineSeries data={shearForceData(playerLoc,loadData.length)} color="red" />
                         <LabelSeries data={plotReactions(playerLoc,loadData.length)} />
@@ -591,8 +591,8 @@ function SingleLoadApp(){
                     {/*        <HorizontalGridLines/>*/}
                     {/*        <XAxis title = {"Shear Force"}/>*/}
                     {/*        <YAxis/>*/}
-                    {/*        /!*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*!/*/}
-                    {/*        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />*/}
+                    {/*        /!*<LineSeries data = {[{x:((9/loadData.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/loadData.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*!/*/}
+                    {/*        <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />*/}
                     {/*        <LineSeries data={shearForceData(playerLoc)}/>*/}
                     {/*    </XYPlot>*/}
                     {/*    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>*/}
@@ -600,7 +600,7 @@ function SingleLoadApp(){
                     {/*        <HorizontalGridLines/>*/}
                     {/*        <XAxis title = {"Plot Reactions"}/>*/}
                     {/*        <YAxis/>*/}
-                    {/*        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />*/}
+                    {/*        <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />*/}
                     {/*        <LabelSeries data={plotReactions(playerLoc)} />*/}
                     {/*    </XYPlot>*/}
 
@@ -610,7 +610,7 @@ function SingleLoadApp(){
                         <XAxis title = {"Influence Line of Ra"}/>
                         <XAxis/>
                         <YAxis/>
-                        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                        <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
                         <LineSeries data={influenceLinesDiagramRa(playerLoc)} curve={'curveMonotoneX'}/>
                     </XYPlot>
                     <XYPlot height={window.innerHeight * 0.18} width={window.innerWidth/2} yDomain ={[-1, 1]} margin = {{left : 10}}>
@@ -619,7 +619,7 @@ function SingleLoadApp(){
                         <XAxis title = {"Influence Line of Rb"}/>
                         <XAxis/>
                         <YAxis/>
-                        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                        <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
                         <LineSeries data={influenceLinesDiagramRb(playerLoc)} curve={'curveMonotoneX'}/>
                     </XYPlot>
                     <XYPlot height={window.innerHeight * 0.18} width={window.innerWidth/2} yDomain ={[-1, 1]} margin = {{left : 10}}>
@@ -628,7 +628,7 @@ function SingleLoadApp(){
                         <XAxis title = {"Shear Influence Line of the Section"}/>
                         <XAxis/>
                         <YAxis/>
-                        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                        <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
                         <LineSeries data={influenceLineOfTheSection(playerLoc,loadData.length)} curve={'curveMonotoneX'}/>
                     </XYPlot>
                     <XYPlot height={window.innerHeight * 0.18} width={window.innerWidth/2} yDomain ={[-30, 30]} margin = {{left : 10}}>
@@ -637,7 +637,7 @@ function SingleLoadApp(){
                         <XAxis title = {"Bending Influence Line of the Section"}/>
                         <XAxis/>
                         <YAxis/>
-                        <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                        <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
                         <LineSeries data={influenceLineOfTheSectionBending(playerLoc)} curve={'curveMonotoneX'}/>
                     </XYPlot>
                     <XYPlot height={window.innerHeight * 0.18} width={window.innerWidth/2} yDomain ={[ymin*mulScale,-1 * ymin*mulScale]} margin = {{left : 10}}>
@@ -646,7 +646,7 @@ function SingleLoadApp(){
                         <HorizontalGridLines/>
                         <XAxis/>
                         <YAxis/>
-                        <LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>
+                        <LineSeries data = {[{x:((9/loadData.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/loadData.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>
                         <LineSeries data={influenceLineReaction(playerLoc)} curve={'curveMonotoneX'}/>
                     </XYPlot>
                     <XYPlot height={window.innerHeight * 0.18} width={window.innerWidth/2} yDomain ={[ymin*mulScale,-1 * ymin*mulScale]} margin = {{left : 10}}>
@@ -655,7 +655,7 @@ function SingleLoadApp(){
                         <HorizontalGridLines/>
                         <XAxis/>
                         <YAxis/>
-                        <LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>
+                        <LineSeries data = {[{x:((9/loadData.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/loadData.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>
                         <LineSeries data={differentSectionInflunceLines(playerLoc)} curve={'curveMonotoneX'}/>
                     </XYPlot>
                 {/*</div>*/}
@@ -848,10 +848,10 @@ function influenceLineOfTheSectionBending(location,length){
 //     val = val * ((l * l) - (x * x) - ((l-a) * (l-a)));
 //     return val * 1.5;
 // }
-function updateMdata(data){
+function updateMdata(data, length){
     let d = []
     for(let o in data){
-        d.push( {x:data[o].x * 100/9 , y:data[o].y})
+        d.push( {x:data[o].x * length/9 , y:data[o].y})
     }
     return d
 }
@@ -894,8 +894,8 @@ function updateMdata(data){
 //     const data = [
 //         {x: 0, y: -40, label: '' + r1, style: {fontSize: 15}},
 //         {x: 0, y: -35, label: "\u2191", style: {fontSize: 35}},
-//         {x: 99, y: -35, label: "\u2191", style: {fontSize: 35}},
-//         {x: 99, y: -40, label: '' +(-1* r2),  style: {fontSize: 15}}
+//         {x: loadData.length, y: -35, label: "\u2191", style: {fontSize: 35}},
+//         {x: loadData.length, y: -40, label: '' +(-1* r2),  style: {fontSize: 15}}
 //     ]
 //     return data
 // }
@@ -919,7 +919,7 @@ function differentSectionInflunceLines(location){
 //         {x: 0, y: 0},
 //         {x: 0, y: 1},
 //         {x: location, y: r1/100},
-//         {x: 100, y: 0},
+//         {x: l, y: 0},
 //     ]
 //     return data
 // }
@@ -932,8 +932,8 @@ function differentSectionInflunceLines(location){
 //     const data = [
 //         {x: 0, y: 0},
 //         {x: location, y: -r2/100},
-//         {x: 100, y: 1},
-//         {x: 100, y: 0},
+//         {x: l, y: 1},
+//         {x: l, y: 0},
 //     ]
 //     return data
 // }

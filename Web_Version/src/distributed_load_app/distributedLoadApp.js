@@ -416,13 +416,13 @@ function DistributedLoadApp(){
                         <XAxis title = {"Load Location"}/>
                         <YAxis/>
                         {/* Display the beam */}
-                        <LineSeries data={[{x:0,y:0},{x:100,y:0}]}/>
+                        <LineSeries data={[{x:0,y:0},{x:loadData.length,y:0}]}/>
                         <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                        {x: loadData.length, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                         {/* Display the load */}
                         <LineSeries data={[{x:loadLocation,y:8},{x:(loadLocation+loadLength),y:8}]} color="#79c7e3" />
-                        <LabelSeries data={getDistributedLoadMiniArrows(loadLocation, loadLength)} />
-                        {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                        <LabelSeries data={getDistributedLoadMiniArrows(loadLocation, loadLength, loadData.length)} />
+                        {/*<LineSeries data = {[{x:((9/loadData.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/loadData.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
                         {/*<LineSeries data={disLoadMovData()} curve={'curveMonotoneX'}/>*/}
                     </XYPlot>
                     <Button variant="contained" sx={{margin: 0.5}} id={"single_left_btn"} onClick={()=>{loadMovement(loadLocation-1)}}><span>&#8592;</span></Button>
@@ -437,10 +437,10 @@ function DistributedLoadApp(){
                         <HorizontalGridLines/>
                         <XAxis title = {"Deflection Diagram"}/>
                         <YAxis/>
-                        {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
-                        {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
-                        <LineSeries data={[{x:0,y:0},{x:100,y:0}]}/>
-                        <LineSeries data={deflectionCalculation(loadLocation,loadLength,2,100)} curve={'curveMonotoneX'}/>
+                        {/*<LineSeries data = {[{x:((9/loadData.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/loadData.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                        {/*<LineSeries data = {[{x:((9/loadData.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/loadData.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                        <LineSeries data={[{x:0,y:0},{x:loadData.length,y:0}]}/>
+                        <LineSeries data={deflectionCalculation(loadLocation,loadLength,2,loadData.length)} curve={'curveMonotoneX'}/>
                     </XYPlot>
                     <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100,100]} margin = {{left : 10}}>
 
@@ -448,8 +448,8 @@ function DistributedLoadApp(){
                         <HorizontalGridLines/>
                         <XAxis  title = {"Shear Force Diagram"} />
                         <YAxis/>
-                        <LineSeries data={[{x:0,y:0},{x:100,y:0}]}/>
-                        <LineSeries data={shearForceData(loadLocation,loadLength,2,100)} curve={'curveMonotoneX'}/>
+                        <LineSeries data={[{x:0,y:0},{x:loadData.length,y:0}]}/>
+                        <LineSeries data={shearForceData(loadLocation,loadLength,2,loadData.length)} curve={'curveMonotoneX'}/>
                     </XYPlot>
 
                     <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-5000,5000]} margin = {{left : 10}}>
@@ -457,8 +457,8 @@ function DistributedLoadApp(){
                         <HorizontalGridLines/>
                         <XAxis  title = {"Bending Moment Diagram"} />
                         <YAxis/>
-                        <LineSeries data={[{x:0,y:0},{x:100,y:0}]}/>
-                        <LineSeries data={bendingMomentDiagram(loadLocation,loadLength,2,100)} curve={'curveMonotoneX'}/>
+                        <LineSeries data={[{x:0,y:0},{x:loadData.length,y:0}]}/>
+                        <LineSeries data={bendingMomentDiagram(loadLocation,loadLength,2,loadData.length)} curve={'curveMonotoneX'}/>
                     </XYPlot>
 
                 </div>
@@ -469,12 +469,12 @@ function DistributedLoadApp(){
 
 }
 
-function getDistributedLoadMiniArrows(pos, len){
+function getDistributedLoadMiniArrows(pos, loadLength, beamLength){
     // Load will have more arrows the longer it is: at least every 5 units, and one on each end. They are all evenly spaced.
     let arrowsArray=[];
-    let numArrows = Math.floor(len / 5) + 1;
+    let numArrows = Math.floor(loadLength / beamLength * 20) + 1;
     for(let i = 0; i <= numArrows; i++)
-        arrowsArray.push({x: pos + (i / numArrows) * len, y: -3, label: "\u2193",  style: {fontSize: 25, font: "verdana", fill: "#79c7e3", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        arrowsArray.push({x: pos + (i / numArrows) * loadLength, y: -3, label: "\u2193",  style: {fontSize: 25, font: "verdana", fill: "#79c7e3", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
     return arrowsArray;
 }
 

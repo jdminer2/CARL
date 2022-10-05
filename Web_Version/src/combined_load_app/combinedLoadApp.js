@@ -749,9 +749,9 @@ function CombinedLoadApp(){
                     <XAxis title = {"Load Location"}/>
                     <YAxis/>
                     {/* Display the beam. */}
-                    <LineSeries data = {[{x: 0, y: 0}, {x: 100, y: 0}]} />
+                    <LineSeries data = {[{x: 0, y: 0}, {x: beamProperties.length, y: 0}]} />
                     <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                        {x: beamProperties.length, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                     {/* Display the loads. */}
                     <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
                     {/* Display the line part of distributed loads. */}
@@ -969,7 +969,7 @@ function CombinedLoadApp(){
                     <XAxis title = {"Deflection Diagram"}/>
                     <XAxis/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={deflection(loads, beamProperties)} curve={'curveMonotoneX'}/>
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-35000, 35000]} margin = {{left : 10}}>
@@ -979,7 +979,7 @@ function CombinedLoadApp(){
                     <XAxis/>
                     <YAxis/>
 
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={movementBendingDiagram(loads,beamProperties)}/>
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-600, 600]} margin = {{left : 10}}>
@@ -988,7 +988,7 @@ function CombinedLoadApp(){
                     <HorizontalGridLines/>
                     <XAxis title = {"Shear Force Diagram"}/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={shearForceData(loads, beamProperties)}/>
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
@@ -996,7 +996,7 @@ function CombinedLoadApp(){
                     <HorizontalGridLines/>
                     <XAxis title = {"Plot Reactions"}/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LabelSeries data={plotReactions(loads, beamProperties)} />
                 </XYPlot>
             </div>
@@ -1041,7 +1041,7 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
             data.push({x: loads[load].location+loads[load].length/2, y: 20, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put small arrows under distributed load line. 
             console.log(loads[load].color);
-            getDistributedLoadMiniArrows(data, loads[load].location, loads[load].length, loads[load].color, load);
+            getDistributedLoadMiniArrows(data, loads[load].location, loads[load].length, beamProperties.length, loads[load].color, load);
         }
     }
     return data;
@@ -1057,8 +1057,8 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
  * color is the color of the load line, so that the arrows can match that color.
  * loadID is the name of the load that these arrows belong to. It is part of allowing users to click on these arrows to select the load to move/delete it.
  */
-function getDistributedLoadMiniArrows(array, pos, len, color, loadID){
-    let numArrows = Math.floor(len / 5) + 1;
+function getDistributedLoadMiniArrows(array, pos, len, beamLen, color, loadID){
+    let numArrows = Math.floor(len / beamLen * 20) + 1;
     for(let i = 0; i <= numArrows; i++)
         array.push({x: pos + (i/numArrows) * len, y: -3, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", fill: color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
 }
@@ -1237,8 +1237,8 @@ function plotReactions(loads,beamProperties){
     const data = [
         {x: 0, y: -40, label: '' + R1, style: {fontSize: 15}},
         {x: 0, y: -35, label: "\u2191", style: {fontSize: 35}},
-        {x: 99, y: -35, label: "\u2191", style: {fontSize: 35}},
-        {x: 99, y: -40, label: '' +(R2),  style: {fontSize: 15}}
+        {x: beamProperties.length, y: -35, label: "\u2191", style: {fontSize: 35}},
+        {x: beamProperties.length, y: -40, label: '' +(R2),  style: {fontSize: 15}}
     ]
     return data
 }

@@ -384,7 +384,7 @@ function Ce325App(){
                     {/* Display the beam */}
                     <LineSeries data = {[{x : 0, y : 0},{x : loadData.length ,y : 0}]} />
                     <LabelSeries data={[{x: 0, y: -8, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: 100, y: -8, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                        {x: loadData.length, y: -8, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                 </XYPlot>
                 <Button variant="contained" sx={{margin: 0.5}} id={"single_325_left_btn"} onClick={()=>{playerMovement(playerLoc-1)}}><span>&#8592;</span></Button>
                 <Button variant="contained" sx={{margin: 0.5}} id={"single_325_right_btn"} onClick={()=>{playerMovement(playerLoc+1)}}><span>&#8594;</span></Button>
@@ -406,7 +406,7 @@ function Ce325App(){
                     <HorizontalGridLines/>
                     <XAxis title = {"Shear Force and Reaction Diagram"}/>
                     <YAxis/>
-                    {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                    {/*<LineSeries data = {[{x:((9/loadData.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/loadData.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
                     <LineSeries data = {[{x : 0, y : 0},{x : loadData.length,y : 0}]} />
                     <LineSeries data={shearForceData(playerLoc,loadData.length)} color="red" />
                     <LabelSeries data={plotReactions(playerLoc,loadData.length)} />

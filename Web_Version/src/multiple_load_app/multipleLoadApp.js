@@ -172,11 +172,12 @@ function MultipleLoadApp(){
         responseReceived()
     },[responseReceived])
 
+    // Find the y position of a load at x=loc, according to the given data.
     function calcPlayerLoc(loc, data){
         if(data === undefined){
             return 0;
         }
-        var px  = (9/100)*loc
+        var px  = (9/beamProperties.length)*loc
         if(px === 9.0){
             return 0.0;
         }
@@ -814,11 +815,11 @@ function MultipleLoadApp(){
                     <HorizontalGridLines/>
                     <XAxis title = {"Actual Displacement"}/>
                     <YAxis/>
-                    {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                    {/*<LineSeries data = {[{x:((9/beamProperties.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/beamProperties.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
                     {/* Display the beam */}
-                    <LineSeries data={updateMdata(mData)} curve={'curveMonotoneX'}/>
+                    <LineSeries data={updateMdata(mData, beamProperties.length)} curve={'curveMonotoneX'}/>
                     <LabelSeries data={[{x: 0, y: -8 * (100000000/100), label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: 100, y: -8 * (100000000/100), label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                        {x: beamProperties.length, y: -8 * (100000000/100), label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                     {/* Display the loads */}
                     <LabelSeries data={dataMakerForLoadsDynamic()} allowOffsetToBeReversed={false} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
@@ -946,9 +947,9 @@ function MultipleLoadApp(){
                     <XAxis title = {"Load Location"}/>
                     <YAxis/>
                     {/* Display the beam */}
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: 100, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                        {x: beamProperties.length, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                     {/* Display the loads */}
                     <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick = {(d,event)=>{loadSwitcher(d,event)}} />
                 </XYPlot>
@@ -961,8 +962,8 @@ function MultipleLoadApp(){
                     <HorizontalGridLines/>
                     <XAxis title = {"Shear Force Diagram"}/>
                     <YAxis/>
-                    {/*<LineSeries data = {[{x:((9/100)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/100)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    {/*<LineSeries data = {[{x:((9/beamProperties.length)*playerLoc),y: calcPlayerLoc(playerLoc,mData)},{x:((9/beamProperties.length)*playerLoc),y: (calcPlayerLoc(playerLoc,mData) + 15000000)}]} stroke = "black"/>*/}
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={shearForceData(loads, beamProperties)}/>
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
@@ -970,7 +971,7 @@ function MultipleLoadApp(){
                     <HorizontalGridLines/>
                     <XAxis title = {"Plot Reactions"}/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LabelSeries data={plotReactions(loads, beamProperties)} />
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-3000, 3000]} margin = {{left : 10}}>
@@ -979,7 +980,7 @@ function MultipleLoadApp(){
                     <XAxis title = {"Bending Moment Diagram"}/>
                     <XAxis/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={movementBendingDiagram(loads,beamProperties)}/>
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[2, 2]} margin = {{left : 10}}>
@@ -988,7 +989,7 @@ function MultipleLoadApp(){
                     <XAxis title = {"Deflection Diagram"}/>
                     <XAxis/>
                     <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : 100,y : 0}]} />
+                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={deflection(loads, beamProperties)} curve={'curveMonotoneX'}/>
                 </XYPlot>
 
@@ -997,10 +998,10 @@ function MultipleLoadApp(){
         </div>
     )
 }
-function updateMdata(data){
+function updateMdata(data, lengthOfBeam){
     let d = []
     for(let o in data){
-        d.push( {x:data[o].x * 100/9 , y:data[o].y})
+        d.push( {x:data[o].x * lengthOfBeam/9 , y:data[o].y})
     }
     return d
 }
@@ -1135,8 +1136,8 @@ function plotReactions(loads,beamProperties){
     const data = [
         {x: 0, y: -40, label: '' + r1, style: {fontSize: 15}},
         {x: 0, y: -35, label: "\u2191", style: {fontSize: 35}},
-        {x: 99, y: -35, label: "\u2191", style: {fontSize: 35}},
-        {x: 99, y: -40, label: '' +(r2),  style: {fontSize: 15}}
+        {x: length, y: -35, label: "\u2191", style: {fontSize: 35}},
+        {x: length, y: -40, label: '' +(r2),  style: {fontSize: 15}}
     ]
     return data
 
