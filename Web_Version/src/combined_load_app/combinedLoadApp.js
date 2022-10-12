@@ -10,7 +10,7 @@ function CombinedLoadApp(){
 
     const butStyle = {background: "black", height:window.innerHeight/12,
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
-    const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
+    const [beamProperties,setBeamProperties] = useState({supportType: "ss", length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [loads,setLoads] = useState({})
@@ -22,6 +22,7 @@ function CombinedLoadApp(){
     const [initialFormWarning, setInitialFormWarning] = useState("");
     const [loadFormWarning, setLoadFormWarning] = useState("");
     const [hideLengthField, setHideLengthField] = useState(true);
+    const [render, reRender] = useState(true);
 
     // This helps the window automatically focus on the XYPlot, so users don't need to click on the screen before using keyboard controls to move loads.
     const focusRef = React.useRef(null);
@@ -325,7 +326,7 @@ function CombinedLoadApp(){
                 setInitialFormWarning("Right end of " + load + " is out of bounds (Location is " + (loads[load].location + loads[load].length / 2) + ", must be less than or equal to Length of Beam).");
                 return;
             }
-
+        
         // No errors.
         setInitialFormWarning("");
     }
@@ -437,6 +438,23 @@ function CombinedLoadApp(){
     if(!isBeamIni){
         var data = beamProperties;
         return(<form onSubmit={(e)=> {handleSubmit(data, e)}}>
+            <div></div>
+            <FormControl>
+                <FormLabel id="supportTypeRadios">Support Type</FormLabel>
+                <RadioGroup
+                    row
+                    aria-labelledby="supportTypeRadios"
+                    value={beamProperties.supportType}
+                    onChange={(val)=>{
+                        beamProperties.supportType = val.target.value;
+                        validateInputsInitialForm();
+                        reRender(!render);
+                    }}
+                >
+                    <FormControlLabel value="ss" control={<Radio />} label="Simply Supported" />
+                    <FormControlLabel value="c" control={<Radio />} label="Cantilever" />
+                </RadioGroup>
+            </FormControl>
             <div></div>
             <label>Length of Beam:
                 <input
@@ -581,7 +599,7 @@ function CombinedLoadApp(){
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Mass"
+                        label={hideLengthField?"Mass":"Mass Per Meter"}
                         defaultValue={newLoadData.mass}
                         type="text"
                         onChange={(val)=>{
@@ -664,7 +682,7 @@ function CombinedLoadApp(){
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Mass"
+                        label={hideLengthField?"Mass":"Mass Per Meter"}
                         defaultValue={newLoadData.mass}
                         type="text"
                         onChange={(val)=>{
@@ -807,7 +825,7 @@ function CombinedLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="Mass"
+                                label={hideLengthField?"Mass":"Mass Per Meter"}
                                 defaultValue={newLoadData.mass}
                                 type="text"
                                 onChange={(val)=>{
@@ -891,7 +909,7 @@ function CombinedLoadApp(){
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="Mass"
+                                label={hideLengthField?"Mass":"Mass Per Meter"}
                                 defaultValue={newLoadData.mass}
                                 type="text"
                                 onChange={(val)=>{
@@ -971,6 +989,7 @@ function CombinedLoadApp(){
                     <YAxis/>
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={deflection(loads, beamProperties)} curve={'curveMonotoneX'}/>
+                    <LabelSeries data={plotReactions(loads, beamProperties)} />
                 </XYPlot>
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-35000, 35000]} margin = {{left : 10}}>
                     <VerticalGridLines/>
@@ -990,14 +1009,6 @@ function CombinedLoadApp(){
                     <YAxis/>
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={shearForceData(loads, beamProperties)}/>
-                </XYPlot>
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-100, 100]} margin = {{left : 10}}>
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis title = {"Plot Reactions"}/>
-                    <YAxis/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LabelSeries data={plotReactions(loads, beamProperties)} />
                 </XYPlot>
             </div>
         </div>
@@ -1064,6 +1075,8 @@ function getDistributedLoadMiniArrows(array, pos, len, beamLen, color, loadID){
 }
 
 function shearForceData(loads, beamProperties){
+    if(beamProperties.supportType === "c")
+        return shearForceDataCantilever(loads, beamProperties)
     var length = beamProperties.length;
     var x = 0
     var delta = 1
@@ -1107,6 +1120,7 @@ function shearForceData(loads, beamProperties){
     console.log(finalDataList)
     return finalDataList
 }
+// Helper function to shearForceData
 function shearForceDataPointLoad(p,l,a){
     let R1 = p*(l - a)/l
     let dataList = []
@@ -1124,6 +1138,7 @@ function shearForceDataPointLoad(p,l,a){
     }
     return dataList
 }
+// Helper function to shearForceData
 function shearForceDataDistributed(e,d,w,L){
     var R1 = reactionR1(e,d,w,L)[0]
     let dataList = []
@@ -1140,8 +1155,63 @@ function shearForceDataDistributed(e,d,w,L){
     }
     return dataList
 }
+// Alternative function called by shearForceData if the beam is a cantilever beam
+function shearForceDataCantilever(loads, beamProperties){
+    // Should contain all the points where the slope of the line changes: at point loads, and at the start and end of distrib loads
+    const pointsToDraw = []
+    let totalMass = 0
+    const distribLoads = []
+    for(let load in loads) {
+        if(loads[load].type === "p") {
+            pointsToDraw.push(loads[load])
+            totalMass += loads[load].mass
+        }
+        else {
+            pointsToDraw.push({location:loads[load].location,mass:0}) // Left end
+            pointsToDraw.push({location:loads[load].location + loads[load].length,mass:0}) // Right end
+            totalMass += loads[load].mass * loads[load].length
+            distribLoads.push(loads[load])
+        }
+    }
+    // Also put a pointOfInterest at the right end of the beam, so the line series will reach there.
+    pointsToDraw.push({location:beamProperties.length,mass:0})
+    // Sort the points by ascending location
+    pointsToDraw.sort((a,b)=>(a.location > b.location)? 1 : -1)
+
+    const dataList = []
+    let prevPOILoc = 0
+    let passedPointMass = 0
+    for(let i = 0; i < pointsToDraw.length; i++){
+        let currentPOILoc = pointsToDraw[i].location
+        // Draw a line straight down at prevPOILoc according to the point mass at prevPOILoc.
+        // In the first iteration, this starts the line series at x=0.
+        dataList.push({x:prevPOILoc,y:totalMass-passedPointMass-passedDistribMass(distribLoads,prevPOILoc) })
+        // Draw a line horizontally from prevPOILoc to currentPOILoc. The line slopes down according to the distributed mass it passes.
+        dataList.push({x:currentPOILoc,y:totalMass-passedPointMass-passedDistribMass(distribLoads,currentPOILoc)})
+        passedPointMass += pointsToDraw[i].mass
+        prevPOILoc=currentPOILoc
+    }
+    return dataList
+}
+// This function totals the amount of distributed mass that is to the left of the given location.
+// It is a helper function for shearForceDataCantilever
+function passedDistribMass(distribLoads, location) {
+    let passedMass = 0
+    for(let load in distribLoads) {
+        let passedPortion = location - distribLoads[load].location
+        if(passedPortion < 0)
+            passedPortion = 0
+        if(passedPortion > distribLoads[load].length)
+            passedPortion = distribLoads[load].length
+        passedMass += passedPortion * distribLoads[load].mass
+    }
+    return passedMass
+}
+
 
 function movementBendingDiagram(loads, beamProperties){
+    if(beamProperties.supportType === "c")
+        return movementBendingDiagramCantilever(loads, beamProperties)
     var length = beamProperties.length;
     var x = 0
     var delta = 1
@@ -1208,7 +1278,47 @@ function movementBendingDiagramPointLoad(p,l,a){
     }
     return dataList
 }
+// Alternative function called by movementBendingDiagram if the beam is a cantilever beam
+function movementBendingDiagramCantilever(loads, beamProperties){
+    const pointsToDraw = []
+    // Add every 100th of the beam length.
+    for(let x = 0; x <= beamProperties.length; x += beamProperties.length/100)
+        pointsToDraw.push({location:x, mass:0, distribLoadChange:0})
+    // Also add all the point loads, and at the start and end of distrib loads
+    for(let load in loads) {
+        if(loads[load].type === "p")
+            pointsToDraw.push({location:loads[load].location, mass:loads[load].mass, distribLoadChange:0})
+        else {
+            pointsToDraw.push({location:loads[load].location, mass:0, distribLoadChange:-1*loads[load].mass}) // Left end
+            pointsToDraw.push({location:loads[load].location + loads[load].length, mass:0, distribLoadChange:loads[load].mass}) // Right end
+        }
+    }
+
+    // Sort the points by descending location
+    pointsToDraw.sort((a,b)=>(a.location < b.location)? 1 : -1)
+
+    let prevPassedMass = 0
+    let currentIntervalDistribMass = 0
+    let prevX = beamProperties.length
+    let currentX = prevX
+    let prevY = 0
+    let currentY = prevY
+    let dataList = []
+    for(let i = 0; i < pointsToDraw.length; i++){
+        currentX = pointsToDraw[i].location
+        currentY = prevY - prevPassedMass * (prevX - currentX) - currentIntervalDistribMass * (prevX - currentX) ** 2 / 2
+        dataList.push({x:currentX, y:currentY})
+        prevPassedMass += pointsToDraw[i].mass + currentIntervalDistribMass * (prevX - currentX)
+        currentIntervalDistribMass += pointsToDraw[i].distribLoadChange
+        prevX = currentX
+        prevY = currentY
+    }
+    console.log(dataList)
+    return dataList
+}
+
 function plotReactions(loads,beamProperties){
+        
     var length = beamProperties.length;
     var x = 0
     var delta = 1
@@ -1234,12 +1344,19 @@ function plotReactions(loads,beamProperties){
         R2 += reactions[1]
     }
 
-    const data = [
-        {x: 0, y: -40, label: '' + R1, style: {fontSize: 15}},
-        {x: 0, y: -35, label: "\u2191", style: {fontSize: 35}},
-        {x: beamProperties.length, y: -35, label: "\u2191", style: {fontSize: 35}},
-        {x: beamProperties.length, y: -40, label: '' +(R2),  style: {fontSize: 15}}
-    ]
+    let data
+    if(beamProperties.supportType === "c")
+        data = [
+            {x: 0, y: -40*(3/100), label: '' + (R1 + R2), style: {fontSize: 15}},
+            {x: 0, y: -35*(3/100), label: "\u2191", style: {fontSize: 35}}
+        ]
+    else
+        data = [
+            {x: 0, y: -40*(3/100), label: '' + R1, style: {fontSize: 15}},
+            {x: 0, y: -35*(3/100), label: "\u2191", style: {fontSize: 35}},
+            {x: beamProperties.length, y: -35*(3/100), label: "\u2191", style: {fontSize: 35}},
+            {x: beamProperties.length, y: -40*(3/100), label: '' +(R2),  style: {fontSize: 15}}
+        ]
     return data
 }
 function deflection(loads, beamProperties){
