@@ -981,7 +981,8 @@ function CombinedLoadApp(){
             <div>
                 <h1>Plots</h1>
                 {/* Side plots */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[3, 3]} margin = {{left : 10}}>
+                {/* Deflection Diagram */}
+                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[0.00003, 0.00003]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
                     <XAxis title = {"Deflection Diagram"}/>
@@ -991,6 +992,7 @@ function CombinedLoadApp(){
                     <LineSeries data={deflection(loads, beamProperties)} curve={'curveMonotoneX'}/>
                     <LabelSeries data={plotReactions(loads, beamProperties)} />
                 </XYPlot>
+                {/* Bending Moment Diagram */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-35000, 35000]} margin = {{left : 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
@@ -1001,6 +1003,7 @@ function CombinedLoadApp(){
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={movementBendingDiagram(loads,beamProperties)}/>
                 </XYPlot>
+                {/* Shear Force Diagram */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-600, 600]} margin = {{left : 10}}>
                     {/*<h1>Shear Force Diagram</h1>*/}
                     <VerticalGridLines/>
@@ -1347,64 +1350,72 @@ function plotReactions(loads,beamProperties){
     let data
     if(beamProperties.supportType === "c")
         data = [
-            {x: 0, y: -40*(3/100), label: '' + (R1 + R2), style: {fontSize: 15}},
-            {x: 0, y: -35*(3/100), label: "\u2191", style: {fontSize: 35}}
+            {x: 0, y: -40*(0.00003/100), label: '' + (R1 + R2), style: {fontSize: 15}},
+            {x: 0, y: -35*(0.00003/100), label: "\u2191", style: {fontSize: 35}}
         ]
     else
         data = [
-            {x: 0, y: -40*(3/100), label: '' + R1, style: {fontSize: 15}},
-            {x: 0, y: -35*(3/100), label: "\u2191", style: {fontSize: 35}},
+            {x: 0, y: -40*(0.00003/100), label: '' + R1, style: {fontSize: 15}},
+            {x: 0, y: -35*(0.00003/100), label: "\u2191", style: {fontSize: 35}},
             {x: beamProperties.length, y: -35*(3/100), label: "\u2191", style: {fontSize: 35}},
             {x: beamProperties.length, y: -40*(3/100), label: '' +(R2),  style: {fontSize: 15}}
         ]
     return data
 }
+
 function deflection(loads, beamProperties){
-    var length = beamProperties.length;
     var dataList = []
-    var x = 0
-    var delta = 1
-    while(x <=length){
+    for(let x = 0; x <= beamProperties.length; x += beamProperties.length/100){
         var y = 0;
-        for(let load in loads){
-            if(loads[load].type !== "p"){
-                continue
-            }
-            var p = loads[load].mass;
-            var a = loads[load].location
-            var val = deflectionOfSingleLoadPointLoad(p,x,length,a);
-            y += val;
-        }
-        dataList.push({x:x,y:-1*y})
-        x+= delta
+        Object.values(loads).forEach(load => y += deflectionOfSingleLoad(x, load, beamProperties))
+        dataList.push({x:x,y:y})
     }
-    let allDataList = [dataList]
-    for(let load in loads){
-        let myload = loads[load]
-        if(myload.type === "p"){
-            continue
-        }
-        let e = myload.location
-        let d = myload.length
-        let w = myload.mass
-        let L = length
-        allDataList.push(deflectionCalculation(e,d,w,L))
-    }
-    let finalDataList = []
-    x = 0
-    while(x<=length){
-        let yval = 0
-        for(let list of allDataList){
-            yval += list[x].y
-        }
-        finalDataList.push({x:x,y:yval})
-        x+= delta
-    }
-    console.log("deflection is : ")
-    console.log(finalDataList)
-    return finalDataList
+    return dataList
 }
 
+function deflectionOfSingleLoad(x, load, beamProperties) {
+    let deflection
+    let F = load.mass * beamProperties.gravity
+    let X = load.location
+    let L = load.length
+    let Lb = beamProperties.length
+    let EI = beamProperties.EI
+    if(load.type === "p") {
+        // This is based on integrating shear force 3 times.
+        if(x < X)
+            deflection = (x**3-3*x**2*X) / 6
+        else
+            deflection = (X**3-3*X**2*x) / 6
+
+        if(beamProperties.supportType === "ss") {
+            // Simply supported's shear force is shifted slightly down from cantilever's shear force. 
+            // Also the left end of the beam's derivative of deflection is no longer 0, and the right end of the beam's deflection is now 0.
+            deflection += (-2*Lb**2*X*x + 3*Lb*X*x**2 + 3*Lb*x*X**2 - X*x**3 - x*X**3) / 6 / Lb
+        }
+    }
+    else {
+        // This is based on integrating shear force 3 times.
+        if(x < X)
+            deflection = (-3*L**2*x**2 - 6*L*X*x**2 + 2*L*x**3) / 12
+        else if(x < X + L)
+            deflection = (-1*(X-x)**4 - 6*L**2*x**2 - 12*L*X*x**2 + 4*L*x**3) / 24
+        else
+            deflection = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
+
+        if(beamProperties.supportType === "ss") {
+            // Simply supported's shear force is shifted slightly down from cantilever's shear force. 
+            // Also the left end of the beam's derivative of deflection is no longer 0, and the right end of the beam's deflection is now 0.
+            deflection += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
+        }
+    }
+
+    deflection *= F / EI
+
+    console.log({x:x,deflection:deflection})
+    console.log({F:F,X:X,L:L,Lb:Lb,EI:EI})
+
+    return deflection
+}
 
 function deflectionOfSingleLoadPointLoad(p,x,l,a){
     var e = 2110000;
