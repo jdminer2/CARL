@@ -3,7 +3,8 @@ import React, { useEffect, useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField} from '@mui/material'
 import LoadSelector from '../components/LoadSelector';
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis";
-import {inv, multiply} from "mathjs";
+import {inv, max, multiply} from "mathjs";
+import { letterSpacing } from '@mui/system';
 
 
 function CombinedLoadApp(){
@@ -22,6 +23,9 @@ function CombinedLoadApp(){
     const [initialFormWarning, setInitialFormWarning] = useState("");
     const [loadFormWarning, setLoadFormWarning] = useState("");
     const [hideLengthField, setHideLengthField] = useState(true);
+    const [deflectionScale, setDeflectionScale] = useState(1);
+    const [bendingMomentScale, setBendingMomentScale] = useState(1);
+    const [shearForceScale, setShearForceScale] = useState(1);
     const [render, reRender] = useState(true);
 
     // This helps the window automatically focus on the XYPlot, so users don't need to click on the screen before using keyboard controls to move loads.
@@ -433,7 +437,100 @@ function CombinedLoadApp(){
             />)
         return labels;
     }
+    
+    function deflectionDiagram(loads, beamProperties){
+        const pointsToDraw = []
+        // Add every 100th of the beam length.
+        for(let i = 0; i <= 100; i++)
+            pointsToDraw.push((i/100)*beamProperties.length)
+    
+        // Also add all the point loads, and the start and end of distrib loads
+        Object.values(loads).forEach(load => {
+            pointsToDraw.push(load.location)
+            if(load.type === "d")
+                pointsToDraw.push(load.location+load.length)
+        })
+        // Sort the points by location
+        pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
+    
+        let plotData = []
+        pointsToDraw.forEach(ptd => {
+            let plotDataY = 0
+            Object.values(loads).forEach(load =>
+                plotDataY += deflectionSingleLoad(ptd, load, beamProperties)
+            )
+            plotData.push({x:ptd, y:plotDataY})
+        })
 
+        let newScale = getScale(plotData)
+        if(newScale != deflectionScale)
+            setDeflectionScale(newScale)
+
+        return plotData
+    }
+
+    function bendingMomentDiagram(loads, beamProperties){
+        const pointsToDraw = []
+        // Add every 100th of the beam length.
+        for(let i = 0; i <= 100; i++)
+            pointsToDraw.push((i/100)*beamProperties.length)
+    
+        // Also add all the point loads, and the start and end of distrib loads
+        Object.values(loads).forEach(load => {
+            pointsToDraw.push(load.location)
+            if(load.type === "d")
+                pointsToDraw.push(load.location+load.length)
+        })
+        // Sort the points by location
+        pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
+    
+        let plotData = []
+        pointsToDraw.forEach(ptd => {
+            let plotDataY = 0
+            Object.values(loads).forEach(load =>
+                plotDataY += bendingMomentSingleLoad(ptd, load, beamProperties)
+            )
+            plotData.push({x:ptd, y:plotDataY})
+        })
+
+        let newScale = getScale(plotData)
+        if(newScale != bendingMomentScale)
+            setBendingMomentScale(newScale)
+
+        return plotData
+    }
+
+    function shearForceDiagram(loads, beamProperties){
+        const pointsToDraw = []
+        // Add every 100th of the beam length.
+        for(let i = 0; i <= 100; i++)
+            pointsToDraw.push((i/100)*beamProperties.length)
+    
+        // Also add all the point loads, and the start and end of distrib loads
+        Object.values(loads).forEach(load => {
+            pointsToDraw.push(load.location)
+            if(load.type === "d")
+                pointsToDraw.push(load.location+load.length)
+        })
+        // Sort the points by location
+        pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
+    
+        let plotData = []
+        pointsToDraw.forEach(ptd => {
+            let plotDataY = 0
+            Object.values(loads).forEach(load =>
+                plotDataY += shearForceSingleLoad(ptd, load, beamProperties)
+            )
+            plotData.push({x:ptd, y:plotDataY})
+        })
+
+        let newScale = getScale(plotData)
+        if(newScale != shearForceScale)
+            setShearForceScale(newScale)
+
+        return plotData
+    }
+    
     // Display the initial inputs form
     if(!isBeamIni){
         var data = beamProperties;
@@ -764,7 +861,7 @@ function CombinedLoadApp(){
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Load Location"}/>
+                    <XAxis tickFormat={formatVal} title = {"Load Location"}/>
                     <YAxis/>
                     {/* Display the beam. */}
                     <LineSeries data = {[{x: 0, y: 0}, {x: beamProperties.length, y: 0}]} />
@@ -982,36 +1079,34 @@ function CombinedLoadApp(){
                 <h1>Plots</h1>
                 {/* Side plots */}
                 {/* Deflection Diagram */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[0.00003, 0.00003]} margin = {{left : 10}}>
+                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left : 60, right:60}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Deflection Diagram"}/>
-                    <XAxis/>
-                    <YAxis/>
+                    <XAxis tickFormat = {formatVal} title = {"Deflection Diagram"}/>
+                    <YAxis tickFormat = {formatVal}/>
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={deflection(loads, beamProperties)} curve={'curveMonotoneX'}/>
-                    <LabelSeries data={plotReactions(loads, beamProperties)} />
+                    <LineSeries data={deflectionDiagram(loads, beamProperties)} curve={'curveMonotoneX'}/>
+                    <LabelSeries data={plotReactions(loads, beamProperties, deflectionScale)} />
                 </XYPlot>
                 {/* Bending Moment Diagram */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[-35000, 35000]} margin = {{left : 10}}>
+                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[bendingMomentScale, bendingMomentScale]} margin = {{left : 60, right:60}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Bending Moment Diagram"}/>
-                    <XAxis/>
-                    <YAxis/>
+                    <XAxis tickFormat = {formatVal} title = {"Bending Moment Diagram"}/>
+                    <YAxis tickFormat = {formatVal}/>
 
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={movementBendingDiagram(loads,beamProperties)}/>
+                    <LineSeries data={bendingMomentDiagram(loads,beamProperties)}/>
                 </XYPlot>
                 {/* Shear Force Diagram */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[-600, 600]} margin = {{left : 10}}>
+                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[shearForceScale, shearForceScale]} margin = {{left : 60, right:60}}>
                     {/*<h1>Shear Force Diagram</h1>*/}
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis title = {"Shear Force Diagram"}/>
-                    <YAxis/>
+                    <XAxis tickFormat = {formatVal} title = {"Shear Force Diagram"}/>
+                    <YAxis tickFormat = {formatVal}/>
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={shearForceData(loads, beamProperties)}/>
+                    <LineSeries data={shearForceDiagram(loads, beamProperties)}/>
                 </XYPlot>
             </div>
         </div>
@@ -1077,412 +1172,187 @@ function getDistributedLoadMiniArrows(array, pos, len, beamLen, color, loadID){
         array.push({x: pos + (i/numArrows) * len, y: -3, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", fill: color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
 }
 
-function shearForceData(loads, beamProperties){
-    if(beamProperties.supportType === "c")
-        return shearForceDataCantilever(loads, beamProperties)
-    var length = beamProperties.length;
-    var x = 0
-    var delta = 1
-    let allDataList = []
-    let cset = new Set();
-    for(let load in loads){
-        let myload = loads[load]
-        if(myload.type === "d")
-            continue
-        cset.add(myload.location)
-    }
-    for(let load in loads){
-        let myload = loads[load]
-        if(myload.type === "p"){
-            let p = myload.mass
-            let l = length
-            let a = myload.location
-            allDataList.push(shearForceDataPointLoad(p,l,a))
-            continue
-        }
-        let e = myload.location
-        let d = myload.length
-        let w = myload.mass
-        let L = length
-        allDataList.push(shearForceDataDistributed(e,d,w,L,cset))
-    }
-    let finalDataList = []
-    x = 0
-    while(x<=length){
-        let yval = 0
-        let yval1 = 0
-        for(let list of allDataList){
-            yval += list[x].y[0]
-            yval1 += list[x].y[1]
-        }
-        finalDataList.push({x:x,y:yval})
-        finalDataList.push({x:x,y:yval1})
-        x+= delta
-    }
-    console.log("final list is of sheer is : ")
-    console.log(finalDataList)
-    return finalDataList
-}
-// Helper function to shearForceData
-function shearForceDataPointLoad(p,l,a){
-    let R1 = p*(l - a)/l
-    let dataList = []
-    for(let x = 0 ; x <= l;x++){
-        let y = 0
-        if(x >= 0 && x < a){
-            y = R1
-        }else if(x === a){
-            dataList.push({x:x,y:[R1,R1 - p]})
-            continue
-        }else{
-            y = R1 - p
-        }
-        dataList.push({x:x,y:[y,y]})
-    }
-    return dataList
-}
-// Helper function to shearForceData
-function shearForceDataDistributed(e,d,w,L){
-    var R1 = reactionR1(e,d,w,L)[0]
-    let dataList = []
-    for(let x = 0 ; x <= L;x++){
-        let y = 0
-        if(x >= 0 && x <= e){
-            y = R1
-        }else if (x > e && x <= (e + d)){
-            y = R1 - w*(x-e)
-        }else{
-            y = R1-w*d
-        }
-        dataList.push({x:x,y:[y,y]})
-    }
-    return dataList
-}
-// Alternative function called by shearForceData if the beam is a cantilever beam
-function shearForceDataCantilever(loads, beamProperties){
-    // Should contain all the points where the slope of the line changes: at point loads, and at the start and end of distrib loads
-    const pointsToDraw = []
-    let totalMass = 0
-    const distribLoads = []
-    for(let load in loads) {
-        if(loads[load].type === "p") {
-            pointsToDraw.push(loads[load])
-            totalMass += loads[load].mass
-        }
-        else {
-            pointsToDraw.push({location:loads[load].location,mass:0}) // Left end
-            pointsToDraw.push({location:loads[load].location + loads[load].length,mass:0}) // Right end
-            totalMass += loads[load].mass * loads[load].length
-            distribLoads.push(loads[load])
-        }
-    }
-    // Also put a pointOfInterest at the right end of the beam, so the line series will reach there.
-    pointsToDraw.push({location:beamProperties.length,mass:0})
-    // Sort the points by ascending location
-    pointsToDraw.sort((a,b)=>(a.location > b.location)? 1 : -1)
-
-    const dataList = []
-    let prevPOILoc = 0
-    let passedPointMass = 0
-    for(let i = 0; i < pointsToDraw.length; i++){
-        let currentPOILoc = pointsToDraw[i].location
-        // Draw a line straight down at prevPOILoc according to the point mass at prevPOILoc.
-        // In the first iteration, this starts the line series at x=0.
-        dataList.push({x:prevPOILoc,y:totalMass-passedPointMass-passedDistribMass(distribLoads,prevPOILoc) })
-        // Draw a line horizontally from prevPOILoc to currentPOILoc. The line slopes down according to the distributed mass it passes.
-        dataList.push({x:currentPOILoc,y:totalMass-passedPointMass-passedDistribMass(distribLoads,currentPOILoc)})
-        passedPointMass += pointsToDraw[i].mass
-        prevPOILoc=currentPOILoc
-    }
-    return dataList
-}
-// This function totals the amount of distributed mass that is to the left of the given location.
-// It is a helper function for shearForceDataCantilever
-function passedDistribMass(distribLoads, location) {
-    let passedMass = 0
-    for(let load in distribLoads) {
-        let passedPortion = location - distribLoads[load].location
-        if(passedPortion < 0)
-            passedPortion = 0
-        if(passedPortion > distribLoads[load].length)
-            passedPortion = distribLoads[load].length
-        passedMass += passedPortion * distribLoads[load].mass
-    }
-    return passedMass
-}
-
-
-function movementBendingDiagram(loads, beamProperties){
-    if(beamProperties.supportType === "c")
-        return movementBendingDiagramCantilever(loads, beamProperties)
-    var length = beamProperties.length;
-    var x = 0
-    var delta = 1
-    let allDataList = []
-
-    for(let load in loads){
-        let myload = loads[load]
-        if(myload.type === "p"){
-            let p = myload.mass
-            let l = length
-            let a = myload.location
-            allDataList.push(movementBendingDiagramPointLoad(p,l,a))
-            continue
-        }
-        let e = myload.location
-        let d = myload.length
-        let w = myload.mass
-        let L = length
-        allDataList.push(movementBendingDiagramDistributed(e,d,w,L))
-    }
-    let finalDataList = []
-    x = 0
-    while(x<=length){
-        let yval = 0
-        for(let list of allDataList){
-            yval += list[x].y
-        }
-        finalDataList.push({x:x,y:yval})
-        x+= delta
-    }
-    console.log("final list is  : ")
-    console.log(finalDataList)
-    return finalDataList
-}
-function movementBendingDiagramDistributed(e,d,w,L){
-    var R1 = reactionR1(e,d,w,L)[0]
-    var R2 = reactionR1(e,d,w,L)[1]
-    let dataList = []
-    for(let x = 0 ; x <= L;x++){
-        let y = 0
-        if(x >= 0 && x <= e){
-            y = R1*x
-        }else if (x > e && x <= (e + d)){
-            y = R1*x - w * (x-e) * (x - e) / 2
-        }else{
-            y = R2 * (L - x)
-        }
-        dataList.push({x:x,y:y})
-    }
-    return dataList
-}
-function movementBendingDiagramPointLoad(p,l,a){
-    let R1 = p*(l - a)/l
-    let R2 = p*a/l
-    let dataList = []
-    for(let x = 0 ; x <= l;x++){
-        let y = 0
-        if(x >= 0 && x <= a){
-            y = R1*x
-        }else{
-            y = R1*x - p * (x - a)
-        }
-        dataList.push({x:x,y:y})
-    }
-    return dataList
-}
-// Alternative function called by movementBendingDiagram if the beam is a cantilever beam
-function movementBendingDiagramCantilever(loads, beamProperties){
-    const pointsToDraw = []
-    // Add every 100th of the beam length.
-    for(let x = 0; x <= beamProperties.length; x += beamProperties.length/100)
-        pointsToDraw.push({location:x, mass:0, distribLoadChange:0})
-    // Also add all the point loads, and at the start and end of distrib loads
-    for(let load in loads) {
-        if(loads[load].type === "p")
-            pointsToDraw.push({location:loads[load].location, mass:loads[load].mass, distribLoadChange:0})
-        else {
-            pointsToDraw.push({location:loads[load].location, mass:0, distribLoadChange:-1*loads[load].mass}) // Left end
-            pointsToDraw.push({location:loads[load].location + loads[load].length, mass:0, distribLoadChange:loads[load].mass}) // Right end
-        }
-    }
-
-    // Sort the points by descending location
-    pointsToDraw.sort((a,b)=>(a.location < b.location)? 1 : -1)
-
-    let prevPassedMass = 0
-    let currentIntervalDistribMass = 0
-    let prevX = beamProperties.length
-    let currentX = prevX
-    let prevY = 0
-    let currentY = prevY
-    let dataList = []
-    for(let i = 0; i < pointsToDraw.length; i++){
-        currentX = pointsToDraw[i].location
-        currentY = prevY - prevPassedMass * (prevX - currentX) - currentIntervalDistribMass * (prevX - currentX) ** 2 / 2
-        dataList.push({x:currentX, y:currentY})
-        prevPassedMass += pointsToDraw[i].mass + currentIntervalDistribMass * (prevX - currentX)
-        currentIntervalDistribMass += pointsToDraw[i].distribLoadChange
-        prevX = currentX
-        prevY = currentY
-    }
-    console.log(dataList)
-    return dataList
-}
-
-function plotReactions(loads,beamProperties){
-        
-    var length = beamProperties.length;
-    var x = 0
-    var delta = 1
-    let allDataList = []
+function plotReactions(loads,beamProperties,scale){
     let R1 = 0
     let R2 = 0
-    for(let load in loads){
-        let myload = loads[load]
-        if(myload.type === "p"){
-            let p = myload.mass
-            let l = length
-            let a = myload.location
-            R1 += p*(l - a)/l
-            R2 += p*a/l
-            continue
-        }
-        let e = myload.location
-        let d = myload.length
-        let w = myload.mass
-        let L = length
-        let reactions = reactionR1(e,d,w,L)
-        R1 += reactions[0]
-        R2 += reactions[1]
-    }
+    Object.values(loads).forEach(load => {
+        R1 += R1SingleLoad(load, beamProperties)
+        R2 += R2SingleLoad(load, beamProperties)
+    })
 
-    let data
-    if(beamProperties.supportType === "c")
-        data = [
-            {x: 0, y: -40*(0.00003/100), label: '' + (R1 + R2), style: {fontSize: 15}},
-            {x: 0, y: -35*(0.00003/100), label: "\u2191", style: {fontSize: 35}}
-        ]
+    let reactionLabels = []
+    // Left side reaction label
+    reactionLabels.push({x: 0, y: -40/100*scale, label: formatVal(R1) , style: {fontSize: 15}})
+    reactionLabels.push({x: 0, y: -35/100*scale, label: "\u2191", style: {fontSize: 35}})
+    // Right side reaction label
+    if(beamProperties.supportType === "ss") {
+        reactionLabels.push({x: beamProperties.length, y: -40/100*scale, label: formatVal(R2),  style: {fontSize: 15}})
+        reactionLabels.push({x: beamProperties.length, y: -35/100*scale, label: "\u2191", style: {fontSize: 35}})
+    }
+    return reactionLabels
+}
+
+function R1SingleLoad(load, beamProperties){
+    // Get relevant variables
+    let F = load.mass * beamProperties.gravity
+    let X = load.location
+    let L = load.length
+    let Lb = beamProperties.length
+
+    let R1
+    if(load.type === "p") {
+        if(beamProperties.supportType === "c")
+            R1 = F
+        else
+            R1 = F/Lb * (Lb - X)
+    }
+    else {
+        if(beamProperties.supportType === "c")
+            R1 = F*L
+        else
+            R1 = F*L/Lb * (Lb - X - L/2)
+    }
+    return R1
+}
+
+function R2SingleLoad(load, beamProperties) {
+    // Get relevant variables
+    let F = load.mass * beamProperties.gravity
+    let L = load.length
+    
+    let R2
+    if(load.type === "p")
+        R2 = F - R1SingleLoad(load, beamProperties)
     else
-        data = [
-            {x: 0, y: -40*(0.00003/100), label: '' + R1, style: {fontSize: 15}},
-            {x: 0, y: -35*(0.00003/100), label: "\u2191", style: {fontSize: 35}},
-            {x: beamProperties.length, y: -35*(3/100), label: "\u2191", style: {fontSize: 35}},
-            {x: beamProperties.length, y: -40*(3/100), label: '' +(R2),  style: {fontSize: 15}}
-        ]
-    return data
+        R2 = F*L - R1SingleLoad(load, beamProperties)
+    return R2
 }
 
-function deflection(loads, beamProperties){
-    var dataList = []
-    for(let x = 0; x <= beamProperties.length; x += beamProperties.length/100){
-        var y = 0;
-        Object.values(loads).forEach(load => y += deflectionOfSingleLoad(x, load, beamProperties))
-        dataList.push({x:x,y:y})
-    }
-    return dataList
-}
-
-function deflectionOfSingleLoad(x, load, beamProperties) {
-    let deflection
+function deflectionSingleLoad(x, load, beamProperties) {
+    // Get relevant variables
     let F = load.mass * beamProperties.gravity
     let X = load.location
     let L = load.length
     let Lb = beamProperties.length
     let EI = beamProperties.EI
-    if(load.type === "p") {
-        // This is based on integrating shear force 3 times.
-        if(x < X)
-            deflection = (x**3-3*x**2*X) / 6
-        else
-            deflection = (X**3-3*X**2*x) / 6
 
-        if(beamProperties.supportType === "ss") {
-            // Simply supported's shear force is shifted slightly down from cantilever's shear force. 
-            // Also the left end of the beam's derivative of deflection is no longer 0, and the right end of the beam's deflection is now 0.
-            deflection += (-2*Lb**2*X*x + 3*Lb*X*x**2 + 3*Lb*x*X**2 - X*x**3 - x*X**3) / 6 / Lb
-        }
+    let y
+    if(load.type === "p") {
+        if(x < X)
+            y = (x**3-3*x**2*X) / 6
+        else
+            y = (X**3-3*X**2*x) / 6
+
+        if(beamProperties.supportType === "ss")
+            y += (-2*Lb**2*X*x + 3*Lb*X*x**2 + 3*Lb*x*X**2 - X*x**3 - x*X**3) / 6 / Lb
     }
     else {
-        // This is based on integrating shear force 3 times.
         if(x < X)
-            deflection = (-3*L**2*x**2 - 6*L*X*x**2 + 2*L*x**3) / 12
+            y = (-3*L**2*x**2 - 6*L*X*x**2 + 2*L*x**3) / 12
         else if(x < X + L)
-            deflection = (-1*(X-x)**4 - 6*L**2*x**2 - 12*L*X*x**2 + 4*L*x**3) / 24
+            y = (-1*(X-x)**4 - 6*L**2*x**2 - 12*L*X*x**2 + 4*L*x**3) / 24
         else
-            deflection = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
+            y = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
 
-        if(beamProperties.supportType === "ss") {
-            // Simply supported's shear force is shifted slightly down from cantilever's shear force. 
-            // Also the left end of the beam's derivative of deflection is no longer 0, and the right end of the beam's deflection is now 0.
-            deflection += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
-        }
+        if(beamProperties.supportType === "ss")
+            y += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
     }
 
-    deflection *= F / EI
+    y *= F / EI
 
-    console.log({x:x,deflection:deflection})
-    console.log({F:F,X:X,L:L,Lb:Lb,EI:EI})
-
-    return deflection
+    return y
 }
 
-function deflectionOfSingleLoadPointLoad(p,x,l,a){
-    var e = 2110000;
-    var i = 0.33;
-    var val =0;
-    if( x <= a){
-        val = p * (l-a) * x;
-        val = val/(6 * l * e * i );
-        val = val * ((l * l) - (x * x) - ((l-a) * (l-a)));
-    }else{
-        val = p * (l-a);
-        val = val/(6 * l * e * i );
-        val = val*((l*(Math.pow((x-a),3))/(l-a)) + (((l*l)-Math.pow(l-a,2))*x) - (x*x*x))
+function bendingMomentSingleLoad(x, load, beamProperties) {
+    // Get relevant variables
+    let F = load.mass * beamProperties.gravity
+    let X = load.location
+    let L = load.length
+    let Lb = beamProperties.length
+
+    let y
+    if(load.type === "p") {
+        if(x < X)
+            y = F * (x - X)
+        else
+            y = 0
+
+        if(beamProperties.supportType === "ss")
+            y -= F * X / Lb * (x-Lb)
     }
-    return val;
-}
-function deflectionCalculation(e,d,w,L){
-    var R1 = reactionR1(e,d,w,L)[0]
-    var cs = constantCalculation(R1,e,d,w,L);
-    var E = 21100000;
-    var I = 3.78;
-    var c1 =  cs[0];
-    var c2 =  0
-    var c3 =  cs[1];
-    var c4 =  cs[2];
-    var c5 =  cs[3];
-    var c6 = cs[4]
-    var dataList = []
-    var x = 0
-    var delta = 1
-    while(x <=L){
-        var y = 0;
-        if(x < e){
-            y = (1/(E*I)) * ((R1/6)*(x*x*x) + (c1 *x) + c2)
-        }else if(x >= e && x <=e+d){
-            var vmid = x-e
-            vmid = w * vmid * vmid * vmid * vmid /24
-            y = (1/(E*I)) * ((R1/6)*(x*x*x) - vmid + (c3 * x) +c4)
-        }else {
-            var vs = (w*d) - R1
-            var vsm = L - x
-            vs = vs * (vsm * vsm * vsm) /6
-
-            y = (1/(E*I)) * (vs + (c5 * x) +c6)
-        }
-        dataList.push({x:x,y:y})
-        x+= delta
+    else {
+        if(x < X)
+            y = F * L * (x-X-L/2)
+        else if(x < X + L)
+            y = F * (L*x - X*L + X*x - (L**2+X**2+x**2)/2)
+        else
+            y = 0
+        
+        if(beamProperties.supportType === "ss")
+            y -= F * L * (2*X+L) / 2 / Lb * (x-Lb)
     }
-    return dataList
-
+    return y
 }
-function constantCalculation(R1,e, d, w  , L){
-    var var1 = (((w*d)-R1)*((L-e-d)**2)/(-2)) + (w*(d**3))/6 - (R1*((e+d)**2))/2
-    var var2 = ((w*d)-R1)*((L-e-d)**3)/6 + (w*(d**4))/24 - R1*((e+d)**3)/6
-    var arr1 = [[0,0,0,L,1],[1,-1,0,0,0],[e,-1*e,-1,0,0],[0,1,0,-1,0],[0,(e+d),1,-1*(e+d),-1]]
-    var arr2 = [[0],[0],[0],[var1],[var2]]
-    var arr1_inv = inv(arr1)
-    var result = multiply(arr1_inv,arr2)
-    var res = [result[0][0],result[1][0],result[2][0],result[3][0],result[4][0]]
-    return res;
+    
+function shearForceSingleLoad(x, load, beamProperties) {
+    // Get relevant variables
+    let X = load.location
+    let F = load.mass * beamProperties.gravity
+    let L = load.length
+    let Lb = beamProperties.length
+
+    let y
+    if(load.type === "p") {
+        if(x < X)
+            y = F
+        else
+            y = 0
+
+        if(beamProperties.supportType === "ss")
+            y -= F * X / Lb
+    }
+    else {
+        if(x < X)
+            y = F * L
+        else if(x < X + L)
+            y = F * (X - x + L)
+        else
+            y = 0
+        
+        if(beamProperties.supportType === "ss")
+            y -= F * L * (2*X+L) / 2 / Lb
+    }
+    return y
 }
 
-function reactionR1(e,d,w,L){
-    let R1 = w*d * ( L - e - (d/2))
-    R1 = R1/L
-    let R2 = w*d - R1
-    return [R1,R2]
+function getScale(dataList) {
+    // Find the biggest absolute value from the data list
+    let maxAbsVal = 0
+    dataList.forEach(dataPoint =>
+        maxAbsVal = Math.max(maxAbsVal, Math.abs(dataPoint.y))
+    )
+    
+    // If the line is flat at 0, scale will be 1
+    if(maxAbsVal == 0)
+        return 1
+
+    // Else, the scale will be the smallest power of 2 greater than maxAbsVal
+    let scale = 1
+    while(scale > maxAbsVal)
+        scale /= 2
+    while(scale < maxAbsVal)
+        scale *= 2
+
+    return scale
+}
+
+function formatVal(val) {
+    val = Number(val.toPrecision(6))
+    if(val == 0)
+        return val
+    if((""+val).length > 8)
+        return val.toExponential()
+    return val
 }
 
 export default CombinedLoadApp;
