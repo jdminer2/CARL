@@ -709,16 +709,28 @@ function CombinedLoadApp(){
                                     key={load.toString()}
                                 />
                             );
-                        else if(load[1].type==="Triangular")
-                            return (
-                                <LineSeries
-                                    color={load[1].color}
-                                    strokeWidth={3}
-                                    data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 20}, {x: (load[1].location+load[1].length), y: 8}, {x: load[1].location, y: 8}]}
-                                    onSeriesClick={(event) => {setSelectedLoad(load[0])}}
-                                    key={load.toString()}
-                                />
-                            )
+                        else if(load[1].type==="Triangular") {
+                            if(load[1].tallerEnd==="Left")
+                                return (
+                                    <LineSeries
+                                        color={load[1].color}
+                                        strokeWidth={3}
+                                        data={[{x: load[1].location, y: 8}, {x: load[1].location, y: 20}, {x: (load[1].location+load[1].length), y: 8}, {x: load[1].location, y: 8}]}
+                                        onSeriesClick={(event) => {setSelectedLoad(load[0])}}
+                                        key={load.toString()}
+                                    />
+                                )
+                            else
+                                return (
+                                    <LineSeries
+                                        color={load[1].color}
+                                        strokeWidth={3}
+                                        data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 20}, {x: (load[1].location+load[1].length), y: 8}, {x: load[1].location, y: 8}]}
+                                        onSeriesClick={(event) => {setSelectedLoad(load[0])}}
+                                        key={load.toString()}
+                                    />
+                                )
+                        }
                     })}
                 </XYPlot>
                 {/* Load Selection dropdown */}
@@ -824,7 +836,7 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
                 // Only adds length/2 to display the center of the load to the user.
                 label = "x=" + (loads[load].location + loads[load].length / 2) + ", m=" + loads[load].mass + ", L=" + loads[load].length;
             else
-                label = (loads[load].location + loads[load].length / 2) + loads[load].mass + ", " + ", " + loads[load].length;
+                label = (loads[load].location + loads[load].length / 2) + ", " + loads[load].mass + ", " + loads[load].length;
             data.push({x: loads[load].location+loads[load].length/2, y: 20, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put small arrows under distributed load line. 
             console.log(loads[load].color);
