@@ -11,13 +11,13 @@ function CombinedLoadApp(){
 
     const butStyle = {background: "black", height:window.innerHeight/12,
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
-    const [beamProperties,setBeamProperties] = useState({supportType: "ss", length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
+    const [beamProperties,setBeamProperties] = useState({supportType: "Simply Supported", length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [loads,setLoads] = useState({})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"p", length:0, color:"#00000080"})
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"Point", length:0, color:"#00000080"})
     const [openAdd, setOpenAdd] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
     const [initialFormWarning, setInitialFormWarning] = useState("");
@@ -57,14 +57,14 @@ function CombinedLoadApp(){
         if(newB.length < 2)
             newB = "0"+newB;
         let color = "#" + newR + newG + newB + "80";
-        setNewLoadData({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"p", length:0, color:color});
+        setNewLoadData({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"Point", length:0, color:color});
         setHideLengthField(true);
         console.log(newLoadData.color);
         setOpenAdd(true);
     };
     const handleClickOpenEdit = () => {
         setNewLoadData({name:selectedLoad, mass:loads[selectedLoad].mass, location:loads[selectedLoad].location + loads[selectedLoad].length / 2, type:loads[selectedLoad].type, length:loads[selectedLoad].length, color:loads[selectedLoad].color});
-        setHideLengthField(loads[selectedLoad].type === "p");
+        setHideLengthField(loads[selectedLoad].type === "Point");
         setOpenEdit(true);
     };
 
@@ -84,7 +84,7 @@ function CombinedLoadApp(){
         if(loadFormWarning !== "")
             return;
         // If closed via confirm button, create a new load.
-        if(newLoadData.type === "p")
+        if(newLoadData.type === "Point")
             newLoadData.length = 0;
         loads[newLoadData.name] = {mass:newLoadData.mass, location:(newLoadData.location - newLoadData.length / 2), type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
         setSelectedLoad(newLoadData.name);
@@ -108,7 +108,7 @@ function CombinedLoadApp(){
         if(loadFormWarning !== "")
             return;
         // If closed via confirm button, replace new load stats except color.
-        if(newLoadData.type === "p")
+        if(newLoadData.type === "Point")
             newLoadData.length = 0;
         for(let load in loads) {
             // This is done to preserve the ordering of the loads list.
@@ -181,7 +181,7 @@ function CombinedLoadApp(){
         // Prevent player from moving out of bounds.
         let newLoc = loads[selectedLoad].location + disp;
         let loadLength = 0;
-        if(loads[selectedLoad].type === "d")
+        if(loads[selectedLoad].type === "Distributed")
             loadLength = loads[selectedLoad].length;
         if(newLoc < 0)
             newLoc = 0;
@@ -322,11 +322,11 @@ function CombinedLoadApp(){
 
         // Check that loads are not invalidated by length of beam change.
         for(let load in loads)
-            if(loads[load].type === "p" && loads[load].location > beamProperties.length) {
+            if(loads[load].type === "Point" && loads[load].location > beamProperties.length) {
                 setInitialFormWarning(load + " location must be less than or equal to Length of Beam.");
                 return;
             }
-            else if(loads[load].type === "d" && loads[load].location + loads[load].length / 2 > beamProperties.length) {
+            else if(loads[load].type === "Distributed" && loads[load].location + loads[load].length / 2 > beamProperties.length) {
                 setInitialFormWarning("Right end of " + load + " is out of bounds (Location is " + (loads[load].location + loads[load].length / 2) + ", must be less than or equal to Length of Beam).");
                 return;
             }
@@ -367,11 +367,11 @@ function CombinedLoadApp(){
         newLoadData.location = Number(newLoadData.location);
 
         // Check that type is either d or p.
-        if(newLoadData.type !== "d" && newLoadData.type !== "p") {
+        if(newLoadData.type !== "Distributed" && newLoadData.type !== "Point") {
             setLoadFormWarning("Type must be Distributed or Point Load.");
             return;
         }
-        setHideLengthField(newLoadData.type === "p");
+        setHideLengthField(newLoadData.type === "Point");
 
         // Check that length is a number >= 0.
         if(parseFloat(newLoadData.length) != newLoadData.length){
@@ -385,7 +385,7 @@ function CombinedLoadApp(){
         }
 
         // Check that load location is in-bounds, for point load.
-        if(newLoadData.type === "p") {
+        if(newLoadData.type === "Point") {
             if(newLoadData.location < 0) {
                 setLoadFormWarning("Location must be at least 0.");
                 return;
@@ -431,9 +431,9 @@ function CombinedLoadApp(){
     function loadRadioButtonsCreator(){
         let labels = [];
         for(let load in loads)
-            labels.push(<FormControlLabel 
-                key={load} value={load} control={<Radio/>} 
-                label={load + ": Location = " + (loads[load].location + loads[load].length / 2) + ", Mass = " + loads[load].mass + ", Type = " + (loads[load].type==="p"?"Point":"Distributed" + ", Length = " + loads[load].length)} 
+            labels.push(<FormControlLabel
+                key={load} value={load} control={<Radio/>}
+                label={load + ": Location = " + (loads[load].location + loads[load].length / 2) + ", Mass = " + loads[load].mass + ", Type = " + loads[load].type + (loads[load].type==="Distributed" ? ", Length = " + loads[load].length : "")}
             />)
         return labels;
     }
@@ -447,7 +447,7 @@ function CombinedLoadApp(){
         // Also add all the point loads, and the start and end of distrib loads
         Object.values(loads).forEach(load => {
             pointsToDraw.push(load.location)
-            if(load.type === "d")
+            if(load.type === "Distributed")
                 pointsToDraw.push(load.location+load.length)
         })
         // Sort the points by location
@@ -478,7 +478,7 @@ function CombinedLoadApp(){
         // Also add all the point loads, and the start and end of distrib loads
         Object.values(loads).forEach(load => {
             pointsToDraw.push(load.location)
-            if(load.type === "d")
+            if(load.type === "Distributed")
                 pointsToDraw.push(load.location+load.length)
         })
         // Sort the points by location
@@ -509,7 +509,7 @@ function CombinedLoadApp(){
         // Also add all the point loads, and the start and end of distrib loads
         Object.values(loads).forEach(load => {
             pointsToDraw.push(load.location)
-            if(load.type === "d")
+            if(load.type === "Distributed")
                 pointsToDraw.push(load.location+load.length)
         })
         // Sort the points by location
@@ -548,8 +548,8 @@ function CombinedLoadApp(){
                         reRender(!render);
                     }}
                 >
-                    <FormControlLabel value="ss" control={<Radio />} label="Simply Supported" />
-                    <FormControlLabel value="c" control={<Radio />} label="Cantilever" />
+                    <FormControlLabel value="Simply Supported" control={<Radio />} label="Simply Supported" />
+                    <FormControlLabel value="Cantilever" control={<Radio />} label="Cantilever" />
                 </RadioGroup>
             </FormControl>
             <div></div>
@@ -730,8 +730,8 @@ function CombinedLoadApp(){
                                 validateInputsLoadForm(true);
                             }}
                         >
-                            <FormControlLabel value="p" control={<Radio />} label="Point Load" />
-                            <FormControlLabel value="d" control={<Radio />} label="Distributed Load" />
+                            <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
+                            <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
                         </RadioGroup>
                     </FormControl>
                     <TextField
@@ -814,8 +814,8 @@ function CombinedLoadApp(){
                                 validateInputsLoadForm(false);
                             }}
                         >
-                            <FormControlLabel value="p" control={<Radio />} label="Point Load" />
-                            <FormControlLabel value="d" control={<Radio />} label="Distributed Load" />
+                            <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
+                            <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
                         </RadioGroup>
                     </FormControl>
                     <TextField
@@ -873,7 +873,7 @@ function CombinedLoadApp(){
                     {Object.entries(loads).map((load) => {
                         console.log(load[0]);
                         console.log(load[1]);
-                        if(load[1].type==="d")
+                        if(load[1].type==="Distributed")
                             return (
                                 <LineSeries 
                                     color={load[1].color}
@@ -957,8 +957,8 @@ function CombinedLoadApp(){
                                         validateInputsLoadForm(true);
                                     }}
                                 >
-                                    <FormControlLabel value="p" control={<Radio />} label="Point Load" />
-                                    <FormControlLabel value="d" control={<Radio />} label="Distributed Load" />
+                                    <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
+                                    <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
                                 </RadioGroup>
                             </FormControl>
                             <TextField
@@ -1041,8 +1041,8 @@ function CombinedLoadApp(){
                                         validateInputsLoadForm(false);
                                     }}
                                 >
-                                    <FormControlLabel value="p" control={<Radio />} label="Point Load" />
-                                    <FormControlLabel value="d" control={<Radio />} label="Distributed Load" />
+                                    <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
+                                    <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
                                 </RadioGroup>
                             </FormControl>
                             <TextField
@@ -1127,7 +1127,7 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
     for(let load in loads){
         console.log("load is : " + load.type)
         // Point Loads
-        if(loads[load].type === "p"){
+        if(loads[load].type === "Point"){
             // Put load label.
             data.push({x: loads[load].location, y: 35, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             let label;
@@ -1185,7 +1185,7 @@ function plotReactions(loads,beamProperties,scale){
     reactionLabels.push({x: 0, y: -40/100*scale, label: formatVal(R1) , style: {fontSize: 15}})
     reactionLabels.push({x: 0, y: -35/100*scale, label: "\u2191", style: {fontSize: 35}})
     // Right side reaction label
-    if(beamProperties.supportType === "ss") {
+    if(beamProperties.supportType === "Simply Supported") {
         reactionLabels.push({x: beamProperties.length, y: -40/100*scale, label: formatVal(R2),  style: {fontSize: 15}})
         reactionLabels.push({x: beamProperties.length, y: -35/100*scale, label: "\u2191", style: {fontSize: 35}})
     }
@@ -1200,14 +1200,14 @@ function R1SingleLoad(load, beamProperties){
     let Lb = beamProperties.length
 
     let R1
-    if(load.type === "p") {
-        if(beamProperties.supportType === "c")
+    if(load.type === "Point") {
+        if(beamProperties.supportType === "Cantilever")
             R1 = F
         else
             R1 = F/Lb * (Lb - X)
     }
     else {
-        if(beamProperties.supportType === "c")
+        if(beamProperties.supportType === "Cantilever")
             R1 = F*L
         else
             R1 = F*L/Lb * (Lb - X - L/2)
@@ -1221,7 +1221,7 @@ function R2SingleLoad(load, beamProperties) {
     let L = load.length
     
     let R2
-    if(load.type === "p")
+    if(load.type === "Point")
         R2 = F - R1SingleLoad(load, beamProperties)
     else
         R2 = F*L - R1SingleLoad(load, beamProperties)
@@ -1237,13 +1237,13 @@ function deflectionSingleLoad(x, load, beamProperties) {
     let EI = beamProperties.EI
 
     let y
-    if(load.type === "p") {
+    if(load.type === "Point") {
         if(x < X)
             y = (x**3-3*x**2*X) / 6
         else
             y = (X**3-3*X**2*x) / 6
 
-        if(beamProperties.supportType === "ss")
+        if(beamProperties.supportType === "Simply Supported")
             y += (-2*Lb**2*X*x + 3*Lb*X*x**2 + 3*Lb*x*X**2 - X*x**3 - x*X**3) / 6 / Lb
     }
     else {
@@ -1254,7 +1254,7 @@ function deflectionSingleLoad(x, load, beamProperties) {
         else
             y = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
 
-        if(beamProperties.supportType === "ss")
+        if(beamProperties.supportType === "Simply Supported")
             y += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
     }
 
@@ -1271,13 +1271,13 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
     let Lb = beamProperties.length
 
     let y
-    if(load.type === "p") {
+    if(load.type === "Point") {
         if(x < X)
             y = F * (x - X)
         else
             y = 0
 
-        if(beamProperties.supportType === "ss")
+        if(beamProperties.supportType === "Simply Supported")
             y -= F * X / Lb * (x-Lb)
     }
     else {
@@ -1288,7 +1288,7 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
         else
             y = 0
         
-        if(beamProperties.supportType === "ss")
+        if(beamProperties.supportType === "Simply Supported")
             y -= F * L * (2*X+L) / 2 / Lb * (x-Lb)
     }
     return y
@@ -1302,13 +1302,13 @@ function shearForceSingleLoad(x, load, beamProperties) {
     let Lb = beamProperties.length
 
     let y
-    if(load.type === "p") {
+    if(load.type === "Point") {
         if(x < X)
             y = F
         else
             y = 0
 
-        if(beamProperties.supportType === "ss")
+        if(beamProperties.supportType === "Simply Supported")
             y -= F * X / Lb
     }
     else {
@@ -1319,7 +1319,7 @@ function shearForceSingleLoad(x, load, beamProperties) {
         else
             y = 0
         
-        if(beamProperties.supportType === "ss")
+        if(beamProperties.supportType === "Simply Supported")
             y -= F * L * (2*X+L) / 2 / Lb
     }
     return y
