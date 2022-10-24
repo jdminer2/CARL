@@ -861,7 +861,7 @@ function CombinedLoadApp(){
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis tickFormat={formatVal} title = {"Load Location"}/>
+                    <XAxis tickFormat={formatVal(beamProperties.length)} title = {"Load Location"}/>
                     <YAxis/>
                     {/* Display the beam. */}
                     <LineSeries data = {[{x: 0, y: 0}, {x: beamProperties.length, y: 0}]} />
@@ -1082,8 +1082,8 @@ function CombinedLoadApp(){
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left : 60, right:60}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis tickFormat = {formatVal} title = {"Deflection Diagram"}/>
-                    <YAxis tickFormat = {formatVal}/>
+                    <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Deflection Diagram"}/>
+                    <YAxis tickFormat = {formatVal(deflectionScale)}/>
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={deflectionDiagram(loads, beamProperties)} curve={'curveMonotoneX'}/>
                     <LabelSeries data={plotReactions(loads, beamProperties, deflectionScale)} />
@@ -1092,8 +1092,8 @@ function CombinedLoadApp(){
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[bendingMomentScale, bendingMomentScale]} margin = {{left : 60, right:60}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis tickFormat = {formatVal} title = {"Bending Moment Diagram"}/>
-                    <YAxis tickFormat = {formatVal}/>
+                    <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Bending Moment Diagram"}/>
+                    <YAxis tickFormat = {formatVal(bendingMomentScale)}/>
 
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={bendingMomentDiagram(loads,beamProperties)}/>
@@ -1103,8 +1103,8 @@ function CombinedLoadApp(){
                     {/*<h1>Shear Force Diagram</h1>*/}
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis tickFormat = {formatVal} title = {"Shear Force Diagram"}/>
-                    <YAxis tickFormat = {formatVal}/>
+                    <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Shear Force Diagram"}/>
+                    <YAxis tickFormat = {formatVal(shearForceScale)}/>
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
                     <LineSeries data={shearForceDiagram(loads, beamProperties)}/>
                 </XYPlot>
@@ -1182,11 +1182,11 @@ function plotReactions(loads,beamProperties,scale){
 
     let reactionLabels = []
     // Left side reaction label
-    reactionLabels.push({x: 0, y: -40/100*scale, label: formatVal(R1) , style: {fontSize: 15}})
+    reactionLabels.push({x: 0, y: -40/100*scale, label: formatVal(R1)(R1) , style: {fontSize: 15}})
     reactionLabels.push({x: 0, y: -35/100*scale, label: "\u2191", style: {fontSize: 35}})
     // Right side reaction label
     if(beamProperties.supportType === "Simply Supported") {
-        reactionLabels.push({x: beamProperties.length, y: -40/100*scale, label: formatVal(R2),  style: {fontSize: 15}})
+        reactionLabels.push({x: beamProperties.length, y: -40/100*scale, label: formatVal(R2)(R2),  style: {fontSize: 15}})
         reactionLabels.push({x: beamProperties.length, y: -35/100*scale, label: "\u2191", style: {fontSize: 35}})
     }
     return reactionLabels
@@ -1346,13 +1346,16 @@ function getScale(dataList) {
     return scale
 }
 
-function formatVal(val) {
-    val = Number(val.toPrecision(6))
-    if(val == 0)
-        return val
-    if((""+val).length > 8)
-        return val.toExponential()
-    return val
+function formatVal(scale) {
+    if(scale >= 10**5 || scale <= 10**-4)
+        return val => {
+            val = Number(val.toPrecision(6))
+            return val == 0 ? val : val.toExponential()
+        }
+    else
+        return val => {
+            return Number(val.toPrecision(6))
+        }
 }
 
 export default CombinedLoadApp;
