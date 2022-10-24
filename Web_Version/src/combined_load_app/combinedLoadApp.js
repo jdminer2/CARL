@@ -1,10 +1,9 @@
 import '../App.css'
-import React, { useEffect, useState} from 'react';
-import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField} from '@mui/material'
-import LoadSelector from '../components/LoadSelector';
-import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis";
-import {inv, max, multiply} from "mathjs";
-import { letterSpacing } from '@mui/system';
+import React, { useEffect, useState} from 'react'
+import {Button, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup} from '@mui/material'
+import LoadSelector from '../components/LoadSelector'
+import AddEditForm from '../components/AddEditForm'
+import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis"
 
 
 function CombinedLoadApp(){
@@ -17,12 +16,13 @@ function CombinedLoadApp(){
     const [loads,setLoads] = useState({})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"Point", length:0, color:"#00000080"})
-    const [openAdd, setOpenAdd] = useState(false);
-    const [openEdit, setOpenEdit] = useState(false);
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:"#00000080"})
+    const [openAddEdit, setOpenAddEdit] = useState(false);
+    const [addEditMode, setAddEditMode] = useState("Add");
     const [initialFormWarning, setInitialFormWarning] = useState("");
-    const [loadFormWarning, setLoadFormWarning] = useState("");
+    const [addEditFormWarning, setAddEditFormWarning] = useState("");
     const [hideLengthField, setHideLengthField] = useState(true);
+    const [hideTallerEndField, setHideTallerEndField] = useState(true);
     const [deflectionScale, setDeflectionScale] = useState(1);
     const [bendingMomentScale, setBendingMomentScale] = useState(1);
     const [shearForceScale, setShearForceScale] = useState(1);
@@ -57,83 +57,75 @@ function CombinedLoadApp(){
         if(newB.length < 2)
             newB = "0"+newB;
         let color = "#" + newR + newG + newB + "80";
-        setNewLoadData({name:loadNamer(), mass:10.0, location:beamProperties.length / 2, type:"Point", length:0, color:color});
+        // Put default load properties.
+        setNewLoadData({name:loadNamer(), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:color});
         setHideLengthField(true);
-        console.log(newLoadData.color);
-        setOpenAdd(true);
+        setHideTallerEndField(true);
+        // Display menu.
+        setOpenAddEdit(true);
+        setAddEditMode("Add");
     };
     const handleClickOpenEdit = () => {
-        setNewLoadData({name:selectedLoad, mass:loads[selectedLoad].mass, location:loads[selectedLoad].location + loads[selectedLoad].length / 2, type:loads[selectedLoad].type, length:loads[selectedLoad].length, color:loads[selectedLoad].color});
+        // Put preexisting load properties.
+        setNewLoadData({name:selectedLoad, type:loads[selectedLoad].type, location:loads[selectedLoad].location + loads[selectedLoad].length / 2, mass:loads[selectedLoad].mass, length:loads[selectedLoad].length, tallerEnd:loads[selectedLoad].tallerEnd, color:loads[selectedLoad].color});
         setHideLengthField(loads[selectedLoad].type === "Point");
-        setOpenEdit(true);
+        setHideTallerEndField(loads[selectedLoad].type !== "Triangular")
+        // Display menu.
+        setOpenAddEdit(true);
+        setAddEditMode("Edit");
     };
 
     /**
      * Function is executed upon closing the Add Load menu either by Canceling or Confirming.
      * This function creates a new load.
      */
-    const handleCloseAdd = (event) => {
+    function handleCloseAddEdit (event, mode) {
         // If closed via cancel button or clicking outside, do nothing.
         if(event !== "confirm"){
-            setOpenAdd(false);
-            setLoadFormWarning("");
-            return;
+            setOpenAddEdit(false)
+            setAddEditFormWarning("")
+            return
         }
-        // Check if errors are present
-        validateInputsLoadForm(true);
-        if(loadFormWarning !== "")
+        // Check if errors are present, don't close menu if there are errors.
+        validateInputsAddEditForm(mode)
+        if(addEditFormWarning !== "")
             return;
-        // If closed via confirm button, create a new load.
+        // Erase unused properties for the given load type.
         if(newLoadData.type === "Point")
-            newLoadData.length = 0;
-        loads[newLoadData.name] = {mass:newLoadData.mass, location:(newLoadData.location - newLoadData.length / 2), type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
-        setSelectedLoad(newLoadData.name);
-        setLoadUpdated(true);
-        setOpenAdd(false);
-        setLoadFormWarning("");
-    };
-    /**
-     * Function is executed upon closing the Edit Load menu either by Canceling or Confirming.
-     * This function modifies an existing load.
-     */
-    const handleCloseEdit = (event) => {
-        // If closed via cancel button or clicking outside, do nothing.
-        if(event !== "confirm"){
-            setOpenEdit(false);
-            setLoadFormWarning("");
-            return;
-        }
-        // Check if errors are present
-        validateInputsLoadForm(false);
-        if(loadFormWarning !== "")
-            return;
-        // If closed via confirm button, replace new load stats except color.
-        if(newLoadData.type === "Point")
-            newLoadData.length = 0;
-        for(let load in loads) {
-            // This is done to preserve the ordering of the loads list.
-            if(load !== selectedLoad) {
-                let mass = loads[load].mass;
-                let location = loads[load].location;
-                let type = loads[load].type;
-                let length = loads[load].length;
-                let color = loads[load].color;
-                delete loads[load];
-                loads[load] = {mass:mass, location:location, type:type, length:length, color:color}
-            }
-            else {
-                delete loads[load];
-                loads[newLoadData.name] = {mass:newLoadData.mass, location:(newLoadData.location - newLoadData.length / 2), type:newLoadData.type, length:newLoadData.length, color:newLoadData.color};
-                setSelectedLoad(newLoadData.name);
-                setLoadUpdated(true);
-                setOpenEdit(false);
-                setLoadFormWarning("");
+            newLoadData.length = 0
+        if(newLoadData.type !== "Triangular")
+            newLoadData.tallerEnd = "Left"
+        // Create the new load if this is adding mode.
+        if(mode === "Add")
+            loads[newLoadData.name] = {type:newLoadData.type, location:(newLoadData.location - newLoadData.length / 2), mass:newLoadData.mass, length:newLoadData.length, tallerEnd:newLoadData.tallerEnd, color:newLoadData.color}
+        // Edit existing load if this is editing mode.
+        else {
+            // This for loop is used to preserve the ordering of the loads in the list, instead of moving the edited load to the end.
+            for(let load in loads) {
+                if(load !== selectedLoad) {
+                    let type = loads[load].type
+                    let location = loads[load].location
+                    let mass = loads[load].mass
+                    let length = loads[load].length
+                    let tallerEnd = loads[load].tallerEnd
+                    let color = loads[load].color
+                    delete loads[load]
+                    loads[load] = {type:type, location:location, mass:mass, length:length, tallerEnd:tallerEnd, color:color}
+                }
+                else {
+                    delete loads[load]
+                    loads[newLoadData.name] = {type:newLoadData.type, location:(newLoadData.location - newLoadData.length / 2), mass:newLoadData.mass, length:newLoadData.length, tallerEnd:newLoadData.tallerEnd, color:newLoadData.color}
+                }
             }
         }
-        validateInputsInitialForm();
-    };
-        useEffect(()=>{if(loadUpdated === false){return;}
-            setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
+        setSelectedLoad(newLoadData.name)
+        setLoadUpdated(true)
+        setOpenAddEdit(false)
+        setAddEditFormWarning("")
+    }
+    
+    useEffect(()=>{if(loadUpdated === false){return;}
+        setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
 
     // Function to pick the first unoccupied load name like load1, load2, load3...
     function loadNamer(){
@@ -152,14 +144,13 @@ function CombinedLoadApp(){
     }
 
     function deleteLoad(){
-        delete loads[selectedLoad];
+        delete loads[selectedLoad]
 
         for(let load in loads){
             setSelectedLoad(load)
-            break;
+            break
         }
         setLoadUpdated(true)
-        validateInputsInitialForm();
     }
 
     // Function for when you click on a load, selects that load.
@@ -178,16 +169,13 @@ function CombinedLoadApp(){
         if(!(selectedLoad in loads)){
             return
         }
+        let newLoc = loads[selectedLoad].location + disp
         // Prevent player from moving out of bounds.
-        let newLoc = loads[selectedLoad].location + disp;
-        let loadLength = 0;
-        if(loads[selectedLoad].type === "Distributed")
-            loadLength = loads[selectedLoad].length;
         if(newLoc < 0)
-            newLoc = 0;
-        else if(newLoc + loadLength > beamProperties.length)
-            newLoc = beamProperties.length - loadLength;
-        loads[selectedLoad].location = newLoc;
+            newLoc = 0
+        else if(newLoc > beamProperties.length - loads[selectedLoad].length)
+            newLoc = beamProperties.length - loads[selectedLoad].length
+        loads[selectedLoad].location = newLoc
         setLoadUpdated(true)
     }
 
@@ -196,7 +184,7 @@ function CombinedLoadApp(){
      */
     function handleKeyDown(event){
         // Don't mess with anything while forms are open.
-        if(openAdd || openEdit)
+        if(openAddEdit)
             return;
         // Prevent arrow keys from scrolling the screen.
         if([37,38,39,40].includes(event.keyCode))
@@ -326,8 +314,8 @@ function CombinedLoadApp(){
                 setInitialFormWarning(load + " location must be less than or equal to Length of Beam.");
                 return;
             }
-            else if(loads[load].type === "Distributed" && loads[load].location + loads[load].length / 2 > beamProperties.length) {
-                setInitialFormWarning("Right end of " + load + " is out of bounds (Location is " + (loads[load].location + loads[load].length / 2) + ", must be less than or equal to Length of Beam).");
+            else if(loads[load].type !== "Point" && loads[load].location + loads[load].length > beamProperties.length) {
+                setInitialFormWarning("Right end of " + load + " is out of bounds (Location is " + (loads[load].location + loads[load].length) + ", must be less than or equal to Length of Beam).");
                 return;
             }
         
@@ -341,76 +329,74 @@ function CombinedLoadApp(){
      * Load location must be less than or equal to beam length.
      * This function also converts the string inputs into number inputs.
      */
-     function validateInputsLoadForm(isAdding){
+     function validateInputsAddEditForm(mode){
+        reRender(!render);
         // Check that name is not in use, unless when editing if the name is the same as the original name.
-        if((newLoadData.name in loads) && (isAdding || newLoadData.name !== selectedLoad)) {
-            setLoadFormWarning("Name is already in use.");
+        if((newLoadData.name in loads) && (mode === "Add" || newLoadData.name !== selectedLoad)) {
+            setAddEditFormWarning("Name is already in use.");
             return;
         }
 
-        // Check that mass is a number >= 0.
-        if(parseFloat(newLoadData.mass) != newLoadData.mass){
-            setLoadFormWarning("Mass must be a number.");
-            return;
-        }
-        newLoadData.mass = Number(newLoadData.mass);
-        if(newLoadData.mass < 0) {
-            setLoadFormWarning("Mass must be at least 0.");
-            return;
-        }
+        setHideLengthField(newLoadData.type === "Point");
+        setHideTallerEndField(newLoadData.type !== "Triangular")
 
         // Check that location is a number.
         if(parseFloat(newLoadData.location) != newLoadData.location){
-            setLoadFormWarning("Location must be a number.");
+            setAddEditFormWarning("Location must be a number.");
             return;
         }
         newLoadData.location = Number(newLoadData.location);
 
-        // Check that type is either d or p.
-        if(newLoadData.type !== "Distributed" && newLoadData.type !== "Point") {
-            setLoadFormWarning("Type must be Distributed or Point Load.");
+        // Check that mass is a number >= 0.
+        if(parseFloat(newLoadData.mass) != newLoadData.mass){
+            setAddEditFormWarning("Mass must be a number.");
             return;
         }
-        setHideLengthField(newLoadData.type === "Point");
+        newLoadData.mass = Number(newLoadData.mass);
+        if(newLoadData.mass < 0) {
+            setAddEditFormWarning("Mass must be at least 0.");
+            return;
+        }
 
         // Check that length is a number >= 0.
         if(parseFloat(newLoadData.length) != newLoadData.length){
-            setLoadFormWarning("Length must be a number.");
+            setAddEditFormWarning("Length must be a number.");
             return;
         }
         newLoadData.length = Number(newLoadData.length);
         if(newLoadData.length < 0) {
-            setLoadFormWarning("Length must be at least 0.");
+            setAddEditFormWarning("Length must be at least 0.");
             return;
         }
 
         // Check that load location is in-bounds, for point load.
         if(newLoadData.type === "Point") {
             if(newLoadData.location < 0) {
-                setLoadFormWarning("Location must be at least 0.");
+                setAddEditFormWarning("Location must be at least 0.");
                 return;
             }
             if(newLoadData.location > beamProperties.length) {
-                setLoadFormWarning("Location must be less than or equal to Length of Beam.");
+                setAddEditFormWarning("Location must be less than or equal to Length of Beam.");
                 return;
             }
         }
-        // Check that left and right ends of the load are in-bounds, for distributed load.
+        // Check that left and right ends of the load are in-bounds, for long loads.
         else {
+            // While the form is open, newLoadData.location refers to the middle of the load instead of the left end.
             let leftEnd = newLoadData.location - newLoadData.length / 2;
             let rightEnd = newLoadData.location + newLoadData.length / 2;
             if(leftEnd < 0) {
-                setLoadFormWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).");
+                setAddEditFormWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).");
                 return;
             }
             if(rightEnd > beamProperties.length){
-                setLoadFormWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).");
+                setAddEditFormWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).");
                 return;
             }
         }
 
         // No errors.
-        setLoadFormWarning("");
+        setAddEditFormWarning("");
     }
 
     // Function for using the load selector dropdown or initial form radio buttons to change selected load
@@ -428,12 +414,13 @@ function CombinedLoadApp(){
             e.preventDefault();
     }
 
+    // Radio buttons displaying list of loads in the initial form
     function loadRadioButtonsCreator(){
         let labels = [];
         for(let load in loads)
             labels.push(<FormControlLabel
                 key={load} value={load} control={<Radio/>}
-                label={load + ": Location = " + (loads[load].location + loads[load].length / 2) + ", Mass = " + loads[load].mass + ", Type = " + loads[load].type + (loads[load].type==="Distributed" ? ", Length = " + loads[load].length : "")}
+                label={load + ", Type = " + loads[load].type + ": Location = " + (loads[load].location + loads[load].length / 2) + ", Mass = " + loads[load].mass + (loads[load].type!=="Point" ? ", Length = " + loads[load].length : "") + (loads[load].type==="Triangular" ? ", Taller End = " + loads[load].tallerEnd : "")}
             />)
         return labels;
     }
@@ -444,11 +431,10 @@ function CombinedLoadApp(){
         for(let i = 0; i <= 100; i++)
             pointsToDraw.push((i/100)*beamProperties.length)
     
-        // Also add all the point loads, and the start and end of distrib loads
+        // Also add all the point loads, and the start and end of long loads
         Object.values(loads).forEach(load => {
             pointsToDraw.push(load.location)
-            if(load.type === "Distributed")
-                pointsToDraw.push(load.location+load.length)
+            pointsToDraw.push(load.location+load.length)
         })
         // Sort the points by location
         pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
@@ -475,11 +461,10 @@ function CombinedLoadApp(){
         for(let i = 0; i <= 100; i++)
             pointsToDraw.push((i/100)*beamProperties.length)
     
-        // Also add all the point loads, and the start and end of distrib loads
+        // Also add all the point loads, and the start and end of long loads
         Object.values(loads).forEach(load => {
             pointsToDraw.push(load.location)
-            if(load.type === "Distributed")
-                pointsToDraw.push(load.location+load.length)
+            pointsToDraw.push(load.location+load.length)
         })
         // Sort the points by location
         pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
@@ -506,11 +491,10 @@ function CombinedLoadApp(){
         for(let i = 0; i <= 100; i++)
             pointsToDraw.push((i/100)*beamProperties.length)
     
-        // Also add all the point loads, and the start and end of distrib loads
+        // Also add all the point loads, and the start and end of long loads
         Object.values(loads).forEach(load => {
             pointsToDraw.push(load.location)
-            if(load.type === "Distributed")
-                pointsToDraw.push(load.location+load.length)
+            pointsToDraw.push(load.location+load.length)
         })
         // Sort the points by location
         pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
@@ -673,173 +657,15 @@ function CombinedLoadApp(){
             <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>
                 Delete Load
             </Button>
-            {/* Add Load menu */}
-            <Dialog open={openAdd} onClose={handleCloseAdd}>
-                <DialogTitle>Add Load</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Please enter load properties
-                    </DialogContentText>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Name"
-                        defaultValue={newLoadData.name}
-                        type="text"
-                        onChange={(val)=>{
-                            newLoadData.name = val.target.value;
-                            validateInputsLoadForm(true);
-                        }}
-                        fullWidth
-                        variant="standard"
-                    />
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label={hideLengthField?"Mass":"Mass Per Meter"}
-                        defaultValue={newLoadData.mass}
-                        type="text"
-                        onChange={(val)=>{
-                            newLoadData.mass = val.target.value;
-                            validateInputsLoadForm(true);    
-                        }}
-                        fullWidth
-                        variant="standard"
-                    />
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Location"
-                        type="text"
-                        defaultValue={newLoadData.location}
-                        onChange={(val)=>{
-                            newLoadData.location = val.target.value;
-                            validateInputsLoadForm(true);
-                        }}
-                        fullWidth
-                        variant="standard"
-                    />
-                    <FormControl>
-                        <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
-                        <RadioGroup
-                            row
-                            aria-labelledby="newLoadTypeRadios"
-                            value={newLoadData.type}
-                            onChange={(val)=>{
-                                newLoadData.type = val.target.value;
-                                validateInputsLoadForm(true);
-                            }}
-                        >
-                            <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
-                            <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
-                        </RadioGroup>
-                    </FormControl>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Length (Distributed Load)"
-                        type="text"
-                        defaultValue={newLoadData.length}
-                        onChange={(val)=>{
-                            newLoadData.length = val.target.value;
-                            validateInputsLoadForm(true);
-                        }}
-                        fullWidth
-                        variant="standard"
-                        disabled={hideLengthField}
-                    />
-
-                </DialogContent>
-                <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{loadFormWarning}</DialogContentText>
-                <DialogActions>
-                    <Button onClick={()=>{handleCloseAdd("cancel")}}>Cancel</Button>
-                    <Button onClick={()=>{handleCloseAdd("confirm")}}>Confirm</Button>
-                </DialogActions>
-            </Dialog>
-            {/* Edit Load menu */}
-            <Dialog open={openEdit} onClose={handleCloseEdit}>
-                <DialogTitle>Edit Load</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Please enter load properties
-                    </DialogContentText>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Name"
-                        defaultValue={newLoadData.name}
-                        type="text"
-                        onChange={(val)=>{
-                            newLoadData.name = val.target.value;
-                            validateInputsLoadForm(false);
-                        }}
-                        fullWidth
-                        variant="standard"
-                    />
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label={hideLengthField?"Mass":"Mass Per Meter"}
-                        defaultValue={newLoadData.mass}
-                        type="text"
-                        onChange={(val)=>{
-                            newLoadData.mass = val.target.value;
-                            validateInputsLoadForm(false);
-                        }}
-                        fullWidth
-                        variant="standard"
-                    />
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Location"
-                        type="text"
-                        defaultValue={newLoadData.location}
-                        onChange={(val)=>{
-                            newLoadData.location = val.target.value;
-                            validateInputsLoadForm(false);
-                        }}
-                        fullWidth
-                        variant="standard"
-                    />
-                    <FormControl>
-                        <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
-                        <RadioGroup
-                            row
-                            aria-labelledby="newLoadTypeRadios"
-                            value={newLoadData.type}
-                            label="Type"
-                            onChange={(val)=>{
-                                newLoadData.type = val.target.value;
-                                validateInputsLoadForm(false);
-                            }}
-                        >
-                            <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
-                            <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
-                        </RadioGroup>
-                    </FormControl>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Length (Distributed Load)"
-                        type="text"
-                        defaultValue={newLoadData.length}
-                        onChange={(val)=>{
-                            newLoadData.length = val.target.value;
-                            validateInputsLoadForm(false);
-                        }}
-                        fullWidth
-                        variant="standard"
-                        disabled={hideLengthField}
-                    />
-
-                </DialogContent>
-                <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{loadFormWarning}</DialogContentText>
-                <DialogActions>
-                    <Button onClick={()=>{handleCloseEdit("cancel")}}>Cancel</Button>
-                    <Button onClick={()=>{handleCloseEdit("confirm")}}>Confirm</Button>
-                </DialogActions>
-            </Dialog>
+            {/* Add/Edit Load menu */}
+            <AddEditForm
+                open={openAddEdit} 
+                mode={addEditMode}
+                handleClose={handleCloseAddEdit}
+                newLoadData={newLoadData}
+                validate={validateInputsAddEditForm}
+                warningText={addEditFormWarning}
+            />
             <p></p>
             <div></div>
             {/* Text display for invalid inputs. */}
@@ -869,7 +695,7 @@ function CombinedLoadApp(){
                                         {x: beamProperties.length, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                     {/* Display the loads. */}
                     <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
-                    {/* Display the line part of distributed loads. */}
+                    {/* Display the line parts of distributed and triangular loads. */}
                     {Object.entries(loads).map((load) => {
                         console.log(load[0]);
                         console.log(load[1]);
@@ -883,6 +709,16 @@ function CombinedLoadApp(){
                                     key={load.toString()}
                                 />
                             );
+                        else if(load[1].type==="Triangular")
+                            return (
+                                <LineSeries
+                                    color={load[1].color}
+                                    strokeWidth={3}
+                                    data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 20}, {x: (load[1].location+load[1].length), y: 8}, {x: load[1].location, y: 8}]}
+                                    onSeriesClick={(event) => {setSelectedLoad(load[0])}}
+                                    key={load.toString()}
+                                />
+                            )
                     })}
                 </XYPlot>
                 {/* Load Selection dropdown */}
@@ -899,174 +735,15 @@ function CombinedLoadApp(){
                     <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>
                         Delete Load
                     </Button>
-                    {/* Add Load menu */}
-                    <Dialog open={openAdd} onClose={handleCloseAdd}>
-                        <DialogTitle>Add Load</DialogTitle>
-                        <DialogContent>
-                            <DialogContentText>
-                                Please enter load properties
-                            </DialogContentText>
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Name"
-                                defaultValue={newLoadData.name}
-                                type="text"
-                                onChange={(val)=>{
-                                    newLoadData.name = val.target.value;
-                                    validateInputsLoadForm(true);
-                                }}
-                                fullWidth
-                                variant="standard"
-                            />
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label={hideLengthField?"Mass":"Mass Per Meter"}
-                                defaultValue={newLoadData.mass}
-                                type="text"
-                                onChange={(val)=>{
-                                    newLoadData.mass = val.target.value;
-                                    validateInputsLoadForm(true);    
-                                }}
-                                fullWidth
-                                variant="standard"
-                            />
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Location"
-                                type="text"
-                                defaultValue={newLoadData.location}
-                                onChange={(val)=>{
-                                    newLoadData.location = val.target.value;
-                                    validateInputsLoadForm(true);
-                                }}
-                                fullWidth
-                                variant="standard"
-                            />
-                            <FormControl>
-                                <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
-                                <RadioGroup
-                                    row
-                                    aria-labelledby="newLoadTypeRadios"
-                                    value={newLoadData.type}
-                                    label="Type"
-                                    onChange={(val)=>{
-                                        newLoadData.type = val.target.value;
-                                        validateInputsLoadForm(true);
-                                    }}
-                                >
-                                    <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
-                                    <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
-                                </RadioGroup>
-                            </FormControl>
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Length (Distributed Load)"
-                                type="text"
-                                defaultValue={newLoadData.length}
-                                onChange={(val)=>{
-                                    newLoadData.length = val.target.value;
-                                    validateInputsLoadForm(true);
-                                }}
-                                fullWidth
-                                variant="standard"
-                                disabled={hideLengthField}
-                            />
-
-                        </DialogContent>
-                        <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{loadFormWarning}</DialogContentText>
-                        <DialogActions>
-                            <Button onClick={()=>{handleCloseAdd("cancel")}}>Cancel</Button>
-                            <Button onClick={()=>{handleCloseAdd("confirm")}}>Confirm</Button>
-                        </DialogActions>
-                    </Dialog>
-                    {/* Edit Load menu */}
-                    <Dialog open={openEdit} onClose={handleCloseEdit}>
-                        <DialogTitle>Edit Load</DialogTitle>
-                        <DialogContent>
-                            <DialogContentText>
-                                Please enter load properties
-                            </DialogContentText>
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Name"
-                                defaultValue={newLoadData.name}
-                                type="text"
-                                onChange={(val)=>{
-                                    newLoadData.name = val.target.value;
-                                    validateInputsLoadForm(false);
-                                }}
-                                fullWidth
-                                variant="standard"
-                            />
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label={hideLengthField?"Mass":"Mass Per Meter"}
-                                defaultValue={newLoadData.mass}
-                                type="text"
-                                onChange={(val)=>{
-                                    newLoadData.mass = val.target.value;
-                                    validateInputsLoadForm(false);
-                                }}
-                                fullWidth
-                                variant="standard"
-                            />
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Location"
-                                type="text"
-                                defaultValue={newLoadData.location}
-                                onChange={(val)=>{
-                                    newLoadData.location = val.target.value;
-                                    validateInputsLoadForm(false);
-                                }}
-                                fullWidth
-                                variant="standard"
-                            />
-                            <FormControl>
-                                <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
-                                <RadioGroup
-                                    row
-                                    aria-labelledby="newLoadTypeRadios"
-                                    value={newLoadData.type}
-                                    label="Type"
-                                    onChange={(val)=>{
-                                        newLoadData.type = val.target.value;
-                                        validateInputsLoadForm(false);
-                                    }}
-                                >
-                                    <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
-                                    <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
-                                </RadioGroup>
-                            </FormControl>
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Length (Distributed Load)"
-                                type="text"
-                                defaultValue={newLoadData.length}
-                                onChange={(val)=>{
-                                    newLoadData.length = val.target.value;
-                                    validateInputsLoadForm(false);
-                                }}
-                                fullWidth
-                                variant="standard"
-                                disabled={hideLengthField}
-                            />
-
-                        </DialogContent>
-                        <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{loadFormWarning}</DialogContentText>
-                        <DialogActions>
-                            <Button onClick={()=>{handleCloseEdit("cancel")}}>Cancel</Button>
-                            <Button onClick={()=>{handleCloseEdit("confirm")}}>Confirm</Button>
-                        </DialogActions>
-                    </Dialog>
+                    {/* Add/Edit Load menu */}
+                    <AddEditForm
+                        open={openAddEdit} 
+                        mode={addEditMode}
+                        handleClose={handleCloseAddEdit}
+                        newLoadData={newLoadData}
+                        validate={validateInputsAddEditForm}
+                        warningText={addEditFormWarning}
+                    />
                 </div>
                 <div>
                     {/* Control buttons */}
@@ -1132,9 +809,9 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
             data.push({x: loads[load].location, y: 35, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             let label;
             if(load === selectedLoad)
-                label = "m=" + loads[load].mass + ", x=" + loads[load].location;
+                label = "x=" + loads[load].location + ", m=" + loads[load].mass;
             else
-                label = loads[load].mass + ", " + loads[load].location;
+                label = loads[load].location + ", " + loads[load].mass;
             data.push({x: loads[load].location, y: 30, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put a big arrow.
             data.push({x: loads[load].location, y: -5, label: "\u2193", loadID: load, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
@@ -1144,9 +821,10 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
             data.push({x: loads[load].location+loads[load].length/2, y: 25, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             let label;
             if(load === selectedLoad)
-                label = "m=" + loads[load].mass + ", x=" + (loads[load].location + loads[load].length / 2) +", L=" + loads[load].length;
+                // Only adds length/2 to display the center of the load to the user.
+                label = "x=" + (loads[load].location + loads[load].length / 2) + ", m=" + loads[load].mass + ", L=" + loads[load].length;
             else
-                label = loads[load].mass + ", " + (loads[load].location + loads[load].length / 2) + ", " + loads[load].length;
+                label = (loads[load].location + loads[load].length / 2) + loads[load].mass + ", " + ", " + loads[load].length;
             data.push({x: loads[load].location+loads[load].length/2, y: 20, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             // Put small arrows under distributed load line. 
             console.log(loads[load].color);
