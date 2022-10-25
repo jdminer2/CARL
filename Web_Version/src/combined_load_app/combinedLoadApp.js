@@ -10,7 +10,8 @@ function CombinedLoadApp(){
 
     const butStyle = {background: "black", height:window.innerHeight/12,
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
-    const [beamProperties,setBeamProperties] = useState({supportType: "Simply Supported", length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, mass:10.0, gravity:9.8})
+    const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, gravity:9.8})
+    const [supportProperties,setSupportProperties] = useState({type: "Simply Supported", leftSupportPos: 0, rightSupportPos: 100})
     const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [loads,setLoads] = useState({})
@@ -125,7 +126,7 @@ function CombinedLoadApp(){
     }
     
     useEffect(()=>{if(loadUpdated === false){return;}
-        setLoadUpdated(false);loadNamer();dataMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,dataMakerForLoads])
+        setLoadUpdated(false);loadNamer();labelMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,labelMakerForLoads])
 
     // Function to pick the first unoccupied load name like load1, load2, load3...
     function loadNamer(){
@@ -308,6 +309,36 @@ function CombinedLoadApp(){
             return;
         }
 
+        // Check that left support loc is a number >= 0 and <= beam length.
+        if(parseFloat(supportProperties.leftSupportPos) != supportProperties.leftSupportPos){
+            setInitialFormWarning("Left Support Position must be a number.")
+            return;
+        }
+        supportProperties.leftSupportPos = Number(supportProperties.leftSupportPos);
+        if(supportProperties.leftSupportPos < 0) {
+            setInitialFormWarning("Left Support Position must be at least 0.")
+            return;
+        }
+        if(supportProperties.leftSupportPos > beamProperties.length) {
+            setInitialFormWarning("Left Support Position must be less than or equal to Length of Beam.");
+            return;
+        }
+
+        // Check that right support loc is a number >= 0 and <= beam length.
+        if(parseFloat(supportProperties.rightSupportPos) != supportProperties.rightSupportPos){
+            setInitialFormWarning("Right Support Position must be a number.")
+            return;
+        }
+        supportProperties.rightSupportPos = Number(supportProperties.rightSupportPos);
+        if(supportProperties.rightSupportPos < 0) {
+            setInitialFormWarning("Right Support Position must be at least 0.")
+            return;
+        }
+        if(supportProperties.rightSupportPos > beamProperties.length) {
+            setInitialFormWarning("Right Support Position must be less than or equal to Length of Beam.");
+            return;
+        }
+
         // Check that loads are not invalidated by length of beam change.
         for(let load in loads)
             if(loads[load].type === "Point" && loads[load].location > beamProperties.length) {
@@ -404,7 +435,7 @@ function CombinedLoadApp(){
         setSelectedLoad(event.target.value);
     }
     
-    // Function for submitting the initial inputs form
+    // Function for submitting the initial form
     function handleSubmit(data, e){
         validateInputsInitialForm();
         if(initialFormWarning === "") {
@@ -414,40 +445,33 @@ function CombinedLoadApp(){
             e.preventDefault();
     }
 
+    function handleReturnButton() {
+        setIsBeamIni(false)
+        reRender(!render)
+    }
+
     // Radio buttons displaying list of loads in the initial form
     function loadRadioButtonsCreator(){
         let labels = [];
         for(let load in loads)
             labels.push(<FormControlLabel
                 key={load} value={load} control={<Radio/>}
-                label={load + ", Type = " + loads[load].type + ": Location = " + (loads[load].location + loads[load].length / 2) + ", Mass = " + loads[load].mass + (loads[load].type!=="Point" ? ", Length = " + loads[load].length : "") + (loads[load].type==="Triangular" ? ", Taller End = " + loads[load].tallerEnd : "")}
+                label={load + 
+                    ", Type = " + loads[load].type + 
+                    ": Location = " + (loads[load].location + loads[load].length / 2) + 
+                    ", Mass = " + loads[load].mass + 
+                    (loads[load].type!=="Point" ? ", Length = " + loads[load].length : "") + 
+                    (loads[load].type==="Triangular" ? ", Taller End = " + loads[load].tallerEnd : "")}
             />)
         return labels;
     }
     
-    function deflectionDiagram(loads, beamProperties){
-        const pointsToDraw = []
-        // Add every 100th of the beam length.
-        for(let i = 0; i <= 100; i++)
-            pointsToDraw.push((i/100)*beamProperties.length)
-    
-        // Also add all the point loads, and the start and end of long loads
-        Object.values(loads).forEach(load => {
-            pointsToDraw.push(load.location)
-            pointsToDraw.push(load.location+load.length)
-        })
-        // Sort the points by location
-        pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
-    
-        let plotData = []
-        pointsToDraw.forEach(ptd => {
-            let plotDataY = 0
-            Object.values(loads).forEach(load =>
-                plotDataY += deflectionSingleLoad(ptd, load, beamProperties)
-            )
-            plotData.push({x:ptd, y:plotDataY})
-        })
+    // Returns LineSeries plot points for deflection diagram. Also updates the scale for the plot.
+    function deflectionDiagram() {
+        // Get data points for deflection plot
+        let plotData = plotSum(deflectionSingleLoad, loads, beamProperties, supportProperties)
 
+        // Update plot scale if needed
         let newScale = getScale(plotData)
         if(newScale != deflectionScale)
             setDeflectionScale(newScale)
@@ -455,29 +479,12 @@ function CombinedLoadApp(){
         return plotData
     }
 
-    function bendingMomentDiagram(loads, beamProperties){
-        const pointsToDraw = []
-        // Add every 100th of the beam length.
-        for(let i = 0; i <= 100; i++)
-            pointsToDraw.push((i/100)*beamProperties.length)
-    
-        // Also add all the point loads, and the start and end of long loads
-        Object.values(loads).forEach(load => {
-            pointsToDraw.push(load.location)
-            pointsToDraw.push(load.location+load.length)
-        })
-        // Sort the points by location
-        pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
-    
-        let plotData = []
-        pointsToDraw.forEach(ptd => {
-            let plotDataY = 0
-            Object.values(loads).forEach(load =>
-                plotDataY += bendingMomentSingleLoad(ptd, load, beamProperties)
-            )
-            plotData.push({x:ptd, y:plotDataY})
-        })
+    // Returns LineSeries plot points for bending moment diagram. Also updates the scale for the plot.
+    function bendingMomentDiagram() {
+        // Get data points for bending moment plot
+        let plotData = plotSum(bendingMomentSingleLoad, loads, beamProperties, supportProperties)
 
+        // Update plot scale if needed
         let newScale = getScale(plotData)
         if(newScale != bendingMomentScale)
             setBendingMomentScale(newScale)
@@ -485,195 +492,202 @@ function CombinedLoadApp(){
         return plotData
     }
 
-    function shearForceDiagram(loads, beamProperties){
-        const pointsToDraw = []
-        // Add every 100th of the beam length.
-        for(let i = 0; i <= 100; i++)
-            pointsToDraw.push((i/100)*beamProperties.length)
-    
-        // Also add all the point loads, and the start and end of long loads
-        Object.values(loads).forEach(load => {
-            pointsToDraw.push(load.location)
-            pointsToDraw.push(load.location+load.length)
-        })
-        // Sort the points by location
-        pointsToDraw.sort((a,b)=>(a > b)? 1 : -1)
-    
-        let plotData = []
-        pointsToDraw.forEach(ptd => {
-            let plotDataY = 0
-            Object.values(loads).forEach(load =>
-                plotDataY += shearForceSingleLoad(ptd, load, beamProperties)
-            )
-            plotData.push({x:ptd, y:plotDataY})
-        })
+    // Returns LineSeries plot points for shear force diagram. Also updates the scale for the plot.
+    function shearForceDiagram() {
+        // Get data points for shear force plot
+        let plotData = plotSum(shearForceSingleLoad, loads, beamProperties, supportProperties)
 
+        // Update plot scale if needed
         let newScale = getScale(plotData)
         if(newScale != shearForceScale)
             setShearForceScale(newScale)
 
+        console.log(plotData)
         return plotData
     }
     
     // Display the initial inputs form
     if(!isBeamIni){
-        var data = beamProperties;
-        return(<form onSubmit={(e)=> {handleSubmit(data, e)}}>
-            <div></div>
-            <FormControl>
-                <FormLabel id="supportTypeRadios">Support Type</FormLabel>
-                <RadioGroup
-                    row
-                    aria-labelledby="supportTypeRadios"
-                    value={beamProperties.supportType}
-                    onChange={(val)=>{
-                        beamProperties.supportType = val.target.value;
-                        validateInputsInitialForm();
-                        reRender(!render);
-                    }}
-                >
-                    <FormControlLabel value="Simply Supported" control={<Radio />} label="Simply Supported" />
-                    <FormControlLabel value="Cantilever" control={<Radio />} label="Cantilever" />
-                </RadioGroup>
-            </FormControl>
-            <div></div>
-            <label>Length of Beam:
-                <input
-                    defaultValue={100}
-                    type="text"
-                    onChange={(e) => {
-                        data.length = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <div></div>
-            <label>Elasticity:
-                <input
-                    defaultValue={1.0}
-                    type="text"
-                    onChange={(e) => {
-                        data.elasticity = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <div></div>
-            <label>Inertia:
-                <input
-                    defaultValue={1.0}
-                    type="text"
-                    onChange={(e) => {
-                        data.inertia = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <div></div>
-            <label>Density:
-                <input
-                    defaultValue={1.0}
-                    type="text"
-                    onChange={(e) => {
-                        data.density = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <div></div>
-            <label>Area:
-                <input
-                    defaultValue={1.0}
-                    type="text"
-                    onChange={(e) => {
-                        data.area = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <div></div>
-            <label>Damping Ratio:
-                <input
-                    defaultValue={0.02}
-                    type="text"
-                    onChange={(e) => {
-                        data.dampingRatio = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <div></div>
-            <label>rA:
-                <input
-                    defaultValue={85000.0}
-                    type="text"
-                    onChange={(e) => {
-                        data.rA = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <div></div>
-            <label>EI:
-                <input
-                    defaultValue={210000000000.0}
-                    type="text"
-                    onChange={(e) => {
-                        data.EI = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <div></div>
-            <label>Gravity:
-                <input
-                    defaultValue={9.8}
-                    type="text"
-                    onChange={(e) => {
-                        data.gravity = e.target.value
-                        validateInputsInitialForm();
-                    }}
-                />
-            </label>
-            <p></p>
-            <FormLabel id="loadSelection" style={{fontWeight: "bold"}}>List of Loads</FormLabel>
-            <div></div>
-            <RadioGroup
-                aria-labelledby="loadSelection"
-                name="loadSelectionRadioBtns"
-                value={selectedLoad}
-                onChange={handleSelectedChange}
-                sx={{display:'inline-flex'}}
-            >
-                {loadRadioButtonsCreator()}
-            </RadioGroup>
-            <p></p>
-            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
-                Add Load
-            </Button>
-            <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>
-                Edit Load
-            </Button>
-            <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>
-                Delete Load
-            </Button>
-            {/* Add/Edit Load menu */}
-            <AddEditForm
-                open={openAddEdit} 
-                mode={addEditMode}
-                handleClose={handleCloseAddEdit}
-                newLoadData={newLoadData}
-                validate={validateInputsAddEditForm}
-                warningText={addEditFormWarning}
-            />
-            <p></p>
-            <div></div>
-            {/* Text display for invalid inputs. */}
-            <div><span style={{fontWeight: 'bold'}}>{initialFormWarning}</span></div> 
-            <div></div>     
-            <input type="submit" value="Analyze" autoFocus/>
-            <div></div>
-        </form>);
+        return(
+            <form onSubmit={(e)=> {handleSubmit(beamProperties, e)}}>
+                <h1>CARL</h1>
+                {/* Enter beam properties in the initial form */}
+                <h3 style={{marginBottom: 0}}>Beam Properties</h3>
+                <div>
+                    <label>Length of Beam:
+                        <input
+                            defaultValue={beamProperties.length}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.length = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>Elasticity:
+                        <input
+                            defaultValue={beamProperties.elasticity}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.elasticity = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>Inertia:
+                        <input
+                            defaultValue={beamProperties.inertia}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.inertia = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>Density:
+                        <input
+                            defaultValue={beamProperties.density}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.density = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>Area:
+                        <input
+                            defaultValue={beamProperties.area}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.area = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>Damping Ratio:
+                        <input
+                            defaultValue={beamProperties.dampingRatio}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.dampingRatio = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>rA:
+                        <input
+                            defaultValue={beamProperties.rA}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.rA = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>EI:
+                        <input
+                            defaultValue={beamProperties.EI}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.EI = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>Gravity:
+                        <input
+                            defaultValue={beamProperties.gravity}
+                            type="text"
+                            onChange={(e) => {
+                                beamProperties.gravity = e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    {/* Support type radio button selection */}
+                    <FormControl sx={{marginTop:1}}>
+                        <h3 style={{marginBottom: 0}}>Support Properties</h3>
+                        <RadioGroup
+                            row
+                            value={supportProperties.type}
+                            onChange={(val)=>{
+                                supportProperties.type = val.target.value;
+                                validateInputsInitialForm();
+                                reRender(!render);
+                            }}
+                        >
+                            <FormControlLabel value="Simply Supported" control={<Radio />} label="Simply Supported" />
+                            <FormControlLabel value="Cantilever" control={<Radio />} label="Cantilever" />
+                        </RadioGroup>
+                    </FormControl>
+                    <div></div>
+                    <label>Left Support Position:
+                        <input
+                            defaultValue={supportProperties.leftSupportPos}
+                            disabled={supportProperties.type !== "Simply Supported"}
+                            type="text"
+                            onChange={(e)=>{
+                                supportProperties.leftSupportPos=e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                    <div></div>
+                    <label>Right Support Position:
+                        <input
+                            defaultValue={supportProperties.rightSupportPos}
+                            disabled={supportProperties.type !== "Simply Supported"}
+                            type="text"
+                            onChange={(e)=>{
+                                supportProperties.rightSupportPos=e.target.value
+                                validateInputsInitialForm();
+                            }}
+                        />
+                    </label>
+                </div>
+                <p></p>
+                <div>
+                    {/* Load list with radio button selection */}
+                    <h3 style={{marginBottom: 0}}>List of Loads</h3>
+                    <RadioGroup
+                        name="loadSelectionRadioBtns"
+                        value={selectedLoad}
+                        onChange={handleSelectedChange}
+                        sx={{display:'inline-flex'}}
+                    >
+                        {loadRadioButtonsCreator()}
+                    </RadioGroup>
+                    <div>
+                        {/* Add, Edit, Delete Load buttons */}
+                        <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>Add Load</Button>
+                        <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
+                        <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
+                        {/* Add/Edit Load menu */}
+                        <AddEditForm
+                            open={openAddEdit} 
+                            mode={addEditMode}
+                            handleClose={handleCloseAddEdit}
+                            newLoadData={newLoadData}
+                            validate={validateInputsAddEditForm}
+                            warningText={addEditFormWarning}
+                        />
+                    </div>
+                </div>
+                {/* Text display for invalid inputs. */}
+                <p style={{fontWeight: 'bold'}}>{initialFormWarning}</p>
+                {/* Submit button. */}
+                <input type="submit" value="Analyze" autoFocus/>
+            </form>
+        );
     }
 
     if(!onceLoaded){
@@ -691,14 +705,14 @@ function CombinedLoadApp(){
                     <YAxis/>
                     {/* Display the beam. */}
                     <LineSeries data = {[{x: 0, y: 0}, {x: beamProperties.length, y: 0}]} />
-                    <LabelSeries data={[{x: 0, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: beamProperties.length, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                    {/* Display the supports. */}
+                    <LabelSeries data={[{x: supportProperties.leftSupportPos, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                        {x: supportProperties.rightSupportPos, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                     {/* Display the loads. */}
-                    <LabelSeries data={dataMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
+                    <LabelSeries data={labelMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
                     {/* Display the line parts of distributed and triangular loads. */}
                     {Object.entries(loads).map((load) => {
-                        console.log(load[0]);
-                        console.log(load[1]);
+                        // Distributed load line
                         if(load[1].type==="Distributed")
                             return (
                                 <LineSeries 
@@ -708,8 +722,10 @@ function CombinedLoadApp(){
                                     onSeriesClick={(event) => {setSelectedLoad(load[0])}}
                                     key={load.toString()}
                                 />
-                            );
+                            )
+                        // Triangular load lines
                         else if(load[1].type==="Triangular") {
+                            // Left-taller triangle
                             if(load[1].tallerEnd==="Left")
                                 return (
                                     <LineSeries
@@ -720,6 +736,7 @@ function CombinedLoadApp(){
                                         key={load.toString()}
                                     />
                                 )
+                            // Right-taller triangle
                             else
                                 return (
                                     <LineSeries
@@ -736,17 +753,10 @@ function CombinedLoadApp(){
                 {/* Load Selection dropdown */}
                 <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
                 <div>
-                    {/* Add Load button */}
-                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>
-                        Add Load
-                    </Button>
-                    {/* Edit Load button */}
-                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>
-                        Edit Load
-                    </Button>
-                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>
-                        Delete Load
-                    </Button>
+                    {/* Add, Edit, Delete Load buttons */}
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>Add Load</Button>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
+                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
                     {/* Add/Edit Load menu */}
                     <AddEditForm
                         open={openAddEdit} 
@@ -759,10 +769,11 @@ function CombinedLoadApp(){
                 </div>
                 <div>
                     {/* Control buttons */}
-                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_left_btn"} onClick={()=>{playerMovement(-1,1,10)}}><span>&#8592;</span></Button>
-                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_jump_btn"} onClick={()=>{playerMovement(0,5,10)}}><span>JUMP</span></Button>
-                    <Button variant="contained" sx={{margin: 0.5}} id={"multi_right_btn"} onClick={()=>{playerMovement(1,1,10)}}><span>&#8594;</span></Button>
+                    <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(-1,1,10)}}>&#8592;</Button>
+                    <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(0,5,10)}}>JUMP</Button>
+                    <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(1,1,10)}}>&#8594;</Button>
                 </div>
+                <Button variant="contained" sx={{margin:0.5}} onClick={()=>handleReturnButton()}>Edit Beam Properties</Button>
             </div>
             <div>
                 <h1>Plots</h1>
@@ -771,11 +782,12 @@ function CombinedLoadApp(){
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left : 60, right:60}}>
                     <VerticalGridLines/>
                     <HorizontalGridLines/>
-                    <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Deflection Diagram"}/>
+                    <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Deflection Diagram and Support Reactions"}/>
                     <YAxis tickFormat = {formatVal(deflectionScale)}/>
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={deflectionDiagram(loads, beamProperties)} curve={'curveMonotoneX'}/>
-                    <LabelSeries data={plotReactions(loads, beamProperties, deflectionScale)} />
+                    <LineSeries data={deflectionDiagram()}/>
+                    {/* Include reactions in deflection plot */}
+                    <LabelSeries data={plotReactions(loads, beamProperties, supportProperties, deflectionScale)} />
                 </XYPlot>
                 {/* Bending Moment Diagram */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[bendingMomentScale, bendingMomentScale]} margin = {{left : 60, right:60}}>
@@ -783,9 +795,8 @@ function CombinedLoadApp(){
                     <HorizontalGridLines/>
                     <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Bending Moment Diagram"}/>
                     <YAxis tickFormat = {formatVal(bendingMomentScale)}/>
-
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={bendingMomentDiagram(loads,beamProperties)}/>
+                    <LineSeries data={bendingMomentDiagram()}/>
                 </XYPlot>
                 {/* Shear Force Diagram */}
                 <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[shearForceScale, shearForceScale]} margin = {{left : 60, right:60}}>
@@ -795,7 +806,7 @@ function CombinedLoadApp(){
                     <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Shear Force Diagram"}/>
                     <YAxis tickFormat = {formatVal(shearForceScale)}/>
                     <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={shearForceDiagram(loads, beamProperties)}/>
+                    <LineSeries data={shearForceDiagram()}/>
                 </XYPlot>
             </div>
         </div>
@@ -804,42 +815,36 @@ function CombinedLoadApp(){
 
 /**
  * Function for load labels for the Load Location plot.
- * For point loads it puts load name, mass, and position.
- * For distributed loads it puts load name, mass, position, and length. 
- * Distributed load labels are lower than point load labels to reduce the amount of overlapping text.
+ * For point loads it puts load name, position, and mass.
+ * For distributed loads it puts load name, position, mass, and length. 
+ * Point load labels are higher than the rest to reduce the amount of overlapping text.
  * 
  * This function also creates arrow text characters to indicate the positions of loads.
  * This function is not responsible for displaying the line part of the distributed loads, but it does give the arrows.
  */
-function dataMakerForLoads(loads, selectedLoad, beamProperties){
+function labelMakerForLoads(loads, selectedLoad, beamProperties){
     var data = []
     for(let load in loads){
-        console.log("load is : " + load.type)
-        // Point Loads
+        // Check if the load is a point load, and if it is the selected load.
+        let isPoint = loads[load].type === "Point"
+        let isSelected = load === selectedLoad
+
+        // xLoc is the center of the load. It serves as the location for labels, and the x coordinate users see for loads.
+        let xLoc = loads[load].location + loads[load].length/2
+
+        // For selected load, the stats will be labelled with letters. For non-point loads, length will be included.
+        let statsLabel = (isSelected?"x=":"") + xLoc + ", " + (isSelected?"m=":"") + loads[load].mass
+        if(loads[load].type !== "Point")
+            statsLabel += ", " + (isSelected?"L=":"") + loads[load].length
+
+        // Load name and stats labels. For point loads it will be 10 units higher.
+        data.push({x: xLoc, y: isPoint?35:25, label: load, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: xLoc, y: isPoint?30:20, label: statsLabel, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+
+        // Point Loads have a big arrow, distributed loads have mini arrows
         if(loads[load].type === "Point"){
-            // Put load label.
-            data.push({x: loads[load].location, y: 35, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            let label;
-            if(load === selectedLoad)
-                label = "x=" + loads[load].location + ", m=" + loads[load].mass;
-            else
-                label = loads[load].location + ", " + loads[load].mass;
-            data.push({x: loads[load].location, y: 30, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            // Put a big arrow.
-            data.push({x: loads[load].location, y: -5, label: "\u2193", loadID: load, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        // Distributed Loads
+            data.push({x: xLoc, y: -5, label: "\u2193", loadID: load, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }else{
-            // Put load label.
-            data.push({x: loads[load].location+loads[load].length/2, y: 25, label: load.toString(), loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            let label;
-            if(load === selectedLoad)
-                // Only adds length/2 to display the center of the load to the user.
-                label = "x=" + (loads[load].location + loads[load].length / 2) + ", m=" + loads[load].mass + ", L=" + loads[load].length;
-            else
-                label = (loads[load].location + loads[load].length / 2) + ", " + loads[load].mass + ", " + loads[load].length;
-            data.push({x: loads[load].location+loads[load].length/2, y: 20, label: label, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            // Put small arrows under distributed load line. 
-            console.log(loads[load].color);
             getDistributedLoadMiniArrows(data, loads[load].location, loads[load].length, beamProperties.length, loads[load].color, load);
         }
     }
@@ -849,7 +854,7 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
 /**
  * Function for adding mini arrows under the distributed loads.
  * Loads will have at least one arrow per 5 units, and always have an arrow on each end. 
- * There is also an arrow on each end of the load, and the arrows match the color and loadID of the load.
+ * The arrows match the color and loadID of the load.
  * 
  * array is the data array for a LabelSeries that will display these arrows.
  * pos and len are the position and length of the load.
@@ -858,31 +863,34 @@ function dataMakerForLoads(loads, selectedLoad, beamProperties){
  */
 function getDistributedLoadMiniArrows(array, pos, len, beamLen, color, loadID){
     let numArrows = Math.floor(len / beamLen * 20) + 1;
+    // Evenly spaced
     for(let i = 0; i <= numArrows; i++)
         array.push({x: pos + (i/numArrows) * len, y: -3, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", fill: color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
 }
 
-function plotReactions(loads,beamProperties,scale){
+// Plot the reactions, R1 and R2.
+function plotReactions(loads, beamProperties, supportProperties, scale){
     let R1 = 0
     let R2 = 0
     Object.values(loads).forEach(load => {
-        R1 += R1SingleLoad(load, beamProperties)
-        R2 += R2SingleLoad(load, beamProperties)
+        R1 += R1SingleLoad(load, beamProperties, supportProperties)
+        R2 += R2SingleLoad(load, beamProperties, supportProperties)
     })
 
     let reactionLabels = []
-    // Left side reaction label
-    reactionLabels.push({x: 0, y: -40/100*scale, label: formatVal(R1)(R1) , style: {fontSize: 15}})
-    reactionLabels.push({x: 0, y: -35/100*scale, label: "\u2191", style: {fontSize: 35}})
-    // Right side reaction label
-    if(beamProperties.supportType === "Simply Supported") {
-        reactionLabels.push({x: beamProperties.length, y: -40/100*scale, label: formatVal(R2)(R2),  style: {fontSize: 15}})
-        reactionLabels.push({x: beamProperties.length, y: -35/100*scale, label: "\u2191", style: {fontSize: 35}})
+    // Left side reaction label (R1)
+    // Left side reaction label (R1)
+    reactionLabels.push({x: 2.5/100 * beamProperties.length, y: -40/100 * scale, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
+    reactionLabels.push({x: 2.5/100 * beamProperties.length, y: -35/100 * scale, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+    // Right side reaction label (R2), only for Simply Supported
+    if(supportProperties.type === "Simply Supported") {
+        reactionLabels.push({x: 97.5/100 * beamProperties.length, y: -40/100 * scale, label: formatVal(R2)(R2),  style: {fontSize: 15, textAnchor: "middle"}})
+        reactionLabels.push({x: 97.5/100 * beamProperties.length, y: -35/100 * scale, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
     }
     return reactionLabels
 }
 
-function R1SingleLoad(load, beamProperties){
+function R1SingleLoad(load, beamProperties, supportProperties){
     // Get relevant variables
     let F = load.mass * beamProperties.gravity
     let X = load.location
@@ -891,13 +899,13 @@ function R1SingleLoad(load, beamProperties){
 
     let R1
     if(load.type === "Point") {
-        if(beamProperties.supportType === "Cantilever")
+        if(supportProperties.type === "Cantilever")
             R1 = F
         else
             R1 = F/Lb * (Lb - X)
     }
     else {
-        if(beamProperties.supportType === "Cantilever")
+        if(supportProperties.type === "Cantilever")
             R1 = F*L
         else
             R1 = F*L/Lb * (Lb - X - L/2)
@@ -905,20 +913,61 @@ function R1SingleLoad(load, beamProperties){
     return R1
 }
 
-function R2SingleLoad(load, beamProperties) {
+// R1 + R2 = F (or F*L for distributed load)
+function R2SingleLoad(load, beamProperties, supportProperties) {
     // Get relevant variables
     let F = load.mass * beamProperties.gravity
     let L = load.length
     
     let R2
     if(load.type === "Point")
-        R2 = F - R1SingleLoad(load, beamProperties)
+        R2 = F - R1SingleLoad(load, beamProperties, supportProperties)
     else
-        R2 = F*L - R1SingleLoad(load, beamProperties)
+        R2 = F*L - R1SingleLoad(load, beamProperties, supportProperties)
     return R2
 }
 
-function deflectionSingleLoad(x, load, beamProperties) {
+// Takes a function that applies to a single load, returns a list of data points for plotting the sum of that function applied to every load.
+// The singleLoadFunction can return a value, or a 2-element array for instantaneous change.
+// The first element of the array will connect to the line plot to the left, and the second element will connect to the right.
+function plotSum(singleLoadFunction, loads, beamProperties, supportProperties) {
+    // The list of x-values which the y-values will be calculated for. The resulting points will be connected in a line plot later.
+    const xValues = []
+    // Add every 100th of the beam, and the ends of each load (for point loads the ends are equal)
+    for(let i = 0; i <= 100; i++)
+        xValues.push((i/100)*beamProperties.length)
+    Object.values(loads).forEach(load => 
+        xValues.push(load.location, load.location+load.length)
+    )
+    // Sort the x values (else the line plot would go back and forth in the x direction)
+    xValues.sort((a,b)=>(a > b)? 1 : -1)
+
+    // Calculate y values.
+    let plotData = []
+    xValues.forEach(xValue => {
+        // Before and after variables in case of instantaneous change
+        let yValueBefore = 0
+        let yValueAfter = 0
+        Object.values(loads).forEach(load => {
+            let singleYValue = singleLoadFunction(xValue, load, beamProperties, supportProperties)
+            if(Array.isArray(singleYValue)) {
+                yValueBefore += singleYValue[0]
+                yValueAfter += singleYValue[1]
+            }
+            else {
+                yValueBefore += singleYValue
+                yValueAfter += singleYValue
+            }
+        })
+        plotData.push({x:xValue, y:yValueBefore}, {x:xValue, y:yValueAfter})
+    })
+    return plotData
+}
+
+// Integral of integral of bending moment. 
+// For cantilever, deflection and d/dx deflection are 0 at x=0.
+// For simply supported beam, deflection is 0 at x=0 and x=beam length.
+function deflectionSingleLoad(x, load, beamProperties, supportProperties) {
     // Get relevant variables
     let F = load.mass * beamProperties.gravity
     let X = load.location
@@ -933,7 +982,7 @@ function deflectionSingleLoad(x, load, beamProperties) {
         else
             y = (X**3-3*X**2*x) / 6
 
-        if(beamProperties.supportType === "Simply Supported")
+        if(supportProperties.type === "Simply Supported")
             y += (-2*Lb**2*X*x + 3*Lb*X*x**2 + 3*Lb*x*X**2 - X*x**3 - x*X**3) / 6 / Lb
     }
     else {
@@ -944,16 +993,21 @@ function deflectionSingleLoad(x, load, beamProperties) {
         else
             y = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
 
-        if(beamProperties.supportType === "Simply Supported")
+        if(supportProperties.type === "Simply Supported")
             y += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
     }
 
     y *= F / EI
 
+    // Prevent floating point errors when there is only 1 point mass and it's on top of a supported end of the beam. It should be 0 but sometimes floating point errors happen here.
+    if(Math.abs(y) < 10**-18)
+        y = 0
+
     return y
 }
 
-function bendingMomentSingleLoad(x, load, beamProperties) {
+// Integral of shear force. Bending moment is 0 at x=beam length, for both support types.
+function bendingMomentSingleLoad(x, load, beamProperties, supportProperties) {
     // Get relevant variables
     let F = load.mass * beamProperties.gravity
     let X = load.location
@@ -967,7 +1021,7 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
         else
             y = 0
 
-        if(beamProperties.supportType === "Simply Supported")
+        if(supportProperties.type === "Simply Supported")
             y -= F * X / Lb * (x-Lb)
     }
     else {
@@ -978,13 +1032,13 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
         else
             y = 0
         
-        if(beamProperties.supportType === "Simply Supported")
+        if(supportProperties.type === "Simply Supported")
             y -= F * L * (2*X+L) / 2 / Lb * (x-Lb)
     }
     return y
 }
-    
-function shearForceSingleLoad(x, load, beamProperties) {
+
+function shearForceSingleLoad(x, load, beamProperties, supportProperties) {
     // Get relevant variables
     let X = load.location
     let F = load.mass * beamProperties.gravity
@@ -995,34 +1049,46 @@ function shearForceSingleLoad(x, load, beamProperties) {
     if(load.type === "Point") {
         if(x < X)
             y = F
+        else if(x == X)
+            // Array represents instantaneous change in y
+            y = [F,0]
         else
             y = 0
 
-        if(beamProperties.supportType === "Simply Supported")
-            y -= F * X / Lb
+        // For Cantilever, shear force at x=0 is F. For Simply Supported, it is something else, and the whole graph is translated down.
+        if(supportProperties.type === "Simply Supported") {
+            if(Array.isArray(y)) {
+                y[0] -= F * X / Lb
+                y[1] -= F * X / Lb
+            }
+            else
+                y -= F * X / Lb
+        }
     }
     else {
         if(x < X)
             y = F * L
         else if(x < X + L)
-            y = F * (X - x + L)
+            y = F * (X + L - x)
         else
             y = 0
         
-        if(beamProperties.supportType === "Simply Supported")
+        // For Cantilever, shear force at x=0 is F*L. For Simply Supported, it is something else, and the whole graph is translated down.
+        if(supportProperties.type === "Simply Supported")
             y -= F * L * (2*X+L) / 2 / Lb
     }
     return y
 }
 
+// Find a scale for the y axis that comfortably fits the graph.
 function getScale(dataList) {
-    // Find the biggest absolute value from the data list
+    // Find the biggest absolute value in datalist
     let maxAbsVal = 0
     dataList.forEach(dataPoint =>
         maxAbsVal = Math.max(maxAbsVal, Math.abs(dataPoint.y))
     )
     
-    // If the line is flat at 0, scale will be 1
+    // If the line is all 0, scale will be 1
     if(maxAbsVal == 0)
         return 1
 
@@ -1036,16 +1102,22 @@ function getScale(dataList) {
     return scale
 }
 
+// This function returns a formatting function for numbers, using the given scale.
 function formatVal(scale) {
-    if(scale >= 10**5 || scale <= 10**-4)
+    // If the scale is very large or tiny, return a function that converts vals to scientific notation.
+    if(scale >= 10**5 || (scale <= 10**-4 && scale != 0))
         return val => {
             val = Number(val.toPrecision(6))
-            return val == 0 ? val : val.toExponential()
+            return "" + (val == 0 ? val : val.toExponential())
         }
+    // If scale is normal or scale is exactly 0, return a function that just returns val.
     else
         return val => {
-            return Number(val.toPrecision(6))
+            val = Number(val.toPrecision(6))
+            return "" + val
         }
+    // Both functions round the vals to a precision of 6 to avoid floating point trails.
+    // They must also be concatenated with a string or some labels will not display 0 (they view it as false and put no label)
 }
 
 export default CombinedLoadApp;
