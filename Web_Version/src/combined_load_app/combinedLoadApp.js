@@ -7,17 +7,17 @@ import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, 
 
 
 function CombinedLoadApp(){
-
-    const butStyle = {background: "black", height:window.innerHeight/12,
-        width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
+    // Data
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, gravity:9.8})
     const [supportProperties,setSupportProperties] = useState({type: "Simply Supported", leftSupportPos: 0, rightSupportPos: 100})
-    const [isBeamIni, setIsBeamIni] = useState(false)
     const [loads,setLoads] = useState({})
+    // The current load to move/modify/delete
     const [selectedLoad, setSelectedLoad] = useState('load1')
-    const [loadUpdated, setLoadUpdated] = useState(false)
+    // New data entered for a load that is being created/modified
     const [newLoadData, setNewLoadData] = useState({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:"#00000080"})
-    const [openAddEdit, setOpenAddEdit] = useState(false);
+    // Whether the initialForm
+    const [openInitialForm, setOpenInitialForm] = useState(true)
+    const [openAddEditForm, setOpenAddEditForm] = useState(false);
     const [addEditMode, setAddEditMode] = useState("Add");
     const [initialFormWarning, setInitialFormWarning] = useState("");
     const [addEditFormWarning, setAddEditFormWarning] = useState("");
@@ -37,7 +37,7 @@ function CombinedLoadApp(){
     const initialFormRef = React.useRef(null)
     const plotScreenRef = React.useRef(null)
     function reFocus() {
-        if(!isBeamIni)
+        if(openInitialForm)
             initialFormRef.current.focus()
         else
             plotScreenRef.current.focus()
@@ -52,7 +52,7 @@ function CombinedLoadApp(){
     // Function allowing users to submit forms by pressing Enter, or use the left, jump, and right features by pressing Arrow keys.
     function handleKeyDown(event){
         // On the Add/Edit form
-        if(openAddEdit){
+        if(openAddEditForm){
             // Enter key
             if(event.keyCode == 13) {
                 handleCloseAddEdit("confirm", addEditMode)
@@ -60,10 +60,10 @@ function CombinedLoadApp(){
             }
         }
         // On the initial form screen
-        else if(!isBeamIni) {
+        else if(openInitialForm) {
             // Enter key
             if(event.keyCode == 13)
-                handleSubmit(beamProperties, null)
+                handleSubmitInitialForm(null)
         }
         // On the main plots screen
         else {
@@ -83,11 +83,10 @@ function CombinedLoadApp(){
     }
     
     // When submitting the initial form
-    function handleSubmit(data, e){
+    function handleSubmitInitialForm(e){
         validateInputsInitialForm();
         if(initialFormWarning === "") {
-            setBeamProperties(data);
-            setIsBeamIni(true);
+            setOpenInitialForm(false);
             reRender()
             reFocus()
         } 
@@ -114,7 +113,7 @@ function CombinedLoadApp(){
         setHideLengthField(true);
         setHideTallerEndField(true);
         // Display menu.
-        setOpenAddEdit(true);
+        setOpenAddEditForm(true);
         setAddEditMode("Add");
     };
 
@@ -125,7 +124,7 @@ function CombinedLoadApp(){
         setHideLengthField(loads[selectedLoad].type === "Point");
         setHideTallerEndField(loads[selectedLoad].type !== "Triangular")
         // Display menu.
-        setOpenAddEdit(true);
+        setOpenAddEditForm(true);
         setAddEditMode("Edit");
     };
 
@@ -133,7 +132,7 @@ function CombinedLoadApp(){
     function handleCloseAddEdit (event, mode) {
         // If user clicked out or cancelled, do nothing and close the form.
         if(event !== "confirm"){
-            setOpenAddEdit(false)
+            setOpenAddEditForm(false)
             setAddEditFormWarning("")
             reRender()
             reFocus()
@@ -173,7 +172,7 @@ function CombinedLoadApp(){
             }
         }
         setSelectedLoad(newLoadData.name)
-        setOpenAddEdit(false)
+        setOpenAddEditForm(false)
         setAddEditFormWarning("")
         reRender()
         reFocus()
@@ -195,7 +194,7 @@ function CombinedLoadApp(){
  
     // When Edit Beam Properties button is clicked
     function handleReturnButton() {
-        setIsBeamIni(false)
+        setOpenInitialForm(true)
         reRender()
         reFocus()
     }
@@ -495,17 +494,16 @@ function CombinedLoadApp(){
     }
     
     // Display the initial inputs form
-    if(!isBeamIni){
+    if(openInitialForm){
         return(
-            <form ref={initialFormRef} onKeyDown={handleKeyDown} tabIndex="0" onSubmit={(e)=> {handleSubmit(beamProperties, e)}}>
+            <form onKeyDown={handleKeyDown} onSubmit={handleSubmitInitialForm} ref={initialFormRef} tabIndex="0">
                 <h1>CARL</h1>
-                {/* Enter beam properties in the initial form */}
-                <h3 style={{marginBottom: 0}}>Beam Properties</h3>
+                {/* Enter beam properties */}
                 <div>
+                    <h3 style={{marginBottom: 0}}>Beam Properties</h3>
                     <label>Length of Beam:
-                        <input
+                        <input type="text"
                             defaultValue={beamProperties.length}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.length = e.target.value
                                 validateInputsInitialForm();
@@ -514,9 +512,8 @@ function CombinedLoadApp(){
                     </label>
                     <div></div>
                     <label>Elasticity:
-                        <input
+                        <input type="text"
                             defaultValue={beamProperties.elasticity}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.elasticity = e.target.value
                                 validateInputsInitialForm();
@@ -525,9 +522,8 @@ function CombinedLoadApp(){
                     </label>
                     <div></div>
                     <label>Inertia:
-                        <input
+                        <input type="text"
                             defaultValue={beamProperties.inertia}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.inertia = e.target.value
                                 validateInputsInitialForm();
@@ -536,9 +532,8 @@ function CombinedLoadApp(){
                     </label>
                     <div></div>
                     <label>Density:
-                        <input
+                        <input type="text"
                             defaultValue={beamProperties.density}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.density = e.target.value
                                 validateInputsInitialForm();
@@ -547,9 +542,8 @@ function CombinedLoadApp(){
                     </label>
                     <div></div>
                     <label>Area:
-                        <input
+                        <input type="text"
                             defaultValue={beamProperties.area}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.area = e.target.value
                                 validateInputsInitialForm();
@@ -558,9 +552,8 @@ function CombinedLoadApp(){
                     </label>
                     <div></div>
                     <label>Damping Ratio:
-                        <input
+                        <input type="text"
                             defaultValue={beamProperties.dampingRatio}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.dampingRatio = e.target.value
                                 validateInputsInitialForm();
@@ -569,9 +562,8 @@ function CombinedLoadApp(){
                     </label>
                     <div></div>
                     <label>rA:
-                        <input
+                        <input type="text"
                             defaultValue={beamProperties.rA}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.rA = e.target.value
                                 validateInputsInitialForm();
@@ -580,9 +572,8 @@ function CombinedLoadApp(){
                     </label>
                     <div></div>
                     <label>EI:
-                        <input
+                        <input type="text"                            
                             defaultValue={beamProperties.EI}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.EI = e.target.value
                                 validateInputsInitialForm();
@@ -591,63 +582,60 @@ function CombinedLoadApp(){
                     </label>
                     <div></div>
                     <label>Gravity:
-                        <input
+                        <input type="text"
                             defaultValue={beamProperties.gravity}
-                            type="text"
                             onChange={(e) => {
                                 beamProperties.gravity = e.target.value
                                 validateInputsInitialForm();
                             }}
                         />
                     </label>
-                    <div></div>
+                </div>
+                {/* Enter support properties */}
+                <div>
+                    <h3 style={{marginBottom: 0}}>Support Properties</h3>
                     {/* Support type radio button selection */}
-                    <FormControl sx={{marginTop:1}}>
-                        <h3 style={{marginBottom: 0}}>Support Properties</h3>
-                        <RadioGroup
-                            row
-                            value={supportProperties.type}
-                            onChange={(val)=>{
-                                supportProperties.type = val.target.value;
-                                validateInputsInitialForm();
-                                reRender();
-                            }}
-                        >
-                            <FormControlLabel value="Simply Supported" control={<Radio />} label="Simply Supported" />
-                            <FormControlLabel value="Cantilever" control={<Radio />} label="Cantilever" />
-                        </RadioGroup>
-                    </FormControl>
+                    <RadioGroup
+                        value={supportProperties.type}
+                        onChange={(val)=>{
+                            supportProperties.type = val.target.value;
+                            validateInputsInitialForm();
+                            reRender();
+                        }}
+                        sx={{display:'inline-flex'}}
+                        row
+                    >
+                        <FormControlLabel control={<Radio />} value="Simply Supported" label="Simply Supported" />
+                        <FormControlLabel control={<Radio />} value="Cantilever" label="Cantilever" />
+                    </RadioGroup>
                     <div></div>
                     <label>Left Support Position:
-                        <input
+                        <input type="text"
                             defaultValue={supportProperties.leftSupportPos}
-                            disabled={supportProperties.type !== "Simply Supported"}
-                            type="text"
                             onChange={(e)=>{
                                 supportProperties.leftSupportPos=e.target.value
                                 validateInputsInitialForm();
                             }}
+                            disabled={supportProperties.type !== "Simply Supported"}
                         />
                     </label>
                     <div></div>
                     <label>Right Support Position:
-                        <input
+                        <input type="text"
                             defaultValue={supportProperties.rightSupportPos}
-                            disabled={supportProperties.type !== "Simply Supported"}
-                            type="text"
                             onChange={(e)=>{
                                 supportProperties.rightSupportPos=e.target.value
                                 validateInputsInitialForm();
                             }}
+                            disabled={supportProperties.type !== "Simply Supported"}
                         />
                     </label>
                 </div>
-                <p></p>
+                {/* Enter loads */}
                 <div>
                     {/* Load list with radio button selection */}
                     <h3 style={{marginBottom: 0}}>List of Loads</h3>
                     <RadioGroup
-                        name="loadSelectionRadioBtns"
                         value={selectedLoad}
                         onChange={handleSelectedChange}
                         sx={{display:'inline-flex'}}
@@ -661,12 +649,12 @@ function CombinedLoadApp(){
                         <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
                         {/* Add/Edit Load menu */}
                         <AddEditForm
-                            open={openAddEdit} 
+                            open={openAddEditForm} 
                             mode={addEditMode}
                             handleClose={handleCloseAddEdit}
                             newLoadData={newLoadData}
                             validate={validateInputsAddEditForm}
-                            warningText={addEditFormWarning}
+                            warning={addEditFormWarning}
                         />
                     </div>
                 </div>
@@ -677,124 +665,127 @@ function CombinedLoadApp(){
             </form>
         );
     }
-    return(
-        <div className={"rowC"} ref={plotScreenRef} onKeyDown={handleKeyDown} tabIndex="0">
-            <div>
-                <h1>CARL</h1>
-                {/* Main Plot */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis tickFormat={formatVal(beamProperties.length)} title = {"Load Location"}/>
-                    <YAxis/>
-                    {/* Display the beam. */}
-                    <LineSeries data = {[{x: 0, y: 0}, {x: beamProperties.length, y: 0}]} />
-                    {/* Display the supports. */}
-                    <LabelSeries data={[{x: supportProperties.leftSupportPos, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                        {x: supportProperties.rightSupportPos, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
-                    {/* Display the loads. */}
-                    <LabelSeries data={labelMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={handleLoadClick} />
-                    {/* Display the line parts of distributed and triangular loads. */}
-                    {Object.entries(loads).map((load) => {
-                        // Distributed load line
-                        if(load[1].type==="Distributed")
-                            return (
-                                <LineSeries 
-                                    color={load[1].color}
-                                    strokeWidth={3}
-                                    data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 8}]}
-                                    onSeriesClick={(event) => {setSelectedLoad(load[0])}}
-                                    key={load.toString()}
-                                />
-                            )
-                        // Triangular load lines
-                        else if(load[1].type==="Triangular") {
-                            // Left-taller triangle
-                            if(load[1].tallerEnd==="Left")
+    else {
+        // Display the main plots screen
+        return(
+            <div className={"rowC"} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
+                <div>
+                    <h1>CARL</h1>
+                    {/* Main Plot */}
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
+                        <VerticalGridLines/>
+                        <HorizontalGridLines/>
+                        <XAxis tickFormat={formatVal(beamProperties.length)} title = {"Load Locations"}/>
+                        <YAxis/>
+                        {/* Display the beam line. */}
+                        <LineSeries data = {[{x: 0, y: 0}, {x: beamProperties.length, y: 0}]} />
+                        {/* Display the supports. */}
+                        <LabelSeries data={[{x: supportProperties.leftSupportPos, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                            {x: supportProperties.rightSupportPos, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                        {/* Display the loads. */}
+                        <LabelSeries data={labelMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={handleLoadClick} />
+                        {/* Display the line parts of distributed and triangular loads. */}
+                        {Object.entries(loads).map(([loadName, load]) => {
+                            // Distributed load line
+                            if(load.type==="Distributed")
                                 return (
-                                    <LineSeries
-                                        color={load[1].color}
+                                    <LineSeries 
+                                        data={[{x: load.location, y: 8}, {x: (load.location+load.length), y: 8}]}
+                                        onSeriesClick={() => {setSelectedLoad(loadName)}}
+                                        key={[loadName,load]}
+                                        color={load.color}
                                         strokeWidth={3}
-                                        data={[{x: load[1].location, y: 8}, {x: load[1].location, y: 20}, {x: (load[1].location+load[1].length), y: 8}, {x: load[1].location, y: 8}]}
-                                        onSeriesClick={(event) => {setSelectedLoad(load[0])}}
-                                        key={load.toString()}
                                     />
                                 )
-                            // Right-taller triangle
-                            else
-                                return (
-                                    <LineSeries
-                                        color={load[1].color}
-                                        strokeWidth={3}
-                                        data={[{x: load[1].location, y: 8}, {x: (load[1].location+load[1].length), y: 20}, {x: (load[1].location+load[1].length), y: 8}, {x: load[1].location, y: 8}]}
-                                        onSeriesClick={(event) => {setSelectedLoad(load[0])}}
-                                        key={load.toString()}
-                                    />
-                                )
-                        }
-                    })}
-                </XYPlot>
-                {/* Load Selection dropdown */}
-                <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
-                <div>
-                    {/* Add, Edit, Delete Load buttons */}
-                    <Button variant="outlined" sx={{width:135}} onClick={handleClickAdd}>Add Load</Button>
-                    <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
-                    <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
-                    {/* Add/Edit Load menu */}
-                    <AddEditForm
-                        open={openAddEdit} 
-                        mode={addEditMode}
-                        handleClose={handleCloseAddEdit}
-                        newLoadData={newLoadData}
-                        validate={validateInputsAddEditForm}
-                        warningText={addEditFormWarning}
-                    />
+                            // Triangular load lines
+                            else if(load.type==="Triangular") {
+                                // Left-taller triangle
+                                if(load.tallerEnd==="Left")
+                                    return (
+                                        <LineSeries
+                                            data={[{x: load.location, y: 8}, {x: load.location, y: 20}, {x: (load.location+load.length), y: 8}, {x: load.location, y: 8}]}
+                                            onSeriesClick={() => {setSelectedLoad(loadName)}}
+                                            key={[loadName,load]}
+                                            color={load.color}
+                                            strokeWidth={3}
+                                        />
+                                    )
+                                // Right-taller triangle
+                                else
+                                    return (
+                                        <LineSeries
+                                            data={[{x: load.location, y: 8}, {x: (load.location+load.length), y: 20}, {x: (load.location+load.length), y: 8}, {x: load.location, y: 8}]}
+                                            onSeriesClick={() => {setSelectedLoad(loadName)}}
+                                            key={[loadName,load]}
+                                            color={load.color}
+                                            strokeWidth={3}
+                                        />
+                                    )
+                            }
+                        })}
+                    </XYPlot>
+                    {/* Load Selection dropdown */}
+                    <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
+                    <div>
+                        {/* Add, Edit, Delete Load buttons */}
+                        <Button variant="outlined" sx={{width:135}} onClick={handleClickAdd}>Add Load</Button>
+                        <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
+                        <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
+                        {/* Add/Edit Load menu */}
+                        <AddEditForm
+                            open={openAddEditForm} 
+                            mode={addEditMode}
+                            handleClose={handleCloseAddEdit}
+                            newLoadData={newLoadData}
+                            validate={validateInputsAddEditForm}
+                            warning={addEditFormWarning}
+                        />
+                    </div>
+                    <div>
+                        {/* Control buttons */}
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(-1,1,10)}}>&#8592;</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(0,5,10)}}>JUMP</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(1,1,10)}}>&#8594;</Button>
+                    </div>
+                    <Button variant="contained" sx={{margin:0.5}} onClick={()=>handleReturnButton()}>Edit Beam Properties</Button>
                 </div>
                 <div>
-                    {/* Control buttons */}
-                    <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(-1,1,10)}}>&#8592;</Button>
-                    <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(0,5,10)}}>JUMP</Button>
-                    <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(1,1,10)}}>&#8594;</Button>
+                    <h1>Plots</h1>
+                    {/* Side plots */}
+                    {/* Deflection Diagram */}
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left : 60, right:60}}>
+                        <VerticalGridLines/>
+                        <HorizontalGridLines/>
+                        <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Deflection Diagram and Support Reactions"}/>
+                        <YAxis tickFormat = {formatVal(deflectionScale)}/>
+                        <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
+                        <LineSeries data={deflectionDiagram()}/>
+                        {/* Include reactions in deflection plot */}
+                        <LabelSeries data={plotReactions(loads, beamProperties, supportProperties, deflectionScale)} />
+                    </XYPlot>
+                    {/* Bending Moment Diagram */}
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[bendingMomentScale, bendingMomentScale]} margin = {{left : 60, right:60}}>
+                        <VerticalGridLines/>
+                        <HorizontalGridLines/>
+                        <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Bending Moment Diagram"}/>
+                        <YAxis tickFormat = {formatVal(bendingMomentScale)}/>
+                        <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
+                        <LineSeries data={bendingMomentDiagram()}/>
+                    </XYPlot>
+                    {/* Shear Force Diagram */}
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[shearForceScale, shearForceScale]} margin = {{left : 60, right:60}}>
+                        {/*<h1>Shear Force Diagram</h1>*/}
+                        <VerticalGridLines/>
+                        <HorizontalGridLines/>
+                        <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Shear Force Diagram"}/>
+                        <YAxis tickFormat = {formatVal(shearForceScale)}/>
+                        <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
+                        <LineSeries data={shearForceDiagram()}/>
+                    </XYPlot>
                 </div>
-                <Button variant="contained" sx={{margin:0.5}} onClick={()=>handleReturnButton()}>Edit Beam Properties</Button>
             </div>
-            <div>
-                <h1>Plots</h1>
-                {/* Side plots */}
-                {/* Deflection Diagram */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left : 60, right:60}}>
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Deflection Diagram and Support Reactions"}/>
-                    <YAxis tickFormat = {formatVal(deflectionScale)}/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={deflectionDiagram()}/>
-                    {/* Include reactions in deflection plot */}
-                    <LabelSeries data={plotReactions(loads, beamProperties, supportProperties, deflectionScale)} />
-                </XYPlot>
-                {/* Bending Moment Diagram */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[bendingMomentScale, bendingMomentScale]} margin = {{left : 60, right:60}}>
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Bending Moment Diagram"}/>
-                    <YAxis tickFormat = {formatVal(bendingMomentScale)}/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={bendingMomentDiagram()}/>
-                </XYPlot>
-                {/* Shear Force Diagram */}
-                <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[shearForceScale, shearForceScale]} margin = {{left : 60, right:60}}>
-                    {/*<h1>Shear Force Diagram</h1>*/}
-                    <VerticalGridLines/>
-                    <HorizontalGridLines/>
-                    <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Shear Force Diagram"}/>
-                    <YAxis tickFormat = {formatVal(shearForceScale)}/>
-                    <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                    <LineSeries data={shearForceDiagram()}/>
-                </XYPlot>
-            </div>
-        </div>
-    )
+        )
+    }
 }
 
 /**
@@ -808,29 +799,28 @@ function CombinedLoadApp(){
  */
 function labelMakerForLoads(loads, selectedLoad, beamProperties){
     var data = []
-    for(let load in loads){
+    for(let [loadName,load] of Object.entries(loads)){
         // Check if the load is a point load, and if it is the selected load.
-        let isPoint = loads[load].type === "Point"
-        let isSelected = load === selectedLoad
+        let isPoint = load.type === "Point"
+        let isSelected = loadName === selectedLoad
 
         // xLoc is the center of the load. It serves as the location for labels, and the x coordinate users see for loads.
-        let xLoc = loads[load].location + loads[load].length/2
+        let xLoc = load.location + load.length/2
 
         // For selected load, the stats will be labelled with letters. For non-point loads, length will be included.
-        let statsLabel = (isSelected?"x=":"") + xLoc + ", " + (isSelected?"m=":"") + loads[load].mass
-        if(loads[load].type !== "Point")
-            statsLabel += ", " + (isSelected?"L=":"") + loads[load].length
+        let statsLabel = (isSelected?"x=":"") + xLoc + ", " + (isSelected?"m=":"") + load.mass
+        if(load.type !== "Point")
+            statsLabel += ", " + (isSelected?"L=":"") + load.length
 
         // Load name and stats labels. For point loads it will be 10 units higher.
-        data.push({x: xLoc, y: isPoint?35:25, label: load, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        data.push({x: xLoc, y: isPoint?30:20, label: statsLabel, loadID: load, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: xLoc, y: isPoint?35:25, label: loadName, loadID: loadName, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: xLoc, y: isPoint?30:20, label: statsLabel, loadID: loadName, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
 
         // Point Loads have a big arrow, distributed loads have mini arrows
-        if(loads[load].type === "Point"){
-            data.push({x: xLoc, y: -5, label: "\u2193", loadID: load, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        }else{
-            getDistributedLoadMiniArrows(data, loads[load].location, loads[load].length, beamProperties.length, loads[load].color, load);
-        }
+        if(load.type === "Point")
+            data.push({x: xLoc, y: -5, label: "\u2193", loadID: loadName, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        else
+            getDistributedLoadMiniArrows(data, loadName, load, beamProperties.length);
     }
     return data;
 }
@@ -845,11 +835,13 @@ function labelMakerForLoads(loads, selectedLoad, beamProperties){
  * color is the color of the load line, so that the arrows can match that color.
  * loadID is the name of the load that these arrows belong to. It is part of allowing users to click on these arrows to select the load to move/delete it.
  */
-function getDistributedLoadMiniArrows(array, pos, len, beamLen, color, loadID){
-    let numArrows = Math.floor(len / beamLen * 20) + 1;
+function getDistributedLoadMiniArrows(data, loadName, load, beamLen){
+    let numArrows = Math.floor(load.length / beamLen * 20) + 1;
     // Evenly spaced
-    for(let i = 0; i <= numArrows; i++)
-        array.push({x: pos + (i/numArrows) * len, y: -3, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", fill: color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+    for(let i = 0; i <= numArrows; i++) {
+        let x = load.location + (i/numArrows) * load.length
+        data.push({x: x, y: -3, label: "\u2193", loadID: loadName, style: {fontSize: 25, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle", fill: load.color}})
+    }
 }
 
 // Plot the reactions, R1 and R2.
@@ -1119,8 +1111,9 @@ function loadNamer(loads){
 function loadRadioButtonsCreator(loads){
     let labels = [];
     for(let load in loads)
-        labels.push(<FormControlLabel
-            key={load} value={load} control={<Radio/>}
+        labels.push(<FormControlLabel control={<Radio/>}
+            value={load}
+            key={load}
             label={load + 
                 ", Type = " + loads[load].type + 
                 ": Location = " + (loads[load].location + loads[load].length / 2) + 
