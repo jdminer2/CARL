@@ -12,12 +12,11 @@ function CombinedLoadApp(){
         width:window.innerWidth/10 ,borderRadius: 8, color: "white"}
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, gravity:9.8})
     const [supportProperties,setSupportProperties] = useState({type: "Simply Supported", leftSupportPos: 0, rightSupportPos: 100})
-    const [onceLoaded, setOnceLoaded] = useState(false)
     const [isBeamIni, setIsBeamIni] = useState(false)
     const [loads,setLoads] = useState({})
     const [selectedLoad, setSelectedLoad] = useState('load1')
     const [loadUpdated, setLoadUpdated] = useState(false)
-    const [newLoadData, setNewLoadData] = useState({name:loadNamer(), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:"#00000080"})
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:"#00000080"})
     const [openAddEdit, setOpenAddEdit] = useState(false);
     const [addEditMode, setAddEditMode] = useState("Add");
     const [initialFormWarning, setInitialFormWarning] = useState("");
@@ -27,27 +26,78 @@ function CombinedLoadApp(){
     const [deflectionScale, setDeflectionScale] = useState(1);
     const [bendingMomentScale, setBendingMomentScale] = useState(1);
     const [shearForceScale, setShearForceScale] = useState(1);
-    const [render, reRender] = useState(true);
 
-    // This helps the window automatically focus on the XYPlot, so users don't need to click on the screen before using keyboard controls to move loads.
-    const focusRef = React.useRef(null);
-    useEffect(()=>{
-        if(focusRef.current !== null)
-            focusRef.current.focus();
-    }, [onceLoaded]);
+    // Function that automatically re-renders the screen.
+    const [render, setRender] = useState(true);
+    function reRender() {
+        setRender(!render)
+    }
+    
+    // Function that automatically resets the focus on the page so users can use keyboard controls.
+    const initialFormRef = React.useRef(null)
+    const plotScreenRef = React.useRef(null)
+    function reFocus() {
+        if(!isBeamIni)
+            initialFormRef.current.focus()
+        else
+            plotScreenRef.current.focus()
+    }
 
-    // This makes the XYPlots scale when the user resizes the window.
-    const [windowSize, setWindowSize] = useState({height:window.innerHeight, width:window.innerWidth});
+    // This makes the XYPlots automatically scale when the user resizes the window.
     useEffect(() => {
-        window.addEventListener("resize", () =>
-            setWindowSize({height:window.innerHeight, width:window.innerWidth})
-        )
-        return () => 
-            window.removeEventListener("resize", setWindowSize({height:window.innerHeight, width:window.innerWidth}))
+        window.addEventListener("resize", reRender)
+        return () => window.removeEventListener("resize", reRender)
     },[window.innerHeight, window.innerWidth]);
 
-    const handleClickOpenAdd = () => {
-        // Pick a random color, in the range #000000 to #9F9F9F, always opacity 50%.
+    // Function allowing users to submit forms by pressing Enter, or use the left, jump, and right features by pressing Arrow keys.
+    function handleKeyDown(event){
+        // On the Add/Edit form
+        if(openAddEdit){
+            // Enter key
+            if(event.keyCode == 13) {
+                handleCloseAddEdit("confirm", addEditMode)
+                event.preventDefault()
+            }
+        }
+        // On the initial form screen
+        else if(!isBeamIni) {
+            // Enter key
+            if(event.keyCode == 13)
+                handleSubmit(beamProperties, null)
+        }
+        // On the main plots screen
+        else {
+            // Prevent arrow keys from scrolling the screen
+            if([37,38,39,40].includes(event.keyCode))
+                event.preventDefault()
+            // Left arrow key
+            if(event.keyCode == 37)
+                playerMovement(-1,1,10)
+            // Up arrow key (Jump)
+            else if(event.keyCode == 38)
+                playerMovement(0,5,10)
+            // Right arrow key
+            else if(event.keyCode == 39)
+                playerMovement(1,1,10)
+        }
+    }
+    
+    // When submitting the initial form
+    function handleSubmit(data, e){
+        validateInputsInitialForm();
+        if(initialFormWarning === "") {
+            setBeamProperties(data);
+            setIsBeamIni(true);
+            reRender()
+            reFocus()
+        } 
+        else if(e != null)
+            e.preventDefault();
+    }
+
+    // When Add Load button is clicked
+    const handleClickAdd = () => {
+        // Pick a random color in the range #000000 to #9F9F9F, always opacity 50%.
         let newR = Math.floor(Math.random() * 160).toString(16);
         if(newR.length < 2)
             newR = "0"+newR;
@@ -58,15 +108,18 @@ function CombinedLoadApp(){
         if(newB.length < 2)
             newB = "0"+newB;
         let color = "#" + newR + newG + newB + "80";
+
         // Put default load properties.
-        setNewLoadData({name:loadNamer(), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:color});
+        setNewLoadData({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:color});
         setHideLengthField(true);
         setHideTallerEndField(true);
         // Display menu.
         setOpenAddEdit(true);
         setAddEditMode("Add");
     };
-    const handleClickOpenEdit = () => {
+
+    // When Edit Load button is clicked
+    const handleClickEdit = () => {
         // Put preexisting load properties.
         setNewLoadData({name:selectedLoad, type:loads[selectedLoad].type, location:loads[selectedLoad].location + loads[selectedLoad].length / 2, mass:loads[selectedLoad].mass, length:loads[selectedLoad].length, tallerEnd:loads[selectedLoad].tallerEnd, color:loads[selectedLoad].color});
         setHideLengthField(loads[selectedLoad].type === "Point");
@@ -76,21 +129,21 @@ function CombinedLoadApp(){
         setAddEditMode("Edit");
     };
 
-    /**
-     * Function is executed upon closing the Add Load menu either by Canceling or Confirming.
-     * This function creates a new load.
-     */
+    // When closing the Add/Edit Load menu by clicking out, canceling, or confirming.
     function handleCloseAddEdit (event, mode) {
-        // If closed via cancel button or clicking outside, do nothing.
+        // If user clicked out or cancelled, do nothing and close the form.
         if(event !== "confirm"){
             setOpenAddEdit(false)
             setAddEditFormWarning("")
+            reRender()
+            reFocus()
             return
         }
-        // Check if errors are present, don't close menu if there are errors.
+        // Check if errors are present, do nothing.
         validateInputsAddEditForm(mode)
         if(addEditFormWarning !== "")
             return;
+
         // Erase unused properties for the given load type.
         if(newLoadData.type === "Point")
             newLoadData.length = 0
@@ -101,7 +154,7 @@ function CombinedLoadApp(){
             loads[newLoadData.name] = {type:newLoadData.type, location:(newLoadData.location - newLoadData.length / 2), mass:newLoadData.mass, length:newLoadData.length, tallerEnd:newLoadData.tallerEnd, color:newLoadData.color}
         // Edit existing load if this is editing mode.
         else {
-            // This for loop is used to preserve the ordering of the loads in the list, instead of moving the edited load to the end.
+            // This for-loop is used to preserve the ordering of the loads in the list, instead of moving the edited load to the end.
             for(let load in loads) {
                 if(load !== selectedLoad) {
                     let type = loads[load].type
@@ -120,85 +173,31 @@ function CombinedLoadApp(){
             }
         }
         setSelectedLoad(newLoadData.name)
-        setLoadUpdated(true)
         setOpenAddEdit(false)
         setAddEditFormWarning("")
-    }
-    
-    useEffect(()=>{if(loadUpdated === false){return;}
-        setLoadUpdated(false);loadNamer();labelMakerForLoads(loads,selectedLoad,beamProperties)},[loadUpdated,labelMakerForLoads])
-
-    // Function to pick the first unoccupied load name like load1, load2, load3...
-    function loadNamer(){
-        var n = 1;
-        var name = ""
-        while(true){
-            name = "Load " + n;
-            console.log(name in loads)
-            if(name in loads){
-                n += 1;
-                continue;
-            }
-            break;
-        }
-        return name;
+        reRender()
+        reFocus()
     }
 
+    // When Delete Load button is clicked
     function deleteLoad(){
         delete loads[selectedLoad]
 
+        // Switch selectedLoad to the first available load
         for(let load in loads){
             setSelectedLoad(load)
             break
         }
-        setLoadUpdated(true)
-    }
 
-    // Function for when you click on a load, selects that load.
-    function loadSwitcher(d,event){
-        console.log("got called in load switcher")
-        console.log(d)
-        for(let load in loads){
-            if(load === d.loadID){
-                console.log("load was selected")
-                setSelectedLoad(load)
-                break;
-            }
-        }
+        reRender()
+        reFocus()
     }
-    function playerMovement(disp,mag,tl){
-        if(!(selectedLoad in loads)){
-            return
-        }
-        let newLoc = loads[selectedLoad].location + disp
-        // Prevent player from moving out of bounds.
-        if(newLoc < 0)
-            newLoc = 0
-        else if(newLoc > beamProperties.length - loads[selectedLoad].length)
-            newLoc = beamProperties.length - loads[selectedLoad].length
-        loads[selectedLoad].location = newLoc
-        setLoadUpdated(true)
-    }
-
-    /**
-     * Function allowing users to use the left, jump, and right features by pressing Arrow keys.
-     */
-    function handleKeyDown(event){
-        // Don't mess with anything while forms are open.
-        if(openAddEdit)
-            return;
-        // Prevent arrow keys from scrolling the screen.
-        if([37,38,39,40].includes(event.keyCode))
-            event.preventDefault();
-        // Left arrow key.
-        if(event.keyCode == 37)
-            playerMovement(-1,1,10);
-        // Up arrow key (Jump).
-        else if(event.keyCode == 38)
-            playerMovement(0,5,10);
-        // Right arrow key.
-        else if(event.keyCode == 39)
-            playerMovement(1,1,10);
+ 
+    // When Edit Beam Properties button is clicked
+    function handleReturnButton() {
+        setIsBeamIni(false)
+        reRender()
+        reFocus()
     }
 
     /**
@@ -339,7 +338,7 @@ function CombinedLoadApp(){
             return;
         }
 
-        // Check that loads are not invalidated by length of beam change.
+        // Check that created loads are not invalidated by length of beam change.
         for(let load in loads)
             if(loads[load].type === "Point" && loads[load].location > beamProperties.length) {
                 setInitialFormWarning(load + " location must be less than or equal to Length of Beam.");
@@ -361,7 +360,7 @@ function CombinedLoadApp(){
      * This function also converts the string inputs into number inputs.
      */
      function validateInputsAddEditForm(mode){
-        reRender(!render);
+        reRender();
         // Check that name is not in use, unless when editing if the name is the same as the original name.
         if((newLoadData.name in loads) && (mode === "Add" || newLoadData.name !== selectedLoad)) {
             setAddEditFormWarning("Name is already in use.");
@@ -430,40 +429,29 @@ function CombinedLoadApp(){
         setAddEditFormWarning("");
     }
 
-    // Function for using the load selector dropdown or initial form radio buttons to change selected load
+    // When using the load selector dropdown or initial form radio buttons to change selected load
     function handleSelectedChange(event){
         setSelectedLoad(event.target.value);
-    }
-    
-    // Function for submitting the initial form
-    function handleSubmit(data, e){
-        validateInputsInitialForm();
-        if(initialFormWarning === "") {
-            setBeamProperties(data);
-            setIsBeamIni(true);
-        } else
-            e.preventDefault();
+        reRender()
     }
 
-    function handleReturnButton() {
-        setIsBeamIni(false)
-        reRender(!render)
+    // When clicking an arrow, line, or label corresponding to a load to change selected load
+    function handleLoadClick(element){
+        setSelectedLoad(element.loadID)
+        reRender()
     }
 
-    // Radio buttons displaying list of loads in the initial form
-    function loadRadioButtonsCreator(){
-        let labels = [];
-        for(let load in loads)
-            labels.push(<FormControlLabel
-                key={load} value={load} control={<Radio/>}
-                label={load + 
-                    ", Type = " + loads[load].type + 
-                    ": Location = " + (loads[load].location + loads[load].length / 2) + 
-                    ", Mass = " + loads[load].mass + 
-                    (loads[load].type!=="Point" ? ", Length = " + loads[load].length : "") + 
-                    (loads[load].type==="Triangular" ? ", Taller End = " + loads[load].tallerEnd : "")}
-            />)
-        return labels;
+    // Move the selected load
+    function playerMovement(disp,mag,tl){
+        if(!(selectedLoad in loads)){
+            return
+        }
+        let newLoc = loads[selectedLoad].location + disp
+        // Constrain newLoc to be in-bounds
+        newLoc = Math.max(newLoc, 0)
+        newLoc = Math.min(newLoc, beamProperties.length - loads[selectedLoad].length)
+        loads[selectedLoad].location = newLoc
+        reRender()
     }
     
     // Returns LineSeries plot points for deflection diagram. Also updates the scale for the plot.
@@ -509,7 +497,7 @@ function CombinedLoadApp(){
     // Display the initial inputs form
     if(!isBeamIni){
         return(
-            <form onSubmit={(e)=> {handleSubmit(beamProperties, e)}}>
+            <form ref={initialFormRef} onKeyDown={handleKeyDown} tabIndex="0" onSubmit={(e)=> {handleSubmit(beamProperties, e)}}>
                 <h1>CARL</h1>
                 {/* Enter beam properties in the initial form */}
                 <h3 style={{marginBottom: 0}}>Beam Properties</h3>
@@ -622,7 +610,7 @@ function CombinedLoadApp(){
                             onChange={(val)=>{
                                 supportProperties.type = val.target.value;
                                 validateInputsInitialForm();
-                                reRender(!render);
+                                reRender();
                             }}
                         >
                             <FormControlLabel value="Simply Supported" control={<Radio />} label="Simply Supported" />
@@ -664,12 +652,12 @@ function CombinedLoadApp(){
                         onChange={handleSelectedChange}
                         sx={{display:'inline-flex'}}
                     >
-                        {loadRadioButtonsCreator()}
+                        {loadRadioButtonsCreator(loads)}
                     </RadioGroup>
                     <div>
                         {/* Add, Edit, Delete Load buttons */}
-                        <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>Add Load</Button>
-                        <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
+                        <Button variant="outlined" sx={{width:135}} onClick={handleClickAdd}>Add Load</Button>
+                        <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
                         <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
                         {/* Add/Edit Load menu */}
                         <AddEditForm
@@ -685,16 +673,12 @@ function CombinedLoadApp(){
                 {/* Text display for invalid inputs. */}
                 <p style={{fontWeight: 'bold'}}>{initialFormWarning}</p>
                 {/* Submit button. */}
-                <input type="submit" value="Analyze" autoFocus/>
+                <input type="submit" value="Analyze"/>
             </form>
         );
     }
-
-    if(!onceLoaded){
-        setOnceLoaded(true)
-    }
     return(
-        <div className={"rowC"} ref={focusRef} onKeyDown={handleKeyDown} tabIndex="0">
+        <div className={"rowC"} ref={plotScreenRef} onKeyDown={handleKeyDown} tabIndex="0">
             <div>
                 <h1>CARL</h1>
                 {/* Main Plot */}
@@ -709,7 +693,7 @@ function CombinedLoadApp(){
                     <LabelSeries data={[{x: supportProperties.leftSupportPos, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
                                         {x: supportProperties.rightSupportPos, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                     {/* Display the loads. */}
-                    <LabelSeries data={labelMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={(d,event)=>{loadSwitcher(d,event)}} />
+                    <LabelSeries data={labelMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={handleLoadClick} />
                     {/* Display the line parts of distributed and triangular loads. */}
                     {Object.entries(loads).map((load) => {
                         // Distributed load line
@@ -754,8 +738,8 @@ function CombinedLoadApp(){
                 <LoadSelector loadList={loads} value={selectedLoad} onChange={handleSelectedChange} />
                 <div>
                     {/* Add, Edit, Delete Load buttons */}
-                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenAdd}>Add Load</Button>
-                    <Button variant="outlined" sx={{width:135}} onClick={handleClickOpenEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickAdd}>Add Load</Button>
+                    <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
                     <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
                     {/* Add/Edit Load menu */}
                     <AddEditForm
@@ -1118,6 +1102,33 @@ function formatVal(scale) {
         }
     // Both functions round the vals to a precision of 6 to avoid floating point trails.
     // They must also be concatenated with a string or some labels will not display 0 (they view it as false and put no label)
+}
+
+// Function to pick the first unoccupied load name like load1, load2, load3...
+function loadNamer(loads){
+    let i = 1
+    while(true){
+        let name = "Load " + i
+        if(!(name in loads))
+            return name
+        i++
+    }
+}
+
+// Radio buttons displaying list of loads in the initial form
+function loadRadioButtonsCreator(loads){
+    let labels = [];
+    for(let load in loads)
+        labels.push(<FormControlLabel
+            key={load} value={load} control={<Radio/>}
+            label={load + 
+                ", Type = " + loads[load].type + 
+                ": Location = " + (loads[load].location + loads[load].length / 2) + 
+                ", Mass = " + loads[load].mass + 
+                (loads[load].type!=="Point" ? ", Length = " + loads[load].length : "") + 
+                (loads[load].type==="Triangular" ? ", Taller End = " + loads[load].tallerEnd : "")}
+        />)
+    return labels;
 }
 
 export default CombinedLoadApp;
