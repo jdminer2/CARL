@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField} from '@mui/material'
 
 /**
@@ -6,7 +6,7 @@ import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogT
  * They may set the load's name, type, location, mass, length, and for triangular loads, they may set which side is taller.
  * 
  * Props
- * open: the Dialog open prop
+ * open: the Dialog open prop; whether the form is open
  * mode: whether the menu is for adding or editing a load. Should be "Add" or "Edit"
  * handleClose: function that receives "cancel", "confirm", or something invalid, plus the menu mode. Will process the newLoadData accordingly
  * newLoadData: an object with name, type, location, mass, length, and tallerEnd. This stores the properties of the load being added or edited
@@ -121,6 +121,6 @@ const AddEditForm = (props) => {
                 <Button onClick={()=>{props.handleClose("confirm", props.mode)}}>Confirm</Button>
             </DialogActions>
         </Dialog>
-    );
+    )
 }
-export default AddEditForm;
+export default AddEditForm

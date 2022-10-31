@@ -12,17 +12,17 @@ function CombinedLoadApp(){
     const [supportProperties,setSupportProperties] = useState({type: "Simply Supported", leftSupportPos: 0, rightSupportPos: 100})
     const [loads,setLoads] = useState({})
     // The scales of plots
-    const [deflectionScale, setDeflectionScale] = useState(1);
-    const [bendingMomentScale, setBendingMomentScale] = useState(1);
-    const [shearForceScale, setShearForceScale] = useState(1);
+    const [deflectionScale, setDeflectionScale] = useState(1)
+    const [bendingMomentScale, setBendingMomentScale] = useState(1)
+    const [shearForceScale, setShearForceScale] = useState(1)
     // The current load to move/modify/delete
     const [selectedLoad, setSelectedLoad] = useState('load1')
     // Whether forms should be shown
     const [openPropertiesForm, setOpenPropertiesForm] = useState(true)
     const [openAddEditForm, setOpenAddEditForm] = useState(false)
     // The warning text that should be shown at the bottom of the forms
-    const [propertiesFormWarning, setPropertiesFormWarning] = useState("");
-    const [addEditFormWarning, setAddEditFormWarning] = useState("");
+    const [propertiesFormWarning, setPropertiesFormWarning] = useState("")
+    const [addEditFormWarning, setAddEditFormWarning] = useState("")
     // Whether the user is currently adding or editing in the add/edit form
     const [addEditMode, setAddEditMode] = useState("Add")
     // The data being entered in the add/edit form
@@ -30,7 +30,7 @@ function CombinedLoadApp(){
 
 
     // Function that automatically re-renders the screen.
-    const [render, setRender] = useState(true);
+    const [render, setRender] = useState(true)
     function reRender() {
         setRender(!render)
     }
@@ -47,28 +47,29 @@ function CombinedLoadApp(){
     useEffect(() => {
         window.addEventListener("resize", reRender)
         return () => window.removeEventListener("resize", reRender)
-    },[window.innerHeight, window.innerWidth]);
+    },[window.innerHeight, window.innerWidth])
 
 
     /**
      * Function managing keyboard controls.
      * Users may submit forms by pressing Enter, 
-     * or use the arrow keys to jump or move the load left or right.
+     * use the arrow keys to jump or move the load left or right,
+     * or press the delete key to delete a load.
      */
     function handleKeyDown(event){
-        // On the Add/Edit form
-        if(openAddEditForm){
-            // Enter key
-            if(event.keyCode == 13) {
-                handleCloseAddEdit("confirm", addEditMode)
-                event.preventDefault()
-            }
-        }
-        // On the properties form screen
-        else if(openPropertiesForm) {
+        // On the properties form
+        if(openPropertiesForm) {
             // Enter key
             if(event.keyCode == 13)
                 handleSubmitPropertiesForm(null)
+        }
+        // On the add/edit form
+        else if(openAddEditForm){
+            // Enter key
+            if(event.keyCode == 13) {
+                handleCloseAddEditForm("confirm", addEditMode)
+                event.preventDefault()
+            }
         }
         // On the main plots screen
         else {
@@ -77,84 +78,92 @@ function CombinedLoadApp(){
                 event.preventDefault()
             // Left arrow key
             if(event.keyCode == 37)
-                playerMovement(-1,1,10)
+                moveSelectedLoad(-1,1,10)
             // Up arrow key (Jump)
             else if(event.keyCode == 38)
-                playerMovement(0,5,10)
+                moveSelectedLoad(0,5,10)
             // Right arrow key
             else if(event.keyCode == 39)
-                playerMovement(1,1,10)
+                moveSelectedLoad(1,1,10)
+            // Delete key
+            else if(event.keyCode == 46)
+                handleDelete()
         }
     }
-    
+
+
+    // When Edit Properties button is clicked
+    function handleClickProperties() {
+        setOpenPropertiesForm(true)
+        reFocus()
+    }
+    // When Add Load button is clicked
+    const handleClickAdd = () => {
+        // Pick a random color in the range #000000 to #9F9F9F, always opacity 50%.
+        let newR = Math.floor(Math.random() * 160).toString(16)
+        if(newR.length < 2)
+            newR = "0"+newR
+        let newG = Math.floor(Math.random() * 160).toString(16)
+        if(newG.length < 2)
+            newG = "0"+newG
+        let newB = Math.floor(Math.random() * 160).toString(16)
+        if(newB.length < 2)
+            newB = "0"+newB
+        let color = "#" + newR + newG + newB + "80"
+
+        // Put default load properties.
+        setNewLoadData({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:color})
+        // Display add/edit form in add mode.
+        setOpenAddEditForm(true)
+        setAddEditMode("Add")
+
+    }
+    // When Edit Load button is clicked
+    const handleClickEdit = () => {
+        // Put preexisting load properties.
+        setNewLoadData({name:selectedLoad, type:loads[selectedLoad].type, location:loads[selectedLoad].location + loads[selectedLoad].length / 2, mass:loads[selectedLoad].mass, length:loads[selectedLoad].length, tallerEnd:loads[selectedLoad].tallerEnd, color:loads[selectedLoad].color})
+        // Display add/edit form in edit mode.
+        setOpenAddEditForm(true)
+        setAddEditMode("Edit")
+    }
+
+
     // Function to submit the properties form
     function handleSubmitPropertiesForm(e){
-        validateInputsPropertiesForm();
+        validateInputsPropertiesForm()
         if(propertiesFormWarning === "") {
-            setOpenPropertiesForm(false);
+            setOpenPropertiesForm(false)
             reRender()
             reFocus()
         } 
         else if(e != null)
-            e.preventDefault();
+            e.preventDefault()
     }
-
-    // When Add Load button is clicked
-    const handleClickAdd = () => {
-        // Pick a random color in the range #000000 to #9F9F9F, always opacity 50%.
-        let newR = Math.floor(Math.random() * 160).toString(16);
-        if(newR.length < 2)
-            newR = "0"+newR;
-        let newG = Math.floor(Math.random() * 160).toString(16);
-        if(newG.length < 2)
-            newG = "0"+newG;
-        let newB = Math.floor(Math.random() * 160).toString(16);
-        if(newB.length < 2)
-            newB = "0"+newB;
-        let color = "#" + newR + newG + newB + "80";
-
-        // Put default load properties.
-        setNewLoadData({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:color});
-        // Display menu.
-        setOpenAddEditForm(true);
-        setAddEditMode("Add");
-    };
-
-    // When Edit Load button is clicked
-    const handleClickEdit = () => {
-        // Put preexisting load properties.
-        setNewLoadData({name:selectedLoad, type:loads[selectedLoad].type, location:loads[selectedLoad].location + loads[selectedLoad].length / 2, mass:loads[selectedLoad].mass, length:loads[selectedLoad].length, tallerEnd:loads[selectedLoad].tallerEnd, color:loads[selectedLoad].color});
-        // Display menu.
-        setOpenAddEditForm(true);
-        setAddEditMode("Edit");
-    };
-
-    // When closing the Add/Edit Load menu by clicking out, canceling, or confirming.
-    function handleCloseAddEdit (event, mode) {
+    // When closing the Add/Edit Load form by clicking out, canceling, or confirming.
+    function handleCloseAddEditForm (event, mode) {
         // If user clicked out or cancelled, do nothing and close the form.
         if(event !== "confirm"){
             setOpenAddEditForm(false)
             setAddEditFormWarning("")
-            reRender()
             reFocus()
             return
         }
-        // Check if errors are present, do nothing.
+        // If errors are present and user attempted to submit, do nothing and leave the form open.
         validateInputsAddEditForm(mode)
         if(addEditFormWarning !== "")
-            return;
+            return
 
         // Erase unused properties for the given load type.
         if(newLoadData.type === "Point")
             newLoadData.length = 0
         if(newLoadData.type !== "Triangular")
             newLoadData.tallerEnd = "Left"
-        // Create the new load if this is adding mode.
+        // Create the new load if adding mode.
         if(mode === "Add")
             loads[newLoadData.name] = {type:newLoadData.type, location:(newLoadData.location - newLoadData.length / 2), mass:newLoadData.mass, length:newLoadData.length, tallerEnd:newLoadData.tallerEnd, color:newLoadData.color}
-        // Edit existing load if this is editing mode.
+        // Edit existing load if editing mode.
         else {
-            // This for-loop is used to preserve the ordering of the loads in the list, instead of moving the edited load to the end.
+            // This for-loop is used to preserve the ordering of the loads in the list, instead of putting the edited load at the end.
             for(let load in loads) {
                 if(load !== selectedLoad) {
                     let type = loads[load].type
@@ -172,15 +181,240 @@ function CombinedLoadApp(){
                 }
             }
         }
-        setSelectedLoad(newLoadData.name)
         setOpenAddEditForm(false)
-        setAddEditFormWarning("")
-        reRender()
+        setSelectedLoad(newLoadData.name)
         reFocus()
     }
 
+
+    /**
+     * This function checks the properties form inputs to ensure that they are valid. 
+     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
+     * Load location must be less than or equal to beam length.
+     * This function also converts the string inputs into number inputs.
+     */
+     function validateInputsPropertiesForm(){
+        // Check that length is a number > 0.
+        if(parseFloat(beamProperties.length) != beamProperties.length){
+            setPropertiesFormWarning("Length of Beam must be a number.")
+            return
+        }
+        beamProperties.length = Number(beamProperties.length)
+        if(beamProperties.length <= 0) {
+            setPropertiesFormWarning("Length of Beam must be greater than 0.")
+            return
+        }
+
+        // Check that elasticity is a number >= 0
+        if(parseFloat(beamProperties.elasticity) != beamProperties.elasticity){
+            setPropertiesFormWarning("Elasticity must be a number.")
+            return
+        }
+        beamProperties.elasticity = Number(beamProperties.elasticity)
+        if(beamProperties.elasticity < 0) {
+            setPropertiesFormWarning("Elasticity must be at least 0.")
+            return
+        }
+
+        // Check that inertia is a number >= 0.
+        if(parseFloat(beamProperties.inertia) != beamProperties.inertia){
+            setPropertiesFormWarning("Inertia must be a number.")
+            return
+        }
+        beamProperties.inertia = Number(beamProperties.inertia)
+        if(beamProperties.inertia < 0) {
+            setPropertiesFormWarning("Inertia must be at least 0.")
+            return
+        }
+
+        // Check that density is a number >= 0.
+        if(parseFloat(beamProperties.density) != beamProperties.density){
+            setPropertiesFormWarning("Density must be a number.")
+            return
+        }
+        beamProperties.density = Number(beamProperties.density)
+        if(beamProperties.density < 0) {
+            setPropertiesFormWarning("Density must be at least 0.")
+            return
+        }
+
+        // Check that area is a number >= 0.
+        if(parseFloat(beamProperties.area) != beamProperties.area){
+            setPropertiesFormWarning("Area must be a number.")
+            return
+        }
+        beamProperties.area = Number(beamProperties.area)
+        if(beamProperties.area < 0) {
+            setPropertiesFormWarning("Area must be at least 0.")
+            return
+        }
+
+
+        // Check that damping ratio is a number >= 0.
+        if(parseFloat(beamProperties.dampingRatio) != beamProperties.dampingRatio){
+            setPropertiesFormWarning("Damping Ratio must be a number.")
+            return
+        }
+        beamProperties.dampingRatio = Number(beamProperties.dampingRatio)
+        if(beamProperties.dampingRatio < 0) {
+            setPropertiesFormWarning("Damping Ratio must be at least 0.")
+            return
+        }
+
+
+        // Check that rA is a number >= 0.
+        if(parseFloat(beamProperties.rA) != beamProperties.rA){
+            setPropertiesFormWarning("rA must be a number.")
+            return
+        }
+        beamProperties.rA = Number(beamProperties.rA)
+        if(beamProperties.rA < 0) {
+            setPropertiesFormWarning("rA must be at least 0.")
+            return
+        }
+
+        // Check that EI is a number > 0.
+        if(parseFloat(beamProperties.EI) != beamProperties.EI){
+            setPropertiesFormWarning("EI must be a number.")
+            return
+        }
+        beamProperties.EI = Number(beamProperties.EI)
+        if(beamProperties.EI <= 0) {
+            setPropertiesFormWarning("EI must be greater than 0.")
+            return
+        }
+
+        // Check that gravity is a number >= 0.
+        if(parseFloat(beamProperties.gravity) != beamProperties.gravity){
+            setPropertiesFormWarning("Gravity must be a number.")
+            return
+        }
+        beamProperties.gravity = Number(beamProperties.gravity)
+        if(beamProperties.gravity < 0) {
+            setPropertiesFormWarning("Gravity must be at least 0.")
+            return
+        }
+
+        // Check that left support loc is a number >= 0 and <= beam length.
+        if(parseFloat(supportProperties.leftSupportPos) != supportProperties.leftSupportPos){
+            setPropertiesFormWarning("Left Support Position must be a number.")
+            return
+        }
+        supportProperties.leftSupportPos = Number(supportProperties.leftSupportPos)
+        if(supportProperties.leftSupportPos < 0) {
+            setPropertiesFormWarning("Left Support Position must be at least 0.")
+            return
+        }
+        if(supportProperties.leftSupportPos > beamProperties.length) {
+            setPropertiesFormWarning("Left Support Position must be less than or equal to Length of Beam.")
+            return
+        }
+
+        // Check that right support loc is a number >= 0 and <= beam length.
+        if(parseFloat(supportProperties.rightSupportPos) != supportProperties.rightSupportPos){
+            setPropertiesFormWarning("Right Support Position must be a number.")
+            return
+        }
+        supportProperties.rightSupportPos = Number(supportProperties.rightSupportPos)
+        if(supportProperties.rightSupportPos < 0) {
+            setPropertiesFormWarning("Right Support Position must be at least 0.")
+            return
+        }
+        if(supportProperties.rightSupportPos > beamProperties.length) {
+            setPropertiesFormWarning("Right Support Position must be less than or equal to Length of Beam.")
+            return
+        }
+
+        // Check that created loads are not invalidated by length of beam change.
+        for(let load in loads)
+            if(loads[load].type === "Point" && loads[load].location > beamProperties.length) {
+                setPropertiesFormWarning(load + " location must be less than or equal to Length of Beam.")
+                return
+            }
+            else if(loads[load].type !== "Point" && loads[load].location + loads[load].length > beamProperties.length) {
+                setPropertiesFormWarning("Right end of " + load + " is out of bounds (Location is " + (loads[load].location + loads[load].length) + ", must be less than or equal to Length of Beam).")
+                return
+            }
+        
+        // No errors.
+        setPropertiesFormWarning("")
+    }
+    /**
+     * This function checks the properties form inputs to ensure that they are valid. 
+     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
+     * Load location must be less than or equal to beam length.
+     * This function also converts the string inputs into number inputs.
+     */
+     function validateInputsAddEditForm(mode){
+        reRender()
+        // Check that name is not in use, unless when editing if the name is the same as the original name.
+        if((newLoadData.name in loads) && (mode === "Add" || newLoadData.name !== selectedLoad)) {
+            setAddEditFormWarning("Name is already in use.")
+            return
+        }
+
+        // Check that location is a number.
+        if(parseFloat(newLoadData.location) != newLoadData.location){
+            setAddEditFormWarning("Location must be a number.")
+            return
+        }
+        newLoadData.location = Number(newLoadData.location)
+
+        // Check that mass is a number >= 0.
+        if(parseFloat(newLoadData.mass) != newLoadData.mass){
+            setAddEditFormWarning("Mass must be a number.")
+            return
+        }
+        newLoadData.mass = Number(newLoadData.mass)
+        if(newLoadData.mass < 0) {
+            setAddEditFormWarning("Mass must be at least 0.")
+            return
+        }
+
+        // Check that length is a number >= 0.
+        if(parseFloat(newLoadData.length) != newLoadData.length){
+            setAddEditFormWarning("Length must be a number.")
+            return
+        }
+        newLoadData.length = Number(newLoadData.length)
+        if(newLoadData.length < 0) {
+            setAddEditFormWarning("Length must be at least 0.")
+            return
+        }
+
+        // Check that load location is in-bounds, for point load.
+        if(newLoadData.type === "Point") {
+            if(newLoadData.location < 0) {
+                setAddEditFormWarning("Location must be at least 0.")
+                return
+            }
+            if(newLoadData.location > beamProperties.length) {
+                setAddEditFormWarning("Location must be less than or equal to Length of Beam.")
+                return
+            }
+        }
+        // Check that left and right ends of the load are in-bounds, for long loads.
+        else {
+            // While the form is open, newLoadData.location refers to the middle of the load instead of the left end.
+            let leftEnd = newLoadData.location - newLoadData.length / 2
+            let rightEnd = newLoadData.location + newLoadData.length / 2
+            if(leftEnd < 0) {
+                setAddEditFormWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).")
+                return
+            }
+            if(rightEnd > beamProperties.length){
+                setAddEditFormWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).")
+                return
+            }
+        }
+
+        // No errors.
+        setAddEditFormWarning("")
+    }
+
+
     // When Delete Load button is clicked
-    function deleteLoad(){
+    function handleDelete(){
         delete loads[selectedLoad]
 
         // Switch selectedLoad to the first available load
@@ -192,265 +426,28 @@ function CombinedLoadApp(){
         reRender()
         reFocus()
     }
- 
-    // When Edit Beam Properties button is clicked
-    function handleReturnButton() {
-        setOpenPropertiesForm(true)
-        reRender()
-        reFocus()
-    }
-
-    /**
-     * This function checks the properties form inputs to ensure that they are valid. 
-     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
-     * Load location must be less than or equal to beam length.
-     * This function also converts the string inputs into number inputs.
-     */
-     function validateInputsPropertiesForm(){
-        // Check that length is a number > 0.
-        if(parseFloat(beamProperties.length) != beamProperties.length){
-            setPropertiesFormWarning("Length of Beam must be a number.");
-            return;
-        }
-        beamProperties.length = Number(beamProperties.length);
-        if(beamProperties.length <= 0) {
-            setPropertiesFormWarning("Length of Beam must be greater than 0.");
-            return;
-        }
-
-        // Check that elasticity is a number >= 0
-        if(parseFloat(beamProperties.elasticity) != beamProperties.elasticity){
-            setPropertiesFormWarning("Elasticity must be a number.");
-            return;
-        }
-        beamProperties.elasticity = Number(beamProperties.elasticity);
-        if(beamProperties.elasticity < 0) {
-            setPropertiesFormWarning("Elasticity must be at least 0.");
-            return;
-        }
-
-        // Check that inertia is a number >= 0.
-        if(parseFloat(beamProperties.inertia) != beamProperties.inertia){
-            setPropertiesFormWarning("Inertia must be a number.");
-            return;
-        }
-        beamProperties.inertia = Number(beamProperties.inertia);
-        if(beamProperties.inertia < 0) {
-            setPropertiesFormWarning("Inertia must be at least 0.");
-            return;
-        }
-
-        // Check that density is a number >= 0.
-        if(parseFloat(beamProperties.density) != beamProperties.density){
-            setPropertiesFormWarning("Density must be a number.");
-            return;
-        }
-        beamProperties.density = Number(beamProperties.density);
-        if(beamProperties.density < 0) {
-            setPropertiesFormWarning("Density must be at least 0.");
-            return;
-        }
-
-        // Check that area is a number >= 0.
-        if(parseFloat(beamProperties.area) != beamProperties.area){
-            setPropertiesFormWarning("Area must be a number.");
-            return;
-        }
-        beamProperties.area = Number(beamProperties.area);
-        if(beamProperties.area < 0) {
-            setPropertiesFormWarning("Area must be at least 0.");
-            return;
-        }
-
-
-        // Check that damping ratio is a number >= 0.
-        if(parseFloat(beamProperties.dampingRatio) != beamProperties.dampingRatio){
-            setPropertiesFormWarning("Damping Ratio must be a number.");
-            return;
-        }
-        beamProperties.dampingRatio = Number(beamProperties.dampingRatio);
-        if(beamProperties.dampingRatio < 0) {
-            setPropertiesFormWarning("Damping Ratio must be at least 0.");
-            return;
-        }
-
-
-        // Check that rA is a number >= 0.
-        if(parseFloat(beamProperties.rA) != beamProperties.rA){
-            setPropertiesFormWarning("rA must be a number.");
-            return;
-        }
-        beamProperties.rA = Number(beamProperties.rA);
-        if(beamProperties.rA < 0) {
-            setPropertiesFormWarning("rA must be at least 0.");
-            return;
-        }
-
-        // Check that EI is a number > 0.
-        if(parseFloat(beamProperties.EI) != beamProperties.EI){
-            setPropertiesFormWarning("EI must be a number.");
-            return;
-        }
-        beamProperties.EI = Number(beamProperties.EI);
-        if(beamProperties.EI <= 0) {
-            setPropertiesFormWarning("EI must be greater than 0.");
-            return;
-        }
-
-        // Check that gravity is a number >= 0.
-        if(parseFloat(beamProperties.gravity) != beamProperties.gravity){
-            setPropertiesFormWarning("Gravity must be a number.");
-            return;
-        }
-        beamProperties.gravity = Number(beamProperties.gravity);
-        if(beamProperties.gravity < 0) {
-            setPropertiesFormWarning("Gravity must be at least 0.");
-            return;
-        }
-
-        // Check that left support loc is a number >= 0 and <= beam length.
-        if(parseFloat(supportProperties.leftSupportPos) != supportProperties.leftSupportPos){
-            setPropertiesFormWarning("Left Support Position must be a number.")
-            return;
-        }
-        supportProperties.leftSupportPos = Number(supportProperties.leftSupportPos);
-        if(supportProperties.leftSupportPos < 0) {
-            setPropertiesFormWarning("Left Support Position must be at least 0.")
-            return;
-        }
-        if(supportProperties.leftSupportPos > beamProperties.length) {
-            setPropertiesFormWarning("Left Support Position must be less than or equal to Length of Beam.");
-            return;
-        }
-
-        // Check that right support loc is a number >= 0 and <= beam length.
-        if(parseFloat(supportProperties.rightSupportPos) != supportProperties.rightSupportPos){
-            setPropertiesFormWarning("Right Support Position must be a number.")
-            return;
-        }
-        supportProperties.rightSupportPos = Number(supportProperties.rightSupportPos);
-        if(supportProperties.rightSupportPos < 0) {
-            setPropertiesFormWarning("Right Support Position must be at least 0.")
-            return;
-        }
-        if(supportProperties.rightSupportPos > beamProperties.length) {
-            setPropertiesFormWarning("Right Support Position must be less than or equal to Length of Beam.");
-            return;
-        }
-
-        // Check that created loads are not invalidated by length of beam change.
-        for(let load in loads)
-            if(loads[load].type === "Point" && loads[load].location > beamProperties.length) {
-                setPropertiesFormWarning(load + " location must be less than or equal to Length of Beam.");
-                return;
-            }
-            else if(loads[load].type !== "Point" && loads[load].location + loads[load].length > beamProperties.length) {
-                setPropertiesFormWarning("Right end of " + load + " is out of bounds (Location is " + (loads[load].location + loads[load].length) + ", must be less than or equal to Length of Beam).");
-                return;
-            }
-        
-        // No errors.
-        setPropertiesFormWarning("");
-    }
-
-    /**
-     * This function checks the properties form inputs to ensure that they are valid. 
-     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
-     * Load location must be less than or equal to beam length.
-     * This function also converts the string inputs into number inputs.
-     */
-     function validateInputsAddEditForm(mode){
-        reRender();
-        // Check that name is not in use, unless when editing if the name is the same as the original name.
-        if((newLoadData.name in loads) && (mode === "Add" || newLoadData.name !== selectedLoad)) {
-            setAddEditFormWarning("Name is already in use.");
-            return;
-        }
-
-        // Check that location is a number.
-        if(parseFloat(newLoadData.location) != newLoadData.location){
-            setAddEditFormWarning("Location must be a number.");
-            return;
-        }
-        newLoadData.location = Number(newLoadData.location);
-
-        // Check that mass is a number >= 0.
-        if(parseFloat(newLoadData.mass) != newLoadData.mass){
-            setAddEditFormWarning("Mass must be a number.");
-            return;
-        }
-        newLoadData.mass = Number(newLoadData.mass);
-        if(newLoadData.mass < 0) {
-            setAddEditFormWarning("Mass must be at least 0.");
-            return;
-        }
-
-        // Check that length is a number >= 0.
-        if(parseFloat(newLoadData.length) != newLoadData.length){
-            setAddEditFormWarning("Length must be a number.");
-            return;
-        }
-        newLoadData.length = Number(newLoadData.length);
-        if(newLoadData.length < 0) {
-            setAddEditFormWarning("Length must be at least 0.");
-            return;
-        }
-
-        // Check that load location is in-bounds, for point load.
-        if(newLoadData.type === "Point") {
-            if(newLoadData.location < 0) {
-                setAddEditFormWarning("Location must be at least 0.");
-                return;
-            }
-            if(newLoadData.location > beamProperties.length) {
-                setAddEditFormWarning("Location must be less than or equal to Length of Beam.");
-                return;
-            }
-        }
-        // Check that left and right ends of the load are in-bounds, for long loads.
-        else {
-            // While the form is open, newLoadData.location refers to the middle of the load instead of the left end.
-            let leftEnd = newLoadData.location - newLoadData.length / 2;
-            let rightEnd = newLoadData.location + newLoadData.length / 2;
-            if(leftEnd < 0) {
-                setAddEditFormWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).");
-                return;
-            }
-            if(rightEnd > beamProperties.length){
-                setAddEditFormWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).");
-                return;
-            }
-        }
-
-        // No errors.
-        setAddEditFormWarning("");
-    }
-
     // When using the load selector dropdown or properties form radio buttons to change selected load
     function handleSelectedChange(event){
-        setSelectedLoad(event.target.value);
-        reRender()
+        setSelectedLoad(event.target.value)
     }
-
     // When clicking an arrow, line, or label corresponding to a load to change selected load
     function handleLoadClick(element){
         setSelectedLoad(element.loadID)
-        reRender()
     }
-
     // Move the selected load
-    function playerMovement(disp,mag,tl){
-        if(!(selectedLoad in loads)){
+    function moveSelectedLoad(disp,mag,tl){
+        if(!(selectedLoad in loads))
             return
-        }
         let newLoc = loads[selectedLoad].location + disp
         // Constrain newLoc to be in-bounds
         newLoc = Math.max(newLoc, 0)
         newLoc = Math.min(newLoc, beamProperties.length - loads[selectedLoad].length)
         loads[selectedLoad].location = newLoc
+
         reRender()
     }
-    
+
+
     // Returns LineSeries plot points for deflection diagram. Also updates the scale for the plot.
     function deflectionDiagram() {
         // Get data points for deflection plot
@@ -463,7 +460,6 @@ function CombinedLoadApp(){
 
         return plotData
     }
-
     // Returns LineSeries plot points for bending moment diagram. Also updates the scale for the plot.
     function bendingMomentDiagram() {
         // Get data points for bending moment plot
@@ -476,7 +472,6 @@ function CombinedLoadApp(){
 
         return plotData
     }
-
     // Returns LineSeries plot points for shear force diagram. Also updates the scale for the plot.
     function shearForceDiagram() {
         // Get data points for shear force plot
@@ -487,7 +482,6 @@ function CombinedLoadApp(){
         if(newScale != shearForceScale)
             setShearForceScale(newScale)
 
-        console.log(plotData)
         return plotData
     }
     
@@ -504,7 +498,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.length}
                             onChange={(e) => {
                                 beamProperties.length = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -514,7 +508,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.elasticity}
                             onChange={(e) => {
                                 beamProperties.elasticity = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -524,7 +518,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.inertia}
                             onChange={(e) => {
                                 beamProperties.inertia = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -534,7 +528,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.density}
                             onChange={(e) => {
                                 beamProperties.density = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -544,7 +538,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.area}
                             onChange={(e) => {
                                 beamProperties.area = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -554,7 +548,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.dampingRatio}
                             onChange={(e) => {
                                 beamProperties.dampingRatio = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -564,7 +558,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.rA}
                             onChange={(e) => {
                                 beamProperties.rA = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -574,7 +568,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.EI}
                             onChange={(e) => {
                                 beamProperties.EI = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -584,7 +578,7 @@ function CombinedLoadApp(){
                             defaultValue={beamProperties.gravity}
                             onChange={(e) => {
                                 beamProperties.gravity = e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                         />
                     </label>
@@ -596,9 +590,9 @@ function CombinedLoadApp(){
                     <RadioGroup
                         value={supportProperties.type}
                         onChange={(val)=>{
-                            supportProperties.type = val.target.value;
-                            validateInputsPropertiesForm();
-                            reRender();
+                            supportProperties.type = val.target.value
+                            validateInputsPropertiesForm()
+                            reRender()
                         }}
                         sx={{display:'inline-flex'}}
                         row
@@ -612,7 +606,7 @@ function CombinedLoadApp(){
                             defaultValue={supportProperties.leftSupportPos}
                             onChange={(e)=>{
                                 supportProperties.leftSupportPos=e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                             disabled={supportProperties.type !== "Simply Supported"}
                         />
@@ -623,7 +617,7 @@ function CombinedLoadApp(){
                             defaultValue={supportProperties.rightSupportPos}
                             onChange={(e)=>{
                                 supportProperties.rightSupportPos=e.target.value
-                                validateInputsPropertiesForm();
+                                validateInputsPropertiesForm()
                             }}
                             disabled={supportProperties.type !== "Simply Supported"}
                         />
@@ -644,12 +638,12 @@ function CombinedLoadApp(){
                         {/* Add, Edit, Delete Load buttons */}
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickAdd}>Add Load</Button>
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
-                        <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
-                        {/* Add/Edit Load menu */}
+                        <Button variant="outlined" sx={{width:135}} onClick={handleDelete} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
+                        {/* Add/Edit Load form */}
                         <AddEditForm
                             open={openAddEditForm} 
                             mode={addEditMode}
-                            handleClose={handleCloseAddEdit}
+                            handleClose={handleCloseAddEditForm}
                             newLoadData={newLoadData}
                             validate={validateInputsAddEditForm}
                             warning={addEditFormWarning}
@@ -661,7 +655,7 @@ function CombinedLoadApp(){
                 {/* Submit button. */}
                 <input type="submit" value="Analyze"/>
             </form>
-        );
+        )
     }
     else {
         // Display the main plots screen
@@ -736,12 +730,12 @@ function CombinedLoadApp(){
                         {/* Add, Edit, Delete Load buttons */}
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickAdd}>Add Load</Button>
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={Object.keys(loads).length === 0}>Edit Load</Button>
-                        <Button variant="outlined" sx={{width:135}} onClick={deleteLoad} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
-                        {/* Add/Edit Load menu */}
+                        <Button variant="outlined" sx={{width:135}} onClick={handleDelete} disabled={Object.keys(loads).length === 0}>Delete Load</Button>
+                        {/* Add/Edit Load form */}
                         <AddEditForm
                             open={openAddEditForm} 
                             mode={addEditMode}
-                            handleClose={handleCloseAddEdit}
+                            handleClose={handleCloseAddEditForm}
                             newLoadData={newLoadData}
                             validate={validateInputsAddEditForm}
                             warning={addEditFormWarning}
@@ -749,11 +743,11 @@ function CombinedLoadApp(){
                     </div>
                     <div>
                         {/* Control buttons */}
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(-1,1,10)}}>&#8592;</Button>
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(0,5,10)}}>JUMP</Button>
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{playerMovement(1,1,10)}}>&#8594;</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(-1,1,10)}}>&#8592;</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(0,5,10)}}>JUMP</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(1,1,10)}}>&#8594;</Button>
                     </div>
-                    <Button variant="contained" sx={{margin:0.5}} onClick={()=>handleReturnButton()}>Edit Beam Properties</Button>
+                    <Button variant="contained" sx={{margin:0.5}} onClick={()=>handleClickProperties()}>Edit Properties</Button>
                 </div>
                 <div>
                     <h1>Plots</h1>
@@ -826,9 +820,9 @@ function labelMakerForLoads(loads, selectedLoad, beamProperties){
         if(load.type === "Point")
             data.push({x: xLoc, y: -5, label: "\u2193", loadID: loadName, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         else
-            getDistributedLoadMiniArrows(data, loadName, load, beamProperties.length);
+            getDistributedLoadMiniArrows(data, loadName, load, beamProperties.length)
     }
-    return data;
+    return data
 }
 
 /**
@@ -842,7 +836,7 @@ function labelMakerForLoads(loads, selectedLoad, beamProperties){
  * loadID is the name of the load that these arrows belong to. It is part of allowing users to click on these arrows to select the load to move/delete it.
  */
 function getDistributedLoadMiniArrows(data, loadName, load, beamLen){
-    let numArrows = Math.floor(load.length / beamLen * 20) + 1;
+    let numArrows = Math.floor(load.length / beamLen * 20) + 1
     // Evenly spaced
     for(let i = 0; i <= numArrows; i++) {
         let x = load.location + (i/numArrows) * load.length
@@ -1171,19 +1165,19 @@ function loadNamer(loads){
 
 // Radio buttons displaying list of loads in the properties form
 function loadRadioButtonsCreator(loads){
-    let labels = [];
+    let labels = []
     for(let load in loads)
         labels.push(<FormControlLabel control={<Radio/>}
             value={load}
             key={load}
-            label={load + 
+            label={"Name = " + load + 
                 ", Type = " + loads[load].type + 
                 ": Location = " + (loads[load].location + loads[load].length / 2) + 
                 ", Mass = " + loads[load].mass + 
                 (loads[load].type!=="Point" ? ", Length = " + loads[load].length : "") + 
                 (loads[load].type==="Triangular" ? ", Taller End = " + loads[load].tallerEnd : "")}
         />)
-    return labels;
+    return labels
 }
 
-export default CombinedLoadApp;
+export default CombinedLoadApp
