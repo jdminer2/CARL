@@ -895,14 +895,20 @@ function R1SingleLoad(load, beamProperties, supportProperties){
     let L = load.length
     let Lb = beamProperties.length
 
-    let R1
+    let R1 = 0
     if(load.type === "Point") {
         if(supportProperties.type === "Cantilever")
             R1 = F
         else
             R1 = F/Lb * (Lb - X)
     }
-    else {
+    else if(load.type === "Distributed") {
+        if(supportProperties.type === "Cantilever")
+            R1 = F*L
+        else
+            R1 = F*L/Lb * (Lb - X - L/2)
+    }
+    else if(load.type === "Triangular") {
         if(supportProperties.type === "Cantilever")
             R1 = F*L
         else
@@ -917,10 +923,12 @@ function R2SingleLoad(load, beamProperties, supportProperties) {
     let F = load.mass * beamProperties.gravity
     let L = load.length
     
-    let R2
+    let R2 = 0
     if(load.type === "Point")
         R2 = F - R1SingleLoad(load, beamProperties, supportProperties)
-    else
+    else if(load.type === "Distributed")
+        R2 = F*L - R1SingleLoad(load, beamProperties, supportProperties)
+    else if(load.type === "Triangular")
         R2 = F*L - R1SingleLoad(load, beamProperties, supportProperties)
     return R2
 }
@@ -973,7 +981,7 @@ function deflectionSingleLoad(x, load, beamProperties, supportProperties) {
     let Lb = beamProperties.length
     let EI = beamProperties.EI
 
-    let y
+    let y = 0
     if(load.type === "Point") {
         if(x < X)
             y = (x**3-3*x**2*X) / 6
@@ -983,7 +991,18 @@ function deflectionSingleLoad(x, load, beamProperties, supportProperties) {
         if(supportProperties.type === "Simply Supported")
             y += (-2*Lb**2*X*x + 3*Lb*X*x**2 + 3*Lb*x*X**2 - X*x**3 - x*X**3) / 6 / Lb
     }
-    else {
+    else if(load.type === "Distributed") {
+        if(x < X)
+            y = (-3*L**2*x**2 - 6*L*X*x**2 + 2*L*x**3) / 12
+        else if(x < X + L)
+            y = (-1*(X-x)**4 - 6*L**2*x**2 - 12*L*X*x**2 + 4*L*x**3) / 24
+        else
+            y = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
+
+        if(supportProperties.type === "Simply Supported")
+            y += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
+    }
+    else if(load.type === "Triangular") {
         if(x < X)
             y = (-3*L**2*x**2 - 6*L*X*x**2 + 2*L*x**3) / 12
         else if(x < X + L)
@@ -1012,7 +1031,7 @@ function bendingMomentSingleLoad(x, load, beamProperties, supportProperties) {
     let L = load.length
     let Lb = beamProperties.length
 
-    let y
+    let y = 0
     if(load.type === "Point") {
         if(x < X)
             y = F * (x - X)
@@ -1022,7 +1041,18 @@ function bendingMomentSingleLoad(x, load, beamProperties, supportProperties) {
         if(supportProperties.type === "Simply Supported")
             y -= F * X / Lb * (x-Lb)
     }
-    else {
+    else if(load.type === "Distributed") {
+        if(x < X)
+            y = F * L * (x-X-L/2)
+        else if(x < X + L)
+            y = F * (L*x - X*L + X*x - (L**2+X**2+x**2)/2)
+        else
+            y = 0
+        
+        if(supportProperties.type === "Simply Supported")
+            y -= F * L * (2*X+L) / 2 / Lb * (x-Lb)
+    }
+    else if(load.type === "Triangular") {
         if(x < X)
             y = F * L * (x-X-L/2)
         else if(x < X + L)
@@ -1043,7 +1073,7 @@ function shearForceSingleLoad(x, load, beamProperties, supportProperties) {
     let L = load.length
     let Lb = beamProperties.length
 
-    let y
+    let y = 0
     if(load.type === "Point") {
         if(x < X)
             y = F
@@ -1063,7 +1093,19 @@ function shearForceSingleLoad(x, load, beamProperties, supportProperties) {
                 y -= F * X / Lb
         }
     }
-    else {
+    else if(load.type === "Distributed") {
+        if(x < X)
+            y = F * L
+        else if(x < X + L)
+            y = F * (X + L - x)
+        else
+            y = 0
+        
+        // For Cantilever, shear force at x=0 is F*L. For Simply Supported, it is something else, and the whole graph is translated down.
+        if(supportProperties.type === "Simply Supported")
+            y -= F * L * (2*X+L) / 2 / Lb
+    }
+    else if(load.type === "Triangular") {
         if(x < X)
             y = F * L
         else if(x < X + L)
