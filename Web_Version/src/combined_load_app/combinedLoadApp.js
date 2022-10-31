@@ -672,16 +672,24 @@ function CombinedLoadApp(){
                 <div>
                     <h1>CARL</h1>
                     {/* Main Plot */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain={[-100, 100]} margin={{left: 10}}>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} xDomain={[0,beamProperties.length]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
                         <XAxis tickFormat={formatVal(beamProperties.length)} title = {"Load Locations"}/>
-                        <YAxis/>
+                        <YAxis hideTicks/>
                         {/* Display the beam line. */}
                         <LineSeries data = {[{x: 0, y: 0}, {x: beamProperties.length, y: 0}]} />
                         {/* Display the supports. */}
-                        <LabelSeries data={[{x: supportProperties.leftSupportPos, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                            {x: supportProperties.rightSupportPos, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                        {
+                            (supportProperties.type === "Simply Supported")
+                            ?
+                                // Simply Supported supports
+                                <LabelSeries data={[{x: supportProperties.leftSupportPos, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                                    {x: supportProperties.rightSupportPos, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                            :
+                                // Cantilever support
+                                getCantileverSupportDisplay()
+                        }
                         {/* Display the loads. */}
                         <LabelSeries data={labelMakerForLoads(loads,selectedLoad,beamProperties)} onValueClick={handleLoadClick} />
                         {/* Display the line parts of distributed and triangular loads. */}
@@ -842,6 +850,20 @@ function getDistributedLoadMiniArrows(data, loadName, load, beamLen){
         let x = load.location + (i/numArrows) * load.length
         data.push({x: x, y: -3, label: "\u2193", loadID: loadName, style: {fontSize: 25, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle", fill: load.color}})
     }
+}
+
+// Function for adding the cantilever support visual display.
+function getCantileverSupportDisplay() {
+    let support = []
+    support.push(<LineSeries data = {[{x : 0, y : -10}, {x : 0, y : 10}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : 10}, {x : -2, y : 6}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : 6}, {x : -2, y : 2}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : 2}, {x : -2, y : -2}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : -2}, {x : -2, y : -6}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : -6}, {x : -2, y : -10}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : 10}, {x : -2, y : 10}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : -10}, {x : -2, y : -10}]} color = "#12939A"/>)
+    return support
 }
 
 // Plot the reactions, R1 and R2.
