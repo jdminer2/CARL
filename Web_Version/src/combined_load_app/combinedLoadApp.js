@@ -778,7 +778,7 @@ function CombinedLoadApp(){
                         <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Bending Moment Diagram"}/>
                         <YAxis tickFormat = {formatVal(bendingMomentScale)}/>
                         <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                        <LineSeries data={bendingMomentDiagram()}/>
+                        <LineSeries data={bendingMomentDiagram()} color="black"/>
                     </XYPlot>
                     {/* Shear Force Diagram */}
                     <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[shearForceScale, shearForceScale]} margin = {{left : 60, right:60}}>
@@ -788,7 +788,7 @@ function CombinedLoadApp(){
                         <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Shear Force Diagram"}/>
                         <YAxis tickFormat = {formatVal(shearForceScale)}/>
                         <LineSeries data = {[{x : 0, y : 0},{x : beamProperties.length,y : 0}]} />
-                        <LineSeries data={shearForceDiagram()}/>
+                        <LineSeries data={shearForceDiagram()} color="red"/>
                     </XYPlot>
                 </div>
             </div>
