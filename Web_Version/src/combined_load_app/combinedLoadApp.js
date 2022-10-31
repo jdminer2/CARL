@@ -9,7 +9,7 @@ import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, 
 function CombinedLoadApp(){
     // Data
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, gravity:9.8})
-    const [supportProperties,setSupportProperties] = useState({type: "Simply Supported", leftSupportPos: 0, rightSupportPos: 100})
+    const [supportProperties,setSupportProperties] = useState({type: "Simply Supported", pinnedSupportPosition: 0, rollerSupportPosition: 100})
     const [loads,setLoads] = useState({})
     // The scales of plots
     const [deflectionScale, setDeflectionScale] = useState(1)
@@ -29,45 +29,49 @@ function CombinedLoadApp(){
     const [newLoadData, setNewLoadData] = useState({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:"#00000080"})
 
 
-    // Function that automatically re-renders the screen.
+    // Automatically re-renders the screen when called
     const [render, setRender] = useState(true)
     function reRender() {
         setRender(!render)
     }
-    // Function that automatically resets the focus on the page so users can use keyboard controls.
-    const propertiesFormRef = React.useRef(null)
-    const plotScreenRef = React.useRef(null)
-    function reFocus() {
-        if(openPropertiesForm)
-            propertiesFormRef.current.focus()
-        else
-            plotScreenRef.current.focus()
-    }
-    // Makes the XYPlots automatically re-scale when the user resizes the window.
+    // Automatically resizes the plots when the user resizes the window
     useEffect(() => {
         window.addEventListener("resize", reRender)
         return () => window.removeEventListener("resize", reRender)
     },[window.innerHeight, window.innerWidth])
+    // Automatically sets the focus on the page so the user can use keyboard controls
+    const propertiesFormRef = React.useRef(null)
+    const plotScreenRef = React.useRef(null)
+    useEffect(()=>{
+        if(propertiesFormRef.current)
+            propertiesFormRef.current.focus()
+    },[openPropertiesForm])
+    useEffect(()=>{
+        if(plotScreenRef.current)
+            plotScreenRef.current.focus()
+    },[openPropertiesForm])
 
 
     /**
-     * Function managing keyboard controls.
-     * Users may submit forms by pressing Enter, 
+     * Function that manages keyboard controls.
+     * User may submit forms by pressing Enter, 
      * use the arrow keys to jump or move the load left or right,
      * or press the delete key to delete a load.
      */
     function handleKeyDown(event){
-        // On the properties form
-        if(openPropertiesForm) {
-            // Enter key
-            if(event.keyCode == 13)
-                handleSubmitPropertiesForm(null)
-        }
         // On the add/edit form
-        else if(openAddEditForm){
+        if(openAddEditForm){
             // Enter key
             if(event.keyCode == 13) {
-                handleCloseAddEditForm("confirm", addEditMode)
+                handleCloseAddEditForm("confirm")
+                event.preventDefault()
+            }
+        }
+        // On the properties form
+        else if(openPropertiesForm) {
+            // Enter key
+            if(event.keyCode == 13) {
+                handleSubmitPropertiesForm(null)
                 event.preventDefault()
             }
         }
@@ -95,28 +99,13 @@ function CombinedLoadApp(){
     // When Edit Properties button is clicked
     function handleClickProperties() {
         setOpenPropertiesForm(true)
-        reFocus()
     }
     // When Add Load button is clicked
     const handleClickAdd = () => {
-        // Pick a random color in the range #000000 to #9F9F9F, always opacity 50%.
-        let newR = Math.floor(Math.random() * 160).toString(16)
-        if(newR.length < 2)
-            newR = "0"+newR
-        let newG = Math.floor(Math.random() * 160).toString(16)
-        if(newG.length < 2)
-            newG = "0"+newG
-        let newB = Math.floor(Math.random() * 160).toString(16)
-        if(newB.length < 2)
-            newB = "0"+newB
-        let color = "#" + newR + newG + newB + "80"
-
-        // Put default load properties.
-        setNewLoadData({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:color})
+        setNewLoadData({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left"})
         // Display add/edit form in add mode.
         setOpenAddEditForm(true)
         setAddEditMode("Add")
-
     }
     // When Edit Load button is clicked
     const handleClickEdit = () => {
@@ -134,63 +123,60 @@ function CombinedLoadApp(){
         if(propertiesFormWarning === "") {
             setOpenPropertiesForm(false)
             reRender()
-            reFocus()
         } 
         else if(e != null)
             e.preventDefault()
     }
     // When closing the Add/Edit Load form by clicking out, canceling, or confirming.
-    function handleCloseAddEditForm (event, mode) {
+    function handleCloseAddEditForm (event) {
         // If user clicked out or cancelled, do nothing and close the form.
         if(event !== "confirm"){
             setOpenAddEditForm(false)
             setAddEditFormWarning("")
-            reFocus()
             return
         }
         // If errors are present and user attempted to submit, do nothing and leave the form open.
-        validateInputsAddEditForm(mode)
+        validateInputsAddEditForm(addEditMode)
         if(addEditFormWarning !== "")
             return
 
-        // Erase unused properties for the given load type.
-        if(newLoadData.type === "Point")
-            newLoadData.length = 0
-        if(newLoadData.type !== "Triangular")
-            newLoadData.tallerEnd = "Left"
-        // Create the new load if adding mode.
-        if(mode === "Add")
-            loads[newLoadData.name] = {type:newLoadData.type, location:(newLoadData.location - newLoadData.length / 2), mass:newLoadData.mass, length:newLoadData.length, tallerEnd:newLoadData.tallerEnd, color:newLoadData.color}
-        // Edit existing load if editing mode.
-        else {
-            // This for-loop is used to preserve the ordering of the loads in the list, instead of putting the edited load at the end.
+
+        let newLoad = {type:newLoadData.type, 
+                       // Entered location is converted from middle of load to left-end of load, because it is easier to do calculations using the left end
+                       location:(newLoadData.location - newLoadData.length / 2), 
+                       mass:newLoadData.mass, 
+                       // Length is discarded for point loads
+                       length:(newLoadData.type === "Point")?0:newLoadData.length, 
+                       // TallerEnd is discarded for nontriangular loads
+                       tallerEnd:(newLoadData.type === "Triangular")?newLoadData.tallerEnd:0, 
+                       // For newly added loads, a random color is picked. Else the old color is preserved
+                       color:(addEditMode === "Add")?randomColor():newLoadData.color}
+
+        if(addEditMode === "Add")
+            loads[newLoadData.name] = newLoad
+        else
+            // This for-loop is used to preserve the order of the loads in the list, so the edited load doesn't move to the end.
             for(let load in loads) {
                 if(load !== selectedLoad) {
-                    let type = loads[load].type
-                    let location = loads[load].location
-                    let mass = loads[load].mass
-                    let length = loads[load].length
-                    let tallerEnd = loads[load].tallerEnd
-                    let color = loads[load].color
+                    let oldLoad = loads[load]
                     delete loads[load]
-                    loads[load] = {type:type, location:location, mass:mass, length:length, tallerEnd:tallerEnd, color:color}
+                    loads[load] = oldLoad
                 }
                 else {
                     delete loads[load]
-                    loads[newLoadData.name] = {type:newLoadData.type, location:(newLoadData.location - newLoadData.length / 2), mass:newLoadData.mass, length:newLoadData.length, tallerEnd:newLoadData.tallerEnd, color:newLoadData.color}
+                    loads[newLoadData.name] = newLoad
                 }
             }
-        }
+
         setOpenAddEditForm(false)
         setSelectedLoad(newLoadData.name)
-        reFocus()
     }
 
 
     /**
      * This function checks the properties form inputs to ensure that they are valid. 
      * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
-     * Load location must be less than or equal to beam length.
+     * Support positions must be in-bounds (between 0 and beam length inclusive), and beam length must not be decreased to make any load out-of-bounds.
      * This function also converts the string inputs into number inputs.
      */
      function validateInputsPropertiesForm(){
@@ -295,37 +281,37 @@ function CombinedLoadApp(){
             return
         }
 
-        // Check that left support loc is a number >= 0 and <= beam length.
-        if(parseFloat(supportProperties.leftSupportPos) != supportProperties.leftSupportPos){
-            setPropertiesFormWarning("Left Support Position must be a number.")
+        // Check that pinned support position is a number >= 0 and <= beam length.
+        if(parseFloat(supportProperties.pinnedSupportPosition) != supportProperties.pinnedSupportPosition){
+            setPropertiesFormWarning("Pinned Support Position must be a number.")
             return
         }
-        supportProperties.leftSupportPos = Number(supportProperties.leftSupportPos)
-        if(supportProperties.leftSupportPos < 0) {
-            setPropertiesFormWarning("Left Support Position must be at least 0.")
+        supportProperties.pinnedSupportPosition = Number(supportProperties.pinnedSupportPosition)
+        if(supportProperties.pinnedSupportPosition < 0) {
+            setPropertiesFormWarning("Pinned Support Position must be at least 0.")
             return
         }
-        if(supportProperties.leftSupportPos > beamProperties.length) {
-            setPropertiesFormWarning("Left Support Position must be less than or equal to Length of Beam.")
-            return
-        }
-
-        // Check that right support loc is a number >= 0 and <= beam length.
-        if(parseFloat(supportProperties.rightSupportPos) != supportProperties.rightSupportPos){
-            setPropertiesFormWarning("Right Support Position must be a number.")
-            return
-        }
-        supportProperties.rightSupportPos = Number(supportProperties.rightSupportPos)
-        if(supportProperties.rightSupportPos < 0) {
-            setPropertiesFormWarning("Right Support Position must be at least 0.")
-            return
-        }
-        if(supportProperties.rightSupportPos > beamProperties.length) {
-            setPropertiesFormWarning("Right Support Position must be less than or equal to Length of Beam.")
+        if(supportProperties.pinnedSupportPosition > beamProperties.length) {
+            setPropertiesFormWarning("Pinned Support Position must be less than or equal to Length of Beam.")
             return
         }
 
-        // Check that created loads are not invalidated by length of beam change.
+        // Check that roller support position is a number >= 0 and <= beam length.
+        if(parseFloat(supportProperties.rollerSupportPosition) != supportProperties.rollerSupportPosition){
+            setPropertiesFormWarning("Roller Support Position must be a number.")
+            return
+        }
+        supportProperties.rollerSupportPosition = Number(supportProperties.rollerSupportPosition)
+        if(supportProperties.rollerSupportPosition < 0) {
+            setPropertiesFormWarning("Roller Support Position must be at least 0.")
+            return
+        }
+        if(supportProperties.rollerSupportPosition > beamProperties.length) {
+            setPropertiesFormWarning("Roller Support Position must be less than or equal to Length of Beam.")
+            return
+        }
+
+        // Check that existing loads are not invalidated by length of beam change.
         for(let load in loads)
             if(loads[load].type === "Point" && loads[load].location > beamProperties.length) {
                 setPropertiesFormWarning(load + " location must be less than or equal to Length of Beam.")
@@ -340,9 +326,10 @@ function CombinedLoadApp(){
         setPropertiesFormWarning("")
     }
     /**
-     * This function checks the properties form inputs to ensure that they are valid. 
-     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
-     * Load location must be less than or equal to beam length.
+     * This function checks the add/edit form inputs to ensure that they are valid. 
+     * All inputs must be nonnegative numbers. 
+     * Duplicate names are not allowed.
+     * Loads must not extend out of bounds.
      * This function also converts the string inputs into number inputs.
      */
      function validateInputsAddEditForm(mode){
@@ -397,11 +384,11 @@ function CombinedLoadApp(){
         else {
             // While the form is open, newLoadData.location refers to the middle of the load instead of the left end.
             let leftEnd = newLoadData.location - newLoadData.length / 2
-            let rightEnd = newLoadData.location + newLoadData.length / 2
             if(leftEnd < 0) {
                 setAddEditFormWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).")
                 return
             }
+            let rightEnd = newLoadData.location + newLoadData.length / 2
             if(rightEnd > beamProperties.length){
                 setAddEditFormWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).")
                 return
@@ -424,7 +411,6 @@ function CombinedLoadApp(){
         }
 
         reRender()
-        reFocus()
     }
     // When using the load selector dropdown or properties form radio buttons to change selected load
     function handleSelectedChange(event){
@@ -601,22 +587,22 @@ function CombinedLoadApp(){
                         <FormControlLabel control={<Radio />} value="Cantilever" label="Cantilever" />
                     </RadioGroup>
                     <div></div>
-                    <label>Left Support Position:
+                    <label>Pinned Support Position:
                         <input type="text"
-                            defaultValue={supportProperties.leftSupportPos}
+                            defaultValue={supportProperties.pinnedSupportPosition}
                             onChange={(e)=>{
-                                supportProperties.leftSupportPos=e.target.value
+                                supportProperties.pinnedSupportPosition=e.target.value
                                 validateInputsPropertiesForm()
                             }}
                             disabled={supportProperties.type !== "Simply Supported"}
                         />
                     </label>
                     <div></div>
-                    <label>Right Support Position:
+                    <label>Roller Support Position:
                         <input type="text"
-                            defaultValue={supportProperties.rightSupportPos}
+                            defaultValue={supportProperties.rollerSupportPosition}
                             onChange={(e)=>{
-                                supportProperties.rightSupportPos=e.target.value
+                                supportProperties.rollerSupportPosition=e.target.value
                                 validateInputsPropertiesForm()
                             }}
                             disabled={supportProperties.type !== "Simply Supported"}
@@ -676,8 +662,8 @@ function CombinedLoadApp(){
                             (supportProperties.type === "Simply Supported")
                             ?
                                 // Simply Supported supports
-                                <LabelSeries data={[{x: supportProperties.leftSupportPos, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                                    {x: supportProperties.rightSupportPos, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                <LabelSeries data={[{x: supportProperties.pinnedSupportPosition, y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                                    {x: supportProperties.rollerSupportPosition, y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                             :
                                 // Cantilever support
                                 getCantileverSupportDisplay()
@@ -868,7 +854,6 @@ function plotReactions(loads, beamProperties, supportProperties, scale){
     })
 
     let reactionLabels = []
-    // Left side reaction label (R1)
     // Left side reaction label (R1)
     reactionLabels.push({x: 2.5/100 * beamProperties.length, y: -40/100 * scale, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
     reactionLabels.push({x: 2.5/100 * beamProperties.length, y: -35/100 * scale, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
@@ -1178,6 +1163,23 @@ function loadRadioButtonsCreator(loads){
                 (loads[load].type==="Triangular" ? ", Taller End = " + loads[load].tallerEnd : "")}
         />)
     return labels
+}
+
+// Generates a random color with RGBs in the range 0-159, opacity 50%.
+function randomColor() {
+    // R
+    let R = Math.floor(Math.random() * 160).toString(16)
+    if(R.length < 2)
+        R = "0"+R
+    // G
+    let G = Math.floor(Math.random() * 160).toString(16)
+    if(G.length < 2)
+        G = "0"+G
+    // B
+    let B = Math.floor(Math.random() * 160).toString(16)
+    if(B.length < 2)
+        B = "0"+B
+    "#" + R + G + B + "80"
 }
 
 export default CombinedLoadApp

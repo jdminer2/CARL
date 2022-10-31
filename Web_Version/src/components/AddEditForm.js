@@ -117,8 +117,8 @@ const AddEditForm = (props) => {
             <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{props.warning}</DialogContentText>
             {/* buttons to confirm or cancel */}
             <DialogActions>
-                <Button onClick={()=>{props.handleClose("cancel", props.mode)}}>Cancel</Button>
-                <Button onClick={()=>{props.handleClose("confirm", props.mode)}}>Confirm</Button>
+                <Button onClick={()=>{props.handleClose("cancel")}}>Cancel</Button>
+                <Button onClick={()=>{props.handleClose("confirm")}}>Confirm</Button>
             </DialogActions>
         </Dialog>
     )
