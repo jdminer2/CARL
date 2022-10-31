@@ -11,21 +11,22 @@ function CombinedLoadApp(){
     const [beamProperties,setBeamProperties] = useState({length: 100, elasticity: 1.0, inertia: 1.0, density: 1.0, area: 1.0, dampingRatio:0.02, rA: 85000.0, EI: 210000000000.0, gravity:9.8})
     const [supportProperties,setSupportProperties] = useState({type: "Simply Supported", leftSupportPos: 0, rightSupportPos: 100})
     const [loads,setLoads] = useState({})
-    // The current load to move/modify/delete
-    const [selectedLoad, setSelectedLoad] = useState('load1')
-    // New data entered for a load that is being created/modified
-    const [newLoadData, setNewLoadData] = useState({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:"#00000080"})
-    // Whether the initialForm
-    const [openInitialForm, setOpenInitialForm] = useState(true)
-    const [openAddEditForm, setOpenAddEditForm] = useState(false);
-    const [addEditMode, setAddEditMode] = useState("Add");
-    const [initialFormWarning, setInitialFormWarning] = useState("");
-    const [addEditFormWarning, setAddEditFormWarning] = useState("");
-    const [hideLengthField, setHideLengthField] = useState(true);
-    const [hideTallerEndField, setHideTallerEndField] = useState(true);
+    // The scales of plots
     const [deflectionScale, setDeflectionScale] = useState(1);
     const [bendingMomentScale, setBendingMomentScale] = useState(1);
     const [shearForceScale, setShearForceScale] = useState(1);
+    // The current load to move/modify/delete
+    const [selectedLoad, setSelectedLoad] = useState('load1')
+    // Whether forms should be shown
+    const [openInitialForm, setOpenInitialForm] = useState(true)
+    const [openAddEditForm, setOpenAddEditForm] = useState(false)
+    // The warning text that should be shown at the bottom of the forms
+    const [initialFormWarning, setInitialFormWarning] = useState("");
+    const [addEditFormWarning, setAddEditFormWarning] = useState("");
+    // Whether the user is currently adding or editing in the add/edit form
+    const [addEditMode, setAddEditMode] = useState("Add")
+    // The data being entered in the add/edit form
+    const [newLoadData, setNewLoadData] = useState({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:"#00000080"})
 
     // Function that automatically re-renders the screen.
     const [render, setRender] = useState(true);
@@ -110,8 +111,6 @@ function CombinedLoadApp(){
 
         // Put default load properties.
         setNewLoadData({name:loadNamer(loads), type:"Point", location:beamProperties.length / 2, mass:10.0, length:0, tallerEnd: "Left", color:color});
-        setHideLengthField(true);
-        setHideTallerEndField(true);
         // Display menu.
         setOpenAddEditForm(true);
         setAddEditMode("Add");
@@ -121,8 +120,6 @@ function CombinedLoadApp(){
     const handleClickEdit = () => {
         // Put preexisting load properties.
         setNewLoadData({name:selectedLoad, type:loads[selectedLoad].type, location:loads[selectedLoad].location + loads[selectedLoad].length / 2, mass:loads[selectedLoad].mass, length:loads[selectedLoad].length, tallerEnd:loads[selectedLoad].tallerEnd, color:loads[selectedLoad].color});
-        setHideLengthField(loads[selectedLoad].type === "Point");
-        setHideTallerEndField(loads[selectedLoad].type !== "Triangular")
         // Display menu.
         setOpenAddEditForm(true);
         setAddEditMode("Edit");
@@ -365,9 +362,6 @@ function CombinedLoadApp(){
             setAddEditFormWarning("Name is already in use.");
             return;
         }
-
-        setHideLengthField(newLoadData.type === "Point");
-        setHideTallerEndField(newLoadData.type !== "Triangular")
 
         // Check that location is a number.
         if(parseFloat(newLoadData.location) != newLoadData.location){
