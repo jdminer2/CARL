@@ -1,6 +1,6 @@
 import '../App.css'
 import React, { useEffect, useState} from 'react'
-import {Button, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup} from '@mui/material'
+import {Button, FormControlLabel, Radio, RadioGroup} from '@mui/material'
 import LoadSelector from '../components/LoadSelector'
 import AddEditForm from '../components/AddEditForm'
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis"
@@ -30,15 +30,17 @@ function CombinedLoadApp(){
 
 
     // Automatically re-renders the screen when called
-    const [render, setRender] = useState(true)
+    const [render, setRender] = useState(false)
     function reRender() {
-        setRender(!render)
+        // Wrapping setRender inside setTimeout causes the screen to rerender more smoothly when the user holds down a movement key.
+        setTimeout(()=>setRender(!render),0)
     }
     // Automatically resizes the plots when the user resizes the window
+    const [dims, setDims] = useState([])
     useEffect(() => {
-        window.addEventListener("resize", reRender)
-        return () => window.removeEventListener("resize", reRender)
-    },[window.innerHeight, window.innerWidth])
+        window.addEventListener("resize", ()=>setDims([window,innerHeight,window.innerWidth]))
+        return () => window.removeEventListener("resize", ()=>setDims([window,innerHeight,window.innerWidth]))
+    },[])
     // Automatically sets the focus on the page so the user can use keyboard controls
     const propertiesFormRef = React.useRef(null)
     const plotScreenRef = React.useRef(null)
@@ -82,13 +84,13 @@ function CombinedLoadApp(){
                 event.preventDefault()
             // Left arrow key
             if(event.keyCode == 37)
-                moveSelectedLoad(-1,1,10)
+                moveSelectedLoad(-beamProperties.length/100,1,10)
             // Up arrow key (Jump)
             else if(event.keyCode == 38)
                 moveSelectedLoad(0,5,10)
             // Right arrow key
             else if(event.keyCode == 39)
-                moveSelectedLoad(1,1,10)
+                moveSelectedLoad(beamProperties.length/100,1,10)
             // Delete key
             else if(event.keyCode == 46)
                 handleDelete()
@@ -281,34 +283,37 @@ function CombinedLoadApp(){
             return
         }
 
-        // Check that pinned support position is a number >= 0 and <= beam length.
-        if(parseFloat(supportProperties.pinnedSupportPosition) != supportProperties.pinnedSupportPosition){
-            setPropertiesFormWarning("Pinned Support Position must be a number.")
-            return
-        }
-        supportProperties.pinnedSupportPosition = Number(supportProperties.pinnedSupportPosition)
-        if(supportProperties.pinnedSupportPosition < 0) {
-            setPropertiesFormWarning("Pinned Support Position must be at least 0.")
-            return
-        }
-        if(supportProperties.pinnedSupportPosition > beamProperties.length) {
-            setPropertiesFormWarning("Pinned Support Position must be less than or equal to Length of Beam.")
-            return
-        }
+        // If support type is not simply supported, do not block the user from adjusting length regardless of the values in the support textboxes.
+        if(supportProperties.type === "Simply Supported") {
+            // Check that pinned support position is a number >= 0 and <= beam length.
+            if(parseFloat(supportProperties.pinnedSupportPosition) != supportProperties.pinnedSupportPosition){
+                setPropertiesFormWarning("Pinned Support Position must be a number.")
+                return
+            }
+            supportProperties.pinnedSupportPosition = Number(supportProperties.pinnedSupportPosition)
+            if(supportProperties.pinnedSupportPosition < 0) {
+                setPropertiesFormWarning("Pinned Support Position must be at least 0.")
+                return
+            }
+            if(supportProperties.pinnedSupportPosition > beamProperties.length) {
+                setPropertiesFormWarning("Pinned Support Position must be less than or equal to Length of Beam.")
+                return
+            }
 
-        // Check that roller support position is a number >= 0 and <= beam length.
-        if(parseFloat(supportProperties.rollerSupportPosition) != supportProperties.rollerSupportPosition){
-            setPropertiesFormWarning("Roller Support Position must be a number.")
-            return
-        }
-        supportProperties.rollerSupportPosition = Number(supportProperties.rollerSupportPosition)
-        if(supportProperties.rollerSupportPosition < 0) {
-            setPropertiesFormWarning("Roller Support Position must be at least 0.")
-            return
-        }
-        if(supportProperties.rollerSupportPosition > beamProperties.length) {
-            setPropertiesFormWarning("Roller Support Position must be less than or equal to Length of Beam.")
-            return
+            // Check that roller support position is a number >= 0 and <= beam length.
+            if(parseFloat(supportProperties.rollerSupportPosition) != supportProperties.rollerSupportPosition){
+                setPropertiesFormWarning("Roller Support Position must be a number.")
+                return
+            }
+            supportProperties.rollerSupportPosition = Number(supportProperties.rollerSupportPosition)
+            if(supportProperties.rollerSupportPosition < 0) {
+                setPropertiesFormWarning("Roller Support Position must be at least 0.")
+                return
+            }
+            if(supportProperties.rollerSupportPosition > beamProperties.length) {
+                setPropertiesFormWarning("Roller Support Position must be less than or equal to Length of Beam.")
+                return
+            }
         }
 
         // Check that existing loads are not invalidated by length of beam change.
@@ -425,6 +430,8 @@ function CombinedLoadApp(){
         if(!(selectedLoad in loads))
             return
         let newLoc = loads[selectedLoad].location + disp
+        // Round off floating point
+        newLoc = formatVal(newLoc)(newLoc)
         // Constrain newLoc to be in-bounds
         newLoc = Math.max(newLoc, 0)
         newLoc = Math.min(newLoc, beamProperties.length - loads[selectedLoad].length)
@@ -647,7 +654,7 @@ function CombinedLoadApp(){
         // Display the main plots screen
         return(
             <div className={"rowC"} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
-                <div>
+                <div style={{height:window.innerHeight - 100, overflowX:"clip", overflowY:"auto"}}>
                     <h1>CARL</h1>
                     {/* Main Plot */}
                     <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} xDomain={[0,beamProperties.length]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
@@ -729,17 +736,17 @@ function CombinedLoadApp(){
                     </div>
                     <div>
                         {/* Control buttons */}
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(-1,1,10)}}>&#8592;</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(-beamProperties.length/100,1,10)}}>&#8592;</Button>
                         <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(0,5,10)}}>JUMP</Button>
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(1,1,10)}}>&#8594;</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(beamProperties.length/100,1,10)}}>&#8594;</Button>
                     </div>
                     <Button variant="contained" sx={{margin:0.5}} onClick={()=>handleClickProperties()}>Edit Properties</Button>
                 </div>
-                <div>
+                <div style={{height:window.innerHeight - 100, overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
                     {/* Side plots */}
                     {/* Deflection Diagram */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left : 60, right:60}}>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left:60, right:60}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
                         <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Deflection Diagram and Support Reactions"}/>
@@ -750,7 +757,7 @@ function CombinedLoadApp(){
                         <LabelSeries data={plotReactions(loads, beamProperties, supportProperties, deflectionScale)} />
                     </XYPlot>
                     {/* Bending Moment Diagram */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[bendingMomentScale, bendingMomentScale]} margin = {{left : 60, right:60}}>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[bendingMomentScale, bendingMomentScale]} margin = {{left:60, right:60}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
                         <XAxis tickFormat = {formatVal(beamProperties.length)} title = {"Bending Moment Diagram"}/>
@@ -759,7 +766,7 @@ function CombinedLoadApp(){
                         <LineSeries data={bendingMomentDiagram()} color="black"/>
                     </XYPlot>
                     {/* Shear Force Diagram */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[shearForceScale, shearForceScale]} margin = {{left : 60, right:60}}>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[shearForceScale, shearForceScale]} margin = {{left:60, right:60}}>
                         {/*<h1>Shear Force Diagram</h1>*/}
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
@@ -1109,6 +1116,7 @@ function getScale(dataList) {
     if(maxAbsVal == 0)
         return 1
 
+/*
     // Else, the scale will be the smallest power of 2 greater than maxAbsVal
     let scale = 1
     while(scale > maxAbsVal)
@@ -1117,6 +1125,9 @@ function getScale(dataList) {
         scale *= 2
 
     return scale
+*/
+    
+    return maxAbsVal * 1.5
 }
 
 // This function returns a formatting function for numbers, using the given scale.
