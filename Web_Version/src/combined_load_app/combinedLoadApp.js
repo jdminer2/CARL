@@ -1,6 +1,6 @@
 import '../App.css'
 import React, { useEffect, useState} from 'react'
-import {Button, FormControlLabel, Radio, RadioGroup} from '@mui/material'
+import {Button, Dialog, DialogContent, FormControlLabel, Radio, RadioGroup, Table, TableBody, TableCell, TableHead, TableRow} from '@mui/material'
 import LoadSelector from '../components/LoadSelector'
 import AddEditForm from '../components/AddEditForm'
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis"
@@ -63,25 +63,50 @@ function CombinedLoadApp(){
     function handleKeyDown(event){
         // On the add/edit form
         if(openAddEditForm){
-            // Enter key
+            // Enter
             if(event.keyCode == 13) {
                 handleCloseAddEditForm("confirm")
                 event.preventDefault()
             }
+            // Escape already works, no code here needed. It closes the form without making the add/edit.
         }
         // On the properties form
         else if(openPropertiesForm) {
-            // Enter key
+            if(event.shiftKey) {
+                // Shift + Insert
+                if(event.keyCode == 45)
+                    handleClickAdd()
+                // Shift + Enter
+                else if(event.keyCode == 13)
+                    handleClickEdit()
+                // Shift + Backspace and Shift + Delete
+                if(event.keyCode == 8 || event.keyCode == 46)
+                    handleClickDelete()
+            }
+            else
+                // Enter
             if(event.keyCode == 13) {
-                handleSubmitPropertiesForm(null)
+                    handleClosePropertiesForm(null)
                 event.preventDefault()
             }
+                // Escape is not intended to do anything here.
         }
         // On the main plots screen
         else {
-            // Prevent arrow keys from scrolling the screen
-            if([37,38,39,40].includes(event.keyCode))
-                event.preventDefault()
+            if(event.shiftKey) {
+                // Shift + Insert
+                if(event.keyCode == 45)
+                    handleClickAdd()
+                // Shift + Enter
+                else if(event.keyCode == 13)
+                    handleClickEdit()
+                // Shift + Backspace and Shift + Delete
+                else if(event.keyCode == 8 || event.keyCode == 46)
+                    handleClickDelete()
+            }
+            // Escape
+            else if(event.keyCode == 27)
+                handleClickProperties()
             // Left arrow key
             if(event.keyCode == 37)
                 moveSelectedLoad(-beamProperties.length/100,1,10)
@@ -91,9 +116,10 @@ function CombinedLoadApp(){
             // Right arrow key
             else if(event.keyCode == 39)
                 moveSelectedLoad(beamProperties.length/100,1,10)
-            // Delete key
-            else if(event.keyCode == 46)
-                handleDelete()
+            
+            // Disable the screen scroll from arrow keys
+            if([37,38,39,40].includes(event.keyCode))
+                event.preventDefault()
         }
     }
 
@@ -740,11 +766,34 @@ function CombinedLoadApp(){
                         <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(0,5,10)}}>JUMP</Button>
                         <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(beamProperties.length/100,1,10)}}>&#8594;</Button>
                     </div>
-                    <Button variant="contained" sx={{margin:0.5}} onClick={()=>handleClickProperties()}>Edit Properties</Button>
+                    <Button variant="contained" sx={{margin:0.5}} onClick={handleClickProperties}>Edit Properties</Button>
+                    <div></div>
+                    <Button variant="contained" sx={{margin:0.5}} onClick={handleClickHelp}>Help</Button>
+                    <Dialog open={openHelpMenu} onClose={()=>setOpenHelpMenu(false)}>
+                        <DialogContent>
+                            
+                            <Table sx={{minWidth: 500}}>
+                                <TableHead>Keyboard Shortcuts</TableHead>
+                                <TableBody>{[
+                                    ["Left/Right Arrows:", "Move Selected Load"],
+                                    ["Up Arrow:", "Jump"],
+                                    ["Shift + Insert:", "Add Load"],
+                                    ["Shift + Enter:", "Edit Selected Load"],
+                                    ["Shift + Delete:", "Delete Selected Load"],
+                                    ["Esc:", "Edit Properties"]].map(row=>
+                                        <TableRow key={row[0]}>
+                                            {row.map(col=>
+                                                <TableCell>{col}</TableCell>
+                                            )}
+                                        </TableRow>
+                                )}</TableBody>
+                            </Table>
+                        </DialogContent>
+                    </Dialog>
                 </div>
+                {/* Right Column */}
                 <div style={{height:window.innerHeight - 100, overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
-                    {/* Side plots */}
                     {/* Deflection Diagram */}
                     <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left:60, right:60}}>
                         <VerticalGridLines/>
