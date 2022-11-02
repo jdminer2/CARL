@@ -18,6 +18,7 @@ function CombinedLoadApp(){
     // The current load to move/modify/delete
     const [selectedLoad, setSelectedLoad] = useState('load1')
     // Whether forms should be shown
+    const [openHelpMenu, setOpenHelpMenu] = useState(false)
     const [openPropertiesForm, setOpenPropertiesForm] = useState(true)
     const [openAddEditForm, setOpenAddEditForm] = useState(false)
     // The warning text that should be shown at the bottom of the forms
@@ -81,12 +82,12 @@ function CombinedLoadApp(){
                     handleClickEdit()
                 // Shift + Backspace and Shift + Delete
                 if(event.keyCode == 8 || event.keyCode == 46)
-                    handleClickDelete()
+                    handleDelete()
             }
             else
                 // Enter
             if(event.keyCode == 13) {
-                    handleClosePropertiesForm(null)
+                    handleSubmitPropertiesForm(null)
                 event.preventDefault()
             }
                 // Escape is not intended to do anything here.
@@ -102,7 +103,7 @@ function CombinedLoadApp(){
                     handleClickEdit()
                 // Shift + Backspace and Shift + Delete
                 else if(event.keyCode == 8 || event.keyCode == 46)
-                    handleClickDelete()
+                    handleDelete()
             }
             // Escape
             else if(event.keyCode == 27)
@@ -142,6 +143,10 @@ function CombinedLoadApp(){
         // Display add/edit form in edit mode.
         setOpenAddEditForm(true)
         setAddEditMode("Edit")
+    }
+    // When Help button is clicked
+    function handleClickHelp() {
+        setOpenHelpMenu(true)
     }
 
 
