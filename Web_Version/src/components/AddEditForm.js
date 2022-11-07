@@ -8,10 +8,10 @@ import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogT
  * Props
  * open: the Dialog open prop; whether the form is open
  * mode: whether the menu is for adding or editing a load. Should be "Add" or "Edit"
- * handleClose: function that receives "cancel", "confirm", or something invalid, plus the menu mode. Will process the newLoadData accordingly
- * newLoadData: an object with name, type, location, mass, length, and tallerEnd. This stores the properties of the load being added or edited
- * validate: checks whether newLoadData is accurate. Should receive the menu mode as a parameter
- * warningText: the text that will display at the bottom of the menu to indicate what is wrong with newLoadData
+ * handleClose: function that receives "cancel", "confirm", or something invalid, plus the menu mode. Will process the newLoad accordingly
+ * newLoad: an object with name, type, location, mass, length, and tallerEnd. This stores the properties of the load being added or edited
+ * validate: checks whether newLoad is accurate. Should receive the menu mode as a parameter
+ * warningText: the text that will display at the bottom of the menu to indicate what is wrong with newLoad
  */
 const AddEditForm = (props) => {
     return (
@@ -26,11 +26,11 @@ const AddEditForm = (props) => {
                     autoFocus
                     margin="dense"
                     label="Name"
-                    defaultValue={props.newLoadData.name}
+                    defaultValue={props.newLoad.Name}
                     type="text"
                     onChange={val=>{
-                        props.newLoadData.name = val.target.value
-                        props.validate(props.mode)
+                        props.newLoad.Name = val.target.value
+                        props.validate("Name")
                     }}
                     fullWidth
                     variant="standard"
@@ -41,10 +41,10 @@ const AddEditForm = (props) => {
                     <RadioGroup
                         row
                         aria-labelledby="newLoadTypeRadios"
-                        value={props.newLoadData.type}
+                        value={props.newLoad.Type}
                         onChange={val=>{
-                            props.newLoadData.type = val.target.value
-                            props.validate(props.mode)
+                            props.newLoad.Type = val.target.value
+                            props.validate("Length")
                         }}
                     >
                         <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
@@ -58,10 +58,10 @@ const AddEditForm = (props) => {
                     margin="dense"
                     label="Location"
                     type="text"
-                    defaultValue={props.newLoadData.location}
+                    defaultValue={props.newLoad.Location}
                     onChange={val=>{
-                        props.newLoadData.location = val.target.value
-                        props.validate(props.mode)
+                        props.newLoad.Location = val.target.value
+                        props.validate("Location")
                     }}
                     fullWidth
                     variant="standard"
@@ -71,12 +71,12 @@ const AddEditForm = (props) => {
                 <TextField
                     autoFocus
                     margin="dense"
-                    label={props.newLoadData.type==="Point"?"Mass":props.newLoadData.type==="Distributed"?"Mass Per Meter":"Mass Per Meter at Taller End"}
-                    defaultValue={props.newLoadData.mass}
+                    label={props.newLoad.Type==="Point"?"Mass":props.newLoad.Type==="Distributed"?"Mass Per Meter":"Mass Per Meter at Taller End"}
+                    defaultValue={props.newLoad.Mass}
                     type="text"
                     onChange={val=>{
-                        props.newLoadData.mass = val.target.value
-                        props.validate(props.mode)
+                        props.newLoad.Mass = val.target.value
+                        props.validate("Mass")
                     }}
                     fullWidth
                     variant="standard"
@@ -87,14 +87,14 @@ const AddEditForm = (props) => {
                     margin="dense"
                     label="Length (Non-Point Loads Only)"
                     type="text"
-                    defaultValue={props.newLoadData.length}
+                    defaultValue={props.newLoad.Length}
                     onChange={val=>{
-                        props.newLoadData.length = val.target.value
-                        props.validate(props.mode)
+                        props.newLoad.Length = val.target.value
+                        props.validate("Length")
                     }}
                     fullWidth
                     variant="standard"
-                    disabled={props.newLoadData.type==="Point"}
+                    disabled={props.newLoad.Type==="Point"}
                 />
                 {/* radio buttons for triangular loads to decide which end is taller */}
                 <FormControl>
@@ -102,14 +102,14 @@ const AddEditForm = (props) => {
                     <RadioGroup
                         row
                         aria-labelledby="tallerEndRadios"
-                        value={props.newLoadData.tallerEnd}
+                        value={props.newLoad["Taller End"]}
                         onChange={val=>{
-                            props.newLoadData.tallerEnd = val.target.value
-                            props.validate(props.mode)
+                            props.newLoad["Taller End"] = val.target.value
+                            props.validate("Length")
                         }}
                     >
-                        <FormControlLabel value="Left" control={<Radio />} label="Left" disabled={props.newLoadData.type!=="Triangular"}/>
-                        <FormControlLabel value="Right" control={<Radio />} label="Right" disabled={props.newLoadData.type!=="Triangular"}/>
+                        <FormControlLabel value="Left" control={<Radio />} label="Left" disabled={props.newLoad.Type!=="Triangular"}/>
+                        <FormControlLabel value="Right" control={<Radio />} label="Right" disabled={props.newLoad.Type!=="Triangular"}/>
                     </RadioGroup>
                 </FormControl>
             </DialogContent>

@@ -8,12 +8,17 @@ import {FormControl, InputLabel, MenuItem, Select} from '@mui/material';
  * and a function must be entered through props.onChange to allow the dropdown to alter the variable.
  * 
  * Usage could look like:
- * <LoadSelector loadList={loads} value={selectedLoad} onChange={handleDropdownChange} />
+ * <LoadSelector loads={loads} value={selectedLoadID} onChange={handleDropdownChange} />
  */
 const LoadSelector = (props) => {
-    const menuItemList = [];
-    for(let load in props.loadList)
-        menuItemList.push(<MenuItem key={load} value={load}>{load}</MenuItem>);
+    let menuItemList = props.loads.map((load,loadID)=>
+        <MenuItem key={loadID} value={loadID}>{load.Name}</MenuItem>
+    )
+
+    // Avoids console warning for out of bounds selection
+    let currentValue = props.value
+    if(currentValue < 0)
+        currentValue = ""
 
     return (
         <FormControl>
@@ -21,14 +26,14 @@ const LoadSelector = (props) => {
             <Select
                 labelId={"load_selection_dropdown_label"}
                 id={"load_selection_dropdown"}
-                sx={{margin:0.5, minWidth:100}}
+                sx={{margin:0.5, minWidth:140}}
                 label={"Selected Load"}
                 onChange={props.onChange}
-                value={props.value}
+                value={currentValue}
             >
                 {menuItemList}
             </Select>
         </FormControl>
-    );
+    )
 }
-export default LoadSelector;
+export default LoadSelector
