@@ -250,14 +250,20 @@ function CombinedLoadApp(){
         else if(openPropertiesForm) {
             if(event.shiftKey) {
                 // Shift + Insert
-                if(event.keyCode == 45)
+                if(event.keyCode == 45) {
                     handleClickAdd()
+                    event.preventDefault()
+                }
                 // Shift + Enter
-                else if(event.keyCode == 13)
+                else if(event.keyCode == 13) {
                     handleClickEdit()
+                    event.preventDefault()
+                }
                 // Shift + Backspace and Shift + Delete
-                if(event.keyCode == 8 || event.keyCode == 46)
-                handleClickDelete()
+                else if(event.keyCode == 8 || event.keyCode == 46) {
+                    handleClickDelete()
+                    event.preventDefault()
+                }
             }
             else
                 // Enter
@@ -271,14 +277,20 @@ function CombinedLoadApp(){
         else {
             if(event.shiftKey) {
                 // Shift + Insert
-                if(event.keyCode == 45)
+                if(event.keyCode == 45) {
                     handleClickAdd()
+                    event.preventDefault()
+                }
                 // Shift + Enter
-                else if(event.keyCode == 13)
+                else if(event.keyCode == 13) {
                     handleClickEdit()
+                    event.preventDefault()
+                }
                 // Shift + Backspace and Shift + Delete
-                else if(event.keyCode == 8 || event.keyCode == 46)
+                else if(event.keyCode == 8 || event.keyCode == 46) {
                     handleClickDelete()
+                    event.preventDefault()
+                }
             }
             // Escape
             else if(event.keyCode == 27)
