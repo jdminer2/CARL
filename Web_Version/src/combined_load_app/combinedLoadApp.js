@@ -712,6 +712,38 @@ function R2SingleLoad(load, beamProperties) {
     return R2
 }
 
+// Finds the global min of the deflection plot, [x,y]. This is only valid for simply supported beams where no loads are negative.
+//
+// Since bending moment is always positive, integral of bending moment a.k.a derivative of deflection is always increasing.
+// If it's always increasing it can only cross 0 once, so there's only one critical point for deflection, so there's only one local minimum.
+// This means I can find it by just going down the slope.
+function findMaxDeflection(loads, beamProperties) {
+    let yAtX = x => sumFunction(deflectionSingleLoad,x,loads,beamProperties)
+
+    let upperBound = length
+    let lowerBound = 0
+
+    // Each iteration reduces the distance between lowerBound and upperBound to 0.6 of the previous.
+    // 0.6^100 is about 6.5*10^-23
+    let numIterations = 100
+    for(let i = 0; i < numIterations; i++) {
+        let xA = lowerBound + 0.6 * (upperBound - lowerBound)
+        let xB = lowerBound + 0.4 * (upperBound - lowerBound)
+
+        let yA = yAtX(xA)
+        let yB = yAtX(xB)
+
+        if(yA > yB)
+            lowerBound = xA
+        else
+            upperBound = xB
+    }
+
+    let avg = (lowerBound + upperBound)/2
+
+    return [avg,yAtX(avg)]
+}
+
 // Takes a function that applies to a single load, returns a list of data points for plotting the sum of that function applied to every load.
 // The singleLoadFunction can return a value, or a 2-element array for instantaneous change.
 // The first element of the array will connect to the line plot to the left, and the second element will connect to the right.
@@ -727,26 +759,31 @@ function plotSum(singleLoadFunction, loads, beamProperties) {
     // Sort the x values (else the line plot would go back and forth in the x direction)
     xValues.sort((a,b)=>(a > b)? 1 : -1)
 
-    // Calculate y values.
+    // Calculate the y values.
     let plotData = []
     xValues.forEach(xValue => {
-        // Before and after variables in case of instantaneous change
-        let yValueBefore = 0
-        let yValueAfter = 0
-        loads.forEach(load => {
-            let singleYValue = singleLoadFunction(xValue, load, beamProperties)
-            if(Array.isArray(singleYValue)) {
-                yValueBefore += singleYValue[0]
-                yValueAfter += singleYValue[1]
-            }
-            else {
-                yValueBefore += singleYValue
-                yValueAfter += singleYValue
-            }
-        })
-        plotData.push({x:xValue, y:yValueBefore}, {x:xValue, y:yValueAfter})
+        let yValue = sumFunction(singleLoadFunction, xValue, loads, beamProperties)
+        plotData.push({x:xValue, y:yValue[0]}, {x:xValue, y:yValue[1]})
     })
     return plotData
+}
+
+// Takes a function that applies to a single load, applies it to every load and returns the sum.
+// Can represent instantaneous change in y. [0] is before (connects to the plot to the left), [1] is after (connects to the plot to the right)
+function sumFunction(singleLoadFunction, x, loads, beamProperties) {
+    let y = [0,0]
+    loads.forEach(load => {
+        let individualY = singleLoadFunction(x, load, beamProperties)
+        if(Array.isArray(individualY)) {
+            y[0] += individualY[0]
+            y[1] += individualY[1]
+        }
+        else {
+            y[0] += individualY
+            y[1] += individualY
+        }
+    })
+    return y
 }
 
 // Integral of integral of bending moment. 
