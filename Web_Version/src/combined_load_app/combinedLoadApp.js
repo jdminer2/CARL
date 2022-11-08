@@ -8,6 +8,7 @@ import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, 
 
 function CombinedLoadApp(){
     // Data
+    const [loads,setLoads] = useState([])
     const [beamProperties,setBeamProperties] = useState({["Length of Beam"]: 100, 
                                                          Elasticity: 1.0, 
                                                          Inertia: 1.0, 
@@ -19,33 +20,22 @@ function CombinedLoadApp(){
                                                          Gravity:9.8,
                                                          ["Support Type"]: "Simply Supported",
                                                          ["Pinned Support Position"]: 0,
-                                                         ["Roller Support Position"]: 100
-                                                        })
-    const [loads,setLoads] = useState([])
+                                                         ["Roller Support Position"]: 100})
+    // The current load to move/modify/delete
+    const [selectedLoadID, setSelectedLoadID] = useState(-1)
     // The scales of plots
     const [deflectionScale, setDeflectionScale] = useState(1)
     const [bendingMomentScale, setBendingMomentScale] = useState(1)
     const [shearForceScale, setShearForceScale] = useState(1)
-    // The current load to move/modify/delete
-    const [selectedLoadID, setSelectedLoadID] = useState(-1)
     // Whether forms should be shown
     const [openHelpMenu, setOpenHelpMenu] = useState(false)
     const [openPropertiesForm, setOpenPropertiesForm] = useState(true)
+    const [openAddEditForm, setOpenAddEditForm] = useState(false)
+    // Warning and validation for properties form
     const [propertiesFormWarning, setPropertiesFormWarning] = useState("")
     const [invalidPropertiesFields, setInvalidPropertiesFields] = useState([])
-    const [openAddEditForm, setOpenAddEditForm] = useState(false)
-    const [addEditFormWarning, setAddEditFormWarning] = useState("")
-    const [invalidAddEditFields, setInvalidAddEditFields] = useState([])
-    // Whether the user is currently adding or editing in the add/edit form
-    const [addEditMode, setAddEditMode] = useState("Add")
-    // The data being entered in the add/edit form
-    const [newLoad, setNewLoad] = useState({Name:getFreeName(loads),
-                                            Type:"Point", 
-                                            Location:getSafePosition(beamProperties),
-                                            Mass:10.0,
-                                            Length:0,
-                                            ["Taller End"]: "Left", 
-                                            Color:getRandomColor()})
+    // Communication with add/edit form
+    const [addEditFormAction, setAddEditFormAction] = useState("")
 
 
     // Automatically re-renders the screen when called
@@ -54,12 +44,14 @@ function CombinedLoadApp(){
         // Wrapping setRender inside setTimeout causes the screen to rerender more smoothly when the user holds down a movement key.
         setTimeout(()=>setRender(!render),0)
     }
+
     // Automatically resizes the plots when the user resizes the window
     const [dims, setDims] = useState([])
     useEffect(() => {
         window.addEventListener("resize", ()=>setDims([window,innerHeight,window.innerWidth]))
         return () => window.removeEventListener("resize", ()=>setDims([window,innerHeight,window.innerWidth]))
     },[])
+
     // Automatically sets the focus on the page so the user can use keyboard controls
     const propertiesFormRef = React.useRef(null)
     const plotScreenRef = React.useRef(null)
@@ -72,120 +64,16 @@ function CombinedLoadApp(){
             plotScreenRef.current.focus()
     },[openPropertiesForm])
 
-    /**
-     * Function that manages keyboard controls.
-     * User may submit forms by pressing Enter, 
-     * use the arrow keys to jump or move the load left or right,
-     * or press the delete key to delete a load.
-     */
-    function handleKeyDown(event){
-        // On the add/edit form
-        if(openAddEditForm){
-            // Enter
-            if(event.keyCode == 13) {
-                handleCloseAddEditForm("confirm")
-                event.preventDefault()
-            }
-            // Escape already works, no code here needed. It closes the form without making the add/edit.
-        }
-        // On the properties form
-        else if(openPropertiesForm) {
-            if(event.shiftKey) {
-                // Shift + Insert
-                if(event.keyCode == 45)
-                    handleClickAdd()
-                // Shift + Enter
-                else if(event.keyCode == 13)
-                    handleClickEdit()
-                // Shift + Backspace and Shift + Delete
-                if(event.keyCode == 8 || event.keyCode == 46)
-                handleClickDelete()
-            }
-            else
-                // Enter
-                if(event.keyCode == 13) {
-                    handleClosePropertiesForm(null)
-                    event.preventDefault()
-                }
-                // Escape is not intended to do anything here.
-        }
-        // On the main plots screen
-        else {
-            if(event.shiftKey) {
-                // Shift + Insert
-                if(event.keyCode == 45)
-                    handleClickAdd()
-                // Shift + Enter
-                else if(event.keyCode == 13)
-                    handleClickEdit()
-                // Shift + Backspace and Shift + Delete
-                else if(event.keyCode == 8 || event.keyCode == 46)
-                    handleClickDelete()
-            }
-            // Escape
-            else if(event.keyCode == 27)
-                handleClickProperties()
-            // Left arrow key
-            if(event.keyCode == 37)
-                moveSelectedLoad(-beamProperties["Length of Beam"]/100,1,10)
-            // Up arrow key (Jump)
-            else if(event.keyCode == 38)
-                moveSelectedLoad(0,5,10)
-            // Right arrow key
-            else if(event.keyCode == 39)
-                moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)
-            
-            // Disable the screen scroll from arrow keys
-            if([37,38,39,40].includes(event.keyCode))
-                event.preventDefault()
-        }
-    }
-
-    // Move the selected load
-    function moveSelectedLoad(disp,mag,tl){
-        if(selectedLoadID < 0)
-            return
-        let load = loads[selectedLoadID]
-
-        let newLoc = load.Location + disp
-        // Round off floating point
-        newLoc = formatVal(newLoc)(newLoc)
-        // Constrain newLoc to be in-bounds
-        newLoc = Math.max(newLoc, 0)
-        newLoc = Math.min(newLoc, beamProperties["Length of Beam"] - load.Length)
-        load.Location = newLoc
-
-        reRender()
-    }
-
+    
     // When Add Load button is clicked
     const handleClickAdd = () => {
-        setNewLoad({Name:getFreeName(loads),
-                    Type:"Point",
-                    Location:getSafePosition(beamProperties),
-                    Mass:10.0,
-                    Length:beamProperties["Length of Beam"] / 2,
-                    ["Taller End"]:"Left",
-                    Color:getRandomColor()})
-        // Display add/edit form in add mode.
-        setOpenAddEditForm(true)
-        setAddEditMode("Add")
+        if(addEditFormAction === "")
+            setAddEditFormAction("Add")
     }
     // When Edit Load button is clicked
     const handleClickEdit = () => {
-        if(selectedLoadID < 0)
-            return
-        // Put preexisting load properties.
-        setNewLoad({Name:loads[selectedLoadID].Name, 
-                    Type:loads[selectedLoadID].Type,
-                    Location:loads[selectedLoadID].Location + loads[selectedLoadID].Length / 2, // Convert to display format, where location = the middle of the load
-                    Mass:loads[selectedLoadID].Mass,
-                    Length:loads[selectedLoadID].Length > 0?loads[selectedLoadID].Length:beamProperties["Length of Beam"] / 2,
-                    ["Taller End"]:loads[selectedLoadID]["Taller End"],
-                    Color:loads[selectedLoadID].Color})
-        // Display add/edit form in edit mode.
-        setOpenAddEditForm(true)
-        setAddEditMode("Edit")
+        if(addEditFormAction === "")
+            setAddEditFormAction("Edit")
     }
     // When Delete Load button is clicked
     function handleClickDelete(){
@@ -203,7 +91,6 @@ function CombinedLoadApp(){
     function handleClickHelp() {
         setOpenHelpMenu(true)
     }
-
     // When using the load selector dropdown or properties form radio buttons to change selected load
     function handleSelectedChange(event){
         setSelectedLoadID(event.target.value)
@@ -211,6 +98,43 @@ function CombinedLoadApp(){
     // When clicking an arrow, line, or label corresponding to a load to change selected load
     function handleClickLoad(element){
         setSelectedLoadID(element.loadID)
+    }
+
+    // Returns LineSeries plot points for deflection diagram. Also updates the scale for the plot.
+    function deflectionDiagram() {
+        // Get data points for deflection plot
+        let plotData = plotSum(deflectionSingleLoad, loads, beamProperties)
+
+        // Update plot scale if needed
+        let newScale = getScale(plotData)
+        if(newScale != deflectionScale)
+            setDeflectionScale(newScale)
+
+        return plotData
+    }
+    // Returns LineSeries plot points for bending moment diagram. Also updates the scale for the plot.
+    function bendingMomentDiagram() {
+        // Get data points for bending moment plot
+        let plotData = plotSum(bendingMomentSingleLoad, loads, beamProperties)
+
+        // Update plot scale if needed
+        let newScale = getScale(plotData)
+        if(newScale != bendingMomentScale)
+            setBendingMomentScale(newScale)
+
+        return plotData
+    }
+    // Returns LineSeries plot points for shear force diagram. Also updates the scale for the plot.
+    function shearForceDiagram() {
+        // Get data points for shear force plot
+        let plotData = plotSum(shearForceSingleLoad, loads, beamProperties)
+
+        // Update plot scale if needed
+        let newScale = getScale(plotData)
+        if(newScale != shearForceScale)
+            setShearForceScale(newScale)
+
+        return plotData
     }
 
     // Function to submit the properties form
@@ -223,39 +147,6 @@ function CombinedLoadApp(){
         else if(e != null)
             e.preventDefault()
     }
-    // When closing the Add/Edit Load form by clicking out, canceling, or confirming.
-    function handleCloseAddEditForm (event) {
-        // If user clicked out or cancelled, do nothing and close the form.
-        if(event !== "confirm"){
-            setOpenAddEditForm(false)
-            setAddEditFormWarning("")
-            return
-        }
-        // If errors are present and user attempted to submit, do nothing and leave the form open.
-        validateInputsAddEditForm(["Name","Location","Mass","Length"])
-        if(addEditFormWarning !== "")
-            return
-        // Successful submission of the form
-
-        // Simplifies calculations if we can read point loads' Length as 0
-        if(newLoad.Type === "Point")
-            newLoad.Length = 0
-        if(newLoad.Type !== "Triangular")
-            newLoad["Taller End"] = "Left"
-
-        // Convert Location from display format (Location = middle of beam) to internal format (Location = left end of beam)
-        newLoad.Location -= newLoad.Length / 2
-
-        if(addEditMode === "Add") {
-            loads.push(newLoad)
-            setSelectedLoadID(loads.length - 1)
-        }
-        else
-            loads[selectedLoadID] = newLoad
-
-        setOpenAddEditForm(false)
-    }
-
     /**
      * This function checks the properties form inputs to ensure that they are valid. 
      * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
@@ -337,139 +228,92 @@ function CombinedLoadApp(){
         })
         setInvalidPropertiesFields(newInvalidPropertiesFields)
     }
+    
     /**
-     * This function checks the add/edit form inputs to ensure that they are valid. 
-     * All inputs must be nonnegative numbers. 
-     * Duplicate names are not allowed.
-     * Loads must not extend out of bounds.
-     * This function also converts the string inputs into number inputs.
+     * Function that manages keyboard controls.
+     * User may submit forms by pressing Enter, 
+     * use the arrow keys to jump or move the load left or right,
+     * or press the delete key to delete a load.
      */
-     function validateInputsAddEditForm(fields){
-        // Clear the errors
-        setAddEditFormWarning("")
-        let newInvalidAddEditFields = []
-
-        // Add entered fields to the list of fields to check
-        if(Array.isArray(fields))
-            fields.forEach(field => {
-                if(!invalidAddEditFields.includes(field))
-                    invalidAddEditFields.push(field)
-            })
-        else
-            if(!invalidAddEditFields.includes(fields))
-                invalidAddEditFields.push(fields)
-
-        invalidAddEditFields.forEach(field=> {
-            if(field === "Name") {
-                // Check that Name is not in use (ignoring the load currently being edited).
-                let nameInUse = false
-                loads.forEach((load,loadID)=>{
-                    if(load.Name === newLoad.Name && !(addEditMode === "Edit" && loadID == selectedLoadID))
-                        nameInUse = true
-                })
-                if(nameInUse) {
-                    setAddEditFormWarning("Name is already in use.")
-                    newInvalidAddEditFields.push(field)
-                    return
-                }
+     function handleKeyDown(event){
+        // On the add/edit form
+        if(openAddEditForm){
+            // Enter
+            if(event.keyCode == 13) {
+                if(addEditFormAction === "")
+                    setAddEditFormAction("Confirm")
+                event.preventDefault()
             }
-
-            if(["Location", "Mass", "Length"].includes(field)) {
-                // Check that field is a number.
-                if(parseFloat(newLoad[field]) != newLoad[field]){
-                    setAddEditFormWarning(field + " must be a number.")
-                    newInvalidAddEditFields.push(field)
-                    return
-                }
-                newLoad[field] = Number(newLoad[field])
+            // Escape already works, no code here needed. It closes the form without making the add/edit.
+        }
+        // On the properties form
+        else if(openPropertiesForm) {
+            if(event.shiftKey) {
+                // Shift + Insert
+                if(event.keyCode == 45)
+                    handleClickAdd()
+                // Shift + Enter
+                else if(event.keyCode == 13)
+                    handleClickEdit()
+                // Shift + Backspace and Shift + Delete
+                if(event.keyCode == 8 || event.keyCode == 46)
+                handleClickDelete()
             }
-
-            if(field === "Mass") {
-                if(newLoad[field] < 0) {
-                    setAddEditFormWarning("Mass must be at least 0.")
-                    newInvalidAddEditFields.push(field)
-                    return
+            else
+                // Enter
+                if(event.keyCode == 13) {
+                    handleClosePropertiesForm(null)
+                    event.preventDefault()
                 }
+                // Escape is not intended to do anything here.
+        }
+        // On the main plots screen
+        else {
+            if(event.shiftKey) {
+                // Shift + Insert
+                if(event.keyCode == 45)
+                    handleClickAdd()
+                // Shift + Enter
+                else if(event.keyCode == 13)
+                    handleClickEdit()
+                // Shift + Backspace and Shift + Delete
+                else if(event.keyCode == 8 || event.keyCode == 46)
+                    handleClickDelete()
             }
-
-            if(field === "Length" && newLoad.Type !== "Point") {
-                if(newLoad[field] <= 0) {
-                    setAddEditFormWarning("Length must be greater than 0.")
-                    newInvalidAddEditFields.push(field)
-                    return
-                }
-            }
-
-            if((["Location", "Length"].includes(field))) {
-                // Check that load location is in-bounds, for point load.
-                if(newLoad.Type === "Point") {
-                    if(newLoad.Location < 0) {
-                        setAddEditFormWarning("Location must be at least 0.")
-                        newInvalidAddEditFields.push(field)
-                        return
-                    }
-                    if(newLoad.Location > beamProperties["Length of Beam"]) {
-                        setAddEditFormWarning("Location must be less than or equal to Length of Beam.")
-                        newInvalidAddEditFields.push(field)
-                        return
-                    }
-                }
-                // Check that left and right ends of the load are in-bounds, for long loads.
-                else {
-                    // While the form is open, newLoad.location refers to the middle of the load instead of the left end.
-                    let leftEnd = newLoad.Location - newLoad.Length / 2
-                    if(leftEnd < 0) {
-                        setAddEditFormWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).")
-                        newInvalidAddEditFields.push(field)
-                        return
-                    }
-                    let rightEnd = newLoad.Location + newLoad.Length / 2
-                    if(rightEnd > beamProperties["Length of Beam"]){
-                        setAddEditFormWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).")
-                        newInvalidAddEditFields.push(field)
-                        return
-                    }
-                }
-            }
-        })
-        setInvalidAddEditFields(newInvalidAddEditFields)
+            // Escape
+            else if(event.keyCode == 27)
+                handleClickProperties()
+            // Left arrow key
+            if(event.keyCode == 37)
+                moveSelectedLoad(-beamProperties["Length of Beam"]/100,1,10)
+            // Up arrow key (Jump)
+            else if(event.keyCode == 38)
+                moveSelectedLoad(0,5,10)
+            // Right arrow key
+            else if(event.keyCode == 39)
+                moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)
+            
+            // Disable the screen scroll from arrow keys
+            if([37,38,39,40].includes(event.keyCode))
+                event.preventDefault()
+        }
     }
 
-    // Returns LineSeries plot points for deflection diagram. Also updates the scale for the plot.
-    function deflectionDiagram() {
-        // Get data points for deflection plot
-        let plotData = plotSum(deflectionSingleLoad, loads, beamProperties)
+    // Move the selected load
+    function moveSelectedLoad(disp,mag,tl){
+        if(selectedLoadID < 0)
+            return
+        let load = loads[selectedLoadID]
 
-        // Update plot scale if needed
-        let newScale = getScale(plotData)
-        if(newScale != deflectionScale)
-            setDeflectionScale(newScale)
+        let newLoc = load.Location + disp
+        // Round off floating point
+        newLoc = formatVal(newLoc)(newLoc)
+        // Constrain newLoc to be in-bounds
+        newLoc = Math.max(newLoc, 0)
+        newLoc = Math.min(newLoc, beamProperties["Length of Beam"] - load.Length)
+        load.Location = newLoc
 
-        return plotData
-    }
-    // Returns LineSeries plot points for bending moment diagram. Also updates the scale for the plot.
-    function bendingMomentDiagram() {
-        // Get data points for bending moment plot
-        let plotData = plotSum(bendingMomentSingleLoad, loads, beamProperties)
-
-        // Update plot scale if needed
-        let newScale = getScale(plotData)
-        if(newScale != bendingMomentScale)
-            setBendingMomentScale(newScale)
-
-        return plotData
-    }
-    // Returns LineSeries plot points for shear force diagram. Also updates the scale for the plot.
-    function shearForceDiagram() {
-        // Get data points for shear force plot
-        let plotData = plotSum(shearForceSingleLoad, loads, beamProperties)
-
-        // Update plot scale if needed
-        let newScale = getScale(plotData)
-        if(newScale != shearForceScale)
-            setShearForceScale(newScale)
-
-        return plotData
+        reRender()
     }
 
     // Display the properties form
@@ -482,14 +326,13 @@ function CombinedLoadApp(){
                     <h3 style={{marginBottom: 0}}>Beam Properties</h3>
                     {["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity"].map(field=>{
                         return(
-                        <div>{field}:
+                        <div key={field}>{field}:
                             <input type="text"
                                 defaultValue={beamProperties[field]}
                                 onChange={(e) => {
                                     beamProperties[field] = e.target.value
                                     validateInputsPropertiesForm(field)
                                 }}
-                                key={field}
                             />
                         </div>)
                     })}
@@ -513,14 +356,13 @@ function CombinedLoadApp(){
                     </RadioGroup>
                     {["Pinned Support Position","Roller Support Position"].map(field=>{
                         return(
-                        <div>{field}:
+                        <div key={field}>{field}:
                             <input type="text"
                                 defaultValue={beamProperties[field]}
                                 onChange={(e) => {
                                     beamProperties[field] = e.target.value
                                     validateInputsPropertiesForm(field)
                                 }}
-                                key={field}
                                 disabled={beamProperties["Support Type"] !== "Simply Supported"}
                             />
                         </div>)
@@ -544,12 +386,15 @@ function CombinedLoadApp(){
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
                         {/* Add/Edit Load form */}
                         <AddEditForm
-                            open={openAddEditForm} 
-                            mode={addEditMode}
-                            handleClose={handleCloseAddEditForm}
-                            newLoad={newLoad}
-                            validate={validateInputsAddEditForm}
-                            warning={addEditFormWarning}
+                            loads={loads}
+                            beamProperties={beamProperties}
+                            selectedLoadID={selectedLoadID}
+                            setSelectedLoadID={setSelectedLoadID}
+
+                            action={addEditFormAction}
+                            setAction={setAddEditFormAction}
+                            open={openAddEditForm}
+                            setOpen={setOpenAddEditForm}
                         />
                     </div>
                 </div>
@@ -620,12 +465,15 @@ function CombinedLoadApp(){
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
                         {/* Add/Edit Load form */}
                         <AddEditForm
-                            open={openAddEditForm} 
-                            mode={addEditMode}
-                            handleClose={handleCloseAddEditForm}
-                            newLoad={newLoad}
-                            validate={validateInputsAddEditForm}
-                            warning={addEditFormWarning}
+                            loads={loads}
+                            beamProperties={beamProperties}
+                            selectedLoadID={selectedLoadID}
+                            setSelectedLoadID={setSelectedLoadID}
+
+                            action={addEditFormAction}
+                            setAction={setAddEditFormAction}
+                            open={openAddEditForm}
+                            setOpen={setOpenAddEditForm}
                         />
                     </div>
                     <div>
@@ -1016,7 +864,7 @@ function shearForceSingleLoad(x, load, beamProperties) {
         if(x < X)
             y = F * L
         else if(x < X + L)
-            y = F * (X + L - x)
+            y = F * (L - (x-X))
         else
             y = 0
         
@@ -1028,7 +876,7 @@ function shearForceSingleLoad(x, load, beamProperties) {
         if(x < X)
             y = F * L
         else if(x < X + L)
-            y = F * (X + L - x)
+            y = F * (L - (x-X))
         else
             y = 0
         
@@ -1072,45 +920,5 @@ function formatVal(scale) {
     // They must also be concatenated with a string or some labels will not display 0 (they view it as false and put no label)
 }
 
-// Function to pick name for a load, returning the first unoccupied load name like load1, load2, load3...
-function getFreeName(loads){
-    let loadNames = loads.map(load=>load.Name)
-    let i = 1
-    let name = "Load 1"
-    while(loadNames.includes(name))
-        name = "Load " + ++i
-    return name
-}
-
-// Function to pick position for a load, returning the middle of the beam if beam length is valid, or 0 if it's invalid.
-function getSafePosition(beamProperties){
-    let length = beamProperties["Length of Beam"]
-    // Check if length is not a number
-    if(parseFloat(length) != length)
-        return 0
-    // Check if length <= 0
-    length = Number(length)
-    if(length <= 0) {
-        return 0
-    }
-    return length / 2
-}
-
-// Function to pick a color for a load, returning a random color code with RGB components in the range 0-159, and opacity 50%.
-function getRandomColor() {
-    // R
-    let R = Math.floor(Math.random() * 160).toString(16)
-    if(R.length < 2)
-        R = "0"+R
-    // G
-    let G = Math.floor(Math.random() * 160).toString(16)
-    if(G.length < 2)
-        G = "0"+G
-    // B
-    let B = Math.floor(Math.random() * 160).toString(16)
-    if(B.length < 2)
-        B = "0"+B
-    "#" + R + G + B + "80"
-}
 
 export default CombinedLoadApp
