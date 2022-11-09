@@ -151,6 +151,14 @@ const AddEditForm = (props) => {
                 newLoad[field] = Number(newLoad[field])
             }
 
+            if(field === "Mass") {
+                if(newLoad[field] < 0) {
+                    setWarning("Mass must be at least 0.")
+                    newInvalidAddEditFields.push(field)
+                    return
+                }
+            }
+
             if(field === "Length" && newLoad.Type !== "Point") {
                 if(newLoad[field] <= 0) {
                     setWarning("Length must be greater than 0.")
@@ -303,8 +311,6 @@ const AddEditForm = (props) => {
         </Dialog>
     )
 }
-export default AddEditForm
-
 
 // Function to pick name for a load, returning the first unoccupied load name like load1, load2, load3...
 function getFreeName(loads){
@@ -346,3 +352,5 @@ function getRandomColor() {
         B = "0"+B
     return "#" + R + G + B + "80"
 }
+
+export default AddEditForm

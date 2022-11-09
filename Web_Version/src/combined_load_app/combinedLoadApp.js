@@ -1,8 +1,9 @@
 import '../App.css'
 import React, { useEffect, useState} from 'react'
 import {Button, Dialog, DialogContent, FormControlLabel, Radio, RadioGroup, Table, TableBody, TableCell, TableHead, TableRow} from '@mui/material'
-import LoadSelector from '../components/LoadSelector'
 import AddEditForm from '../components/AddEditForm'
+import LoadSelector from '../components/LoadSelector'
+import SidePlot from '../components/SidePlot'
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis"
 
 
@@ -23,10 +24,6 @@ function CombinedLoadApp(){
                                                          ["Roller Support Position"]: 100})
     // The current load to move/modify/delete
     const [selectedLoadID, setSelectedLoadID] = useState(-1)
-    // The scales of plots
-    const [deflectionScale, setDeflectionScale] = useState(1)
-    const [bendingMomentScale, setBendingMomentScale] = useState(1)
-    const [shearForceScale, setShearForceScale] = useState(1)
     // Whether forms should be shown
     const [openHelpMenu, setOpenHelpMenu] = useState(false)
     const [openPropertiesForm, setOpenPropertiesForm] = useState(true)
@@ -36,7 +33,6 @@ function CombinedLoadApp(){
     const [invalidPropertiesFields, setInvalidPropertiesFields] = useState([])
     // Communication with add/edit form
     const [addEditFormAction, setAddEditFormAction] = useState("")
-
 
     // Automatically re-renders the screen when called
     const [render, setRender] = useState(false)
@@ -99,44 +95,7 @@ function CombinedLoadApp(){
     function handleClickLoad(element){
         setSelectedLoadID(element.loadID)
     }
-
-    // Returns LineSeries plot points for deflection diagram. Also updates the scale for the plot.
-    function deflectionDiagram() {
-        // Get data points for deflection plot
-        let plotData = plotSum(deflectionSingleLoad, loads, beamProperties)
-
-        // Update plot scale if needed
-        let newScale = getScale(plotData)
-        if(newScale != deflectionScale)
-            setDeflectionScale(newScale)
-
-        return plotData
-    }
-    // Returns LineSeries plot points for bending moment diagram. Also updates the scale for the plot.
-    function bendingMomentDiagram() {
-        // Get data points for bending moment plot
-        let plotData = plotSum(bendingMomentSingleLoad, loads, beamProperties)
-
-        // Update plot scale if needed
-        let newScale = getScale(plotData)
-        if(newScale != bendingMomentScale)
-            setBendingMomentScale(newScale)
-
-        return plotData
-    }
-    // Returns LineSeries plot points for shear force diagram. Also updates the scale for the plot.
-    function shearForceDiagram() {
-        // Get data points for shear force plot
-        let plotData = plotSum(shearForceSingleLoad, loads, beamProperties)
-
-        // Update plot scale if needed
-        let newScale = getScale(plotData)
-        if(newScale != shearForceScale)
-            setShearForceScale(newScale)
-
-        return plotData
-    }
-
+    
     // Function to submit the properties form
     function handleClosePropertiesForm(e){
         validateInputsPropertiesForm(["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity","Pinned Support Position", "Roller Support Position"])
@@ -180,8 +139,8 @@ function CombinedLoadApp(){
                 newInvalidPropertiesFields.push(field)
                 return
             }
-            // Check that field >= 0
             beamProperties[field] = Number(beamProperties[field])
+            // Check that field >= 0
             if(beamProperties[field] < 0) {
                 setPropertiesFormWarning(field + " must be at least 0.")
                 newInvalidPropertiesFields.push(field)
@@ -421,10 +380,10 @@ function CombinedLoadApp(){
         // Display the main plots screen
         return(
             <div className={"rowC"} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
-                <div style={{height:window.innerHeight - 100, overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
+                <div style={{height:window.innerHeight - 100, width:window.innerWidth / 3, overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
                     <h1>CARL</h1>
                     {/* Main Plot */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/3} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
                         <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title = {"Load Locations"}/>
@@ -518,39 +477,17 @@ function CombinedLoadApp(){
                         </DialogContent>
                     </Dialog>
                 </div>
-                {/* Right Column */}
-                <div style={{height:window.innerHeight - 100, overflowX:"clip", overflowY:"auto"}}>
+                {/* Middle Column */}
+                <div style={{height:window.innerHeight - 100, width:window.innerWidth * 2/3, overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
                     {/* Deflection Diagram */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[deflectionScale, deflectionScale]} margin = {{left:60, right:60}}>
-                        <VerticalGridLines/>
-                        <HorizontalGridLines/>
-                        <XAxis tickFormat = {formatVal(beamProperties["Length of Beam"])} title = {"Deflection Diagram and Support Reactions"}/>
-                        <YAxis tickFormat = {formatVal(deflectionScale)}/>
-                        <LineSeries data = {[{x : 0, y : 0},{x : beamProperties["Length of Beam"],y : 0}]} />
-                        <LineSeries data={deflectionDiagram()}/>
-                        {/* Include reactions in deflection plot */}
-                        <LabelSeries data={plotReactions(loads, beamProperties, deflectionScale)} />
-                    </XYPlot>
+                    <SidePlot loads={loads} beamProperties={beamProperties} singleLoadFunction={deflectionSingleLoad} title="Deflection Diagram" showReactions showGlobalExtreme />
+                    
                     {/* Bending Moment Diagram */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain = {[bendingMomentScale, bendingMomentScale]} margin = {{left:60, right:60}}>
-                        <VerticalGridLines/>
-                        <HorizontalGridLines/>
-                        <XAxis tickFormat = {formatVal(beamProperties["Length of Beam"])} title = {"Bending Moment Diagram"}/>
-                        <YAxis tickFormat = {formatVal(bendingMomentScale)}/>
-                        <LineSeries data = {[{x : 0, y : 0},{x : beamProperties["Length of Beam"],y : 0}]} />
-                        <LineSeries data={bendingMomentDiagram()} color="black"/>
-                    </XYPlot>
+                    <SidePlot loads={loads} beamProperties={beamProperties} singleLoadFunction={bendingMomentSingleLoad} title="Bending Moment Diagram" color="black" showGlobalExtreme />
+                    
                     {/* Shear Force Diagram */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} yDomain ={[shearForceScale, shearForceScale]} margin = {{left:60, right:60}}>
-                        {/*<h1>Shear Force Diagram</h1>*/}
-                        <VerticalGridLines/>
-                        <HorizontalGridLines/>
-                        <XAxis tickFormat = {formatVal(beamProperties["Length of Beam"])} title = {"Shear Force Diagram"}/>
-                        <YAxis tickFormat = {formatVal(shearForceScale)}/>
-                        <LineSeries data = {[{x : 0, y : 0},{x : beamProperties["Length of Beam"],y : 0}]} />
-                        <LineSeries data={shearForceDiagram()} color="red"/>
-                    </XYPlot>
+                    <SidePlot loads={loads} beamProperties={beamProperties} singleLoadFunction={shearForceSingleLoad} title="Shear Force Diagram" color="red" />
                 </div>
             </div>
         )
@@ -644,146 +581,6 @@ function getCantileverSupportDisplay(beamLength) {
     support.push(<LineSeries data = {[{x : 0, y : 10}, {x : -2/100 * beamLength, y : 10}]} color = "#12939A"/>)
     support.push(<LineSeries data = {[{x : 0, y : -10}, {x : -2/100 * beamLength, y : -10}]} color = "#12939A"/>)
     return support
-}
-
-// Plot the reactions, R1 and R2.
-function plotReactions(loads, beamProperties, scale){
-    let R1 = 0
-    let R2 = 0
-    loads.forEach(load => {
-        R1 += R1SingleLoad(load, beamProperties)
-        R2 += R2SingleLoad(load, beamProperties)
-    })
-
-    let reactionLabels = []
-    // Left side reaction label (R1)
-    reactionLabels.push({x: 2.5/100 * beamProperties["Length of Beam"], y: -40/100 * scale, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
-    reactionLabels.push({x: 2.5/100 * beamProperties["Length of Beam"], y: -35/100 * scale, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-    // Right side reaction label (R2), only for Simply Supported
-    if(beamProperties["Support Type"] === "Simply Supported") {
-        reactionLabels.push({x: 97.5/100 * beamProperties["Length of Beam"], y: -40/100 * scale, label: formatVal(R2)(R2),  style: {fontSize: 15, textAnchor: "middle"}})
-        reactionLabels.push({x: 97.5/100 * beamProperties["Length of Beam"], y: -35/100 * scale, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-    }
-    return reactionLabels
-}
-
-function R1SingleLoad(load, beamProperties){
-    // Get relevant variables
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
-    let Lb = beamProperties["Length of Beam"]
-
-    let R1 = 0
-    if(load.Type === "Point") {
-        if(beamProperties["Support Type"] === "Cantilever")
-            R1 = F
-        else
-            R1 = F/Lb * (Lb - X)
-    }
-    else if(load.Type === "Distributed") {
-        if(beamProperties["Support Type"] === "Cantilever")
-            R1 = F*L
-        else
-            R1 = F*L/Lb * (Lb - X - L/2)
-    }
-    else if(load.Type === "Triangular") {
-        if(beamProperties["Support Type"] === "Cantilever")
-            R1 = F*L
-        else
-            R1 = F*L/Lb * (Lb - X - L/2)
-    }
-    return R1
-}
-
-// R1 + R2 = F (or F*L for distributed load)
-function R2SingleLoad(load, beamProperties) {
-    // Get relevant variables
-    let F = load.Mass * beamProperties.Gravity
-    let L = load.Length
-    
-    let R2 = 0
-    if(load.Type === "Point")
-        R2 = F - R1SingleLoad(load, beamProperties)
-    else if(load.Type === "Distributed")
-        R2 = F*L - R1SingleLoad(load, beamProperties)
-    else if(load.Type === "Triangular")
-        R2 = F*L - R1SingleLoad(load, beamProperties)
-    return R2
-}
-
-// Finds the global min of the deflection plot, [x,y]. This is only valid for simply supported beams where no loads are negative.
-//
-// Since bending moment is always positive, integral of bending moment a.k.a derivative of deflection is always increasing.
-// If it's always increasing it can only cross 0 once, so there's only one critical point for deflection, so there's only one local minimum.
-// This means I can find it by just going down the slope.
-function findMaxDeflection(loads, beamProperties) {
-    let yAtX = x => sumFunction(deflectionSingleLoad,x,loads,beamProperties)
-
-    let upperBound = length
-    let lowerBound = 0
-
-    // Each iteration reduces the distance between lowerBound and upperBound to 0.6 of the previous.
-    // 0.6^100 is about 6.5*10^-23
-    let numIterations = 100
-    for(let i = 0; i < numIterations; i++) {
-        let xA = lowerBound + 0.6 * (upperBound - lowerBound)
-        let xB = lowerBound + 0.4 * (upperBound - lowerBound)
-
-        let yA = yAtX(xA)
-        let yB = yAtX(xB)
-
-        if(yA > yB)
-            lowerBound = xA
-        else
-            upperBound = xB
-    }
-
-    let avg = (lowerBound + upperBound)/2
-
-    return [avg,yAtX(avg)]
-}
-
-// Takes a function that applies to a single load, returns a list of data points for plotting the sum of that function applied to every load.
-// The singleLoadFunction can return a value, or a 2-element array for instantaneous change.
-// The first element of the array will connect to the line plot to the left, and the second element will connect to the right.
-function plotSum(singleLoadFunction, loads, beamProperties) {
-    // The list of x-values which the y-values will be calculated for. The resulting points will be connected in a line plot later.
-    const xValues = []
-    // Add every 100th of the beam, and the ends of each load (for point loads the ends are equal)
-    for(let i = 0; i <= 100; i++)
-        xValues.push((i/100)*beamProperties["Length of Beam"])
-    loads.forEach(load => 
-        xValues.push(load.Location, load.Location+load.Length)
-    )
-    // Sort the x values (else the line plot would go back and forth in the x direction)
-    xValues.sort((a,b)=>(a > b)? 1 : -1)
-
-    // Calculate the y values.
-    let plotData = []
-    xValues.forEach(xValue => {
-        let yValue = sumFunction(singleLoadFunction, xValue, loads, beamProperties)
-        plotData.push({x:xValue, y:yValue[0]}, {x:xValue, y:yValue[1]})
-    })
-    return plotData
-}
-
-// Takes a function that applies to a single load, applies it to every load and returns the sum.
-// Can represent instantaneous change in y. [0] is before (connects to the plot to the left), [1] is after (connects to the plot to the right)
-function sumFunction(singleLoadFunction, x, loads, beamProperties) {
-    let y = [0,0]
-    loads.forEach(load => {
-        let individualY = singleLoadFunction(x, load, beamProperties)
-        if(Array.isArray(individualY)) {
-            y[0] += individualY[0]
-            y[1] += individualY[1]
-        }
-        else {
-            y[0] += individualY
-            y[1] += individualY
-        }
-    })
-    return y
 }
 
 // Integral of integral of bending moment. 
@@ -934,21 +731,6 @@ function shearForceSingleLoad(x, load, beamProperties) {
             y -= F * L * (2*X+L) / 2 / Lb
     }
     return y
-}
-
-// Find a scale for the y axis that comfortably fits the graph.
-function getScale(dataList) {
-    // Find the biggest absolute value in datalist
-    let maxAbsVal = 0
-    dataList.forEach(dataPoint =>
-        maxAbsVal = Math.max(maxAbsVal, Math.abs(dataPoint.y))
-    )
-    
-    // If the line is all 0, scale will be 1
-    if(maxAbsVal == 0)
-        return 1
-    
-    return maxAbsVal * 1.5
 }
 
 // This function returns a formatting function for numbers, using the given scale.
