@@ -90,7 +90,7 @@ function SidePlot (props) {
 
     return (
         <div className={"rowC"}>
-            <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/2} xDomain={[0,props.beamProperties["Length of Beam"]]} yDomain ={[scale, scale]} margin = {{left:60, right:60}}>
+            <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth * 0.4} xDomain={[0,props.beamProperties["Length of Beam"]]} yDomain ={[scale, scale]} margin = {{left:60, right:60}}>
                 {/*<h1>Shear Force Diagram</h1>*/}
                 <VerticalGridLines/>
                 <HorizontalGridLines/>
@@ -104,24 +104,22 @@ function SidePlot (props) {
                 {validX() ? <LineSeries data = {[{x:coord.x, y:scale}, {x:coord.x, y:-1*scale}]} color="grey" strokeWidth="1px"/> : []}
                 {props.showReactions?<LabelSeries data={reactions()} />:[]}
             </XYPlot>
-            <div style={{width:window.innerWidth/8}}>
+            <div style={{display:"flex", alignItems:"center", justifyContent:"center", width:"100%"}}>
                 <div>
-                    {coord.title}
-                </div>
-                <div>
-                    x=
-                    <input type="text"
+                    {coord.title}<br/>
+                    x=<input type="text"
                         value={coord.x}
                         style={{width:50}}
                         onChange={(e) => {
                             updateCoord(e.target.value, true)
                         }}
-                    />
-                    , y={coord.y}
-                </div>
-                <div>
-                    Global Extreme:<br/>
-                    {props.showGlobalExtreme?globalExtreme(props.loads,props.beamProperties,props.singleLoadFunction):""}
+                    />, y={coord.y}<br/>
+                    {props.showGlobalExtreme?
+                    <div>
+                        Global Extreme:<br/>
+                        {globalExtreme(props.loads,props.beamProperties,props.singleLoadFunction)}
+                    </div>
+                    :""}
                 </div>
             </div>
         </div>

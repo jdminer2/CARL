@@ -383,10 +383,10 @@ function CombinedLoadApp(){
         // Display the main plots screen
         return(
             <div className={"rowC"} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
-                <div style={{height:window.innerHeight - 100, width:window.innerWidth / 3, overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
+                <div style={{height:window.innerHeight - 100, width:"40%", overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
                     <h1>CARL</h1>
                     {/* Main Plot */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth/3} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
+                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth * 0.4} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
                         <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title = {"Load Locations"}/>
@@ -481,7 +481,7 @@ function CombinedLoadApp(){
                     </Dialog>
                 </div>
                 {/* Right Columns */}
-                <div style={{height:window.innerHeight - 100, width:window.innerWidth * 2/3, overflowX:"clip", overflowY:"auto"}}>
+                <div style={{height:window.innerHeight - 100, width:"60%", overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
                     {/* Deflection Diagram */}
                     <SidePlot loads={loads} beamProperties={beamProperties} singleLoadFunction={deflectionSingleLoad} title="Deflection Diagram" showReactions showGlobalExtreme />
