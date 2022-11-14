@@ -1,3 +1,4 @@
+import '../App.css'
 import React, {useEffect, useState} from 'react'
 import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField} from '@mui/material'
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis"
@@ -62,17 +63,8 @@ function SidePlot (props) {
         return reactionLabels
     }
 
-    function cleanX(newX){
-        let x = newX
-        if(parseFloat(x) == x) {
-            x = Number(x)
-            x = formatVal(x)(x)
-        }
-        return x
-    }
-
-    function cleanY(newX){
-        let x = newX
+    function updateCoord(enteredX, isTyping){
+        let x = enteredX
         let y = coord.y
         if(parseFloat(x) == x) {
             x = Number(x)
@@ -82,7 +74,18 @@ function SidePlot (props) {
                 y = formatVal(y)(y)
             }
         }
-        return y
+        setCoord({title:coord.title, x:(isTyping?enteredX:x), y:y})
+    }
+
+    function validX() {
+        let x = coord.x
+        if(parseFloat(x) == x) {
+            x = Number(x)
+            x = formatVal(x)(x)
+            if(x >= 0 && x <= props.beamProperties["Length of Beam"])
+                return true
+        }
+        return false
     }
 
     return (
@@ -96,12 +99,12 @@ function SidePlot (props) {
                 {/* Beam */}
                 <LineSeries data = {[{x:0, y:0}, {x:props.beamProperties["Length of Beam"],y:0}]} />
                 {/* Plot */}
-                <LineSeries data={diagram()} onNearestX = {(dataPoint,e) => setCoord({title:coord.title,x:cleanX(dataPoint.x),y:cleanY(dataPoint.x)})} color={props.color}/>
+                <LineSeries data={diagram()} onNearestX = {(datapoint,e) => updateCoord(datapoint.x, false)} color={props.color}/>
                 {/* Current X */}
-                <LineSeries data = {[{x:coord.x, y:scale}, {x:coord.x, y:-1*scale}]} color="grey" strokeWidth="1px"/>
+                {validX() ? <LineSeries data = {[{x:coord.x, y:scale}, {x:coord.x, y:-1*scale}]} color="grey" strokeWidth="1px"/> : []}
                 {props.showReactions?<LabelSeries data={reactions()} />:[]}
             </XYPlot>
-            <div>
+            <div style={{width:window.innerWidth/8}}>
                 <div>
                     {coord.title}
                 </div>
@@ -109,9 +112,9 @@ function SidePlot (props) {
                     x=
                     <input type="text"
                         value={coord.x}
-                        style={{maxWidth:100}}
+                        style={{width:50}}
                         onChange={(e) => {
-                            setCoord({title:coord.title, x:e.target.value, y:cleanY(e.target.value)})
+                            updateCoord(e.target.value, true)
                         }}
                     />
                     , y={coord.y}

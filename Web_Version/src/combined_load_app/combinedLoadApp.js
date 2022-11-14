@@ -44,8 +44,8 @@ function CombinedLoadApp(){
     // Automatically resizes the plots when the user resizes the window
     const [dims, setDims] = useState([])
     useEffect(() => {
-        window.addEventListener("resize", ()=>setDims([window,innerHeight,window.innerWidth]))
-        return () => window.removeEventListener("resize", ()=>setDims([window,innerHeight,window.innerWidth]))
+        window.addEventListener("resize", ()=>setDims([window.innerHeight,window.innerWidth]))
+        return () => window.removeEventListener("resize", ()=>setDims([window.innerHeight,window.innerWidth]))
     },[])
 
     // Automatically sets the focus on the page so the user can use keyboard controls
@@ -207,66 +207,69 @@ function CombinedLoadApp(){
         }
         // On the properties form
         else if(openPropertiesForm) {
-            if(event.shiftKey) {
-                // Shift + Insert
-                if(event.keyCode == 45) {
-                    handleClickAdd()
-                    event.preventDefault()
-                }
-                // Shift + Enter
-                else if(event.keyCode == 13) {
-                    handleClickEdit()
-                    event.preventDefault()
-                }
-                // Shift + Backspace and Shift + Delete
-                else if(event.keyCode == 8 || event.keyCode == 46) {
-                    handleClickDelete()
-                    event.preventDefault()
-                }
+            // Insert outside of textboxes
+            if(event.keyCode == 45 && document.activeElement.type !== "text") {
+                handleClickAdd()
+                event.preventDefault()
             }
-            else
-                // Enter
-                if(event.keyCode == 13) {
-                    handleClosePropertiesForm(null)
-                    event.preventDefault()
-                }
-                // Escape is not intended to do anything here.
+            // Shift + Enter outside of textboxes
+            else if(event.shiftKey && event.keyCode == 13 && document.activeElement.type !== "text") {
+                handleClickEdit()
+                event.preventDefault()
+            }
+            // Delete outside of textboxes
+            else if(event.keyCode == 46 && document.activeElement.type !== "text") {
+                handleClickDelete()
+                event.preventDefault()
+            }
+            // Enter
+            else if(event.keyCode == 13) {
+                handleClosePropertiesForm(null)
+                event.preventDefault()
+            }
+            // Escape is not intended to do anything here.
         }
         // On the main plots screen
         else {
-            if(event.shiftKey) {
-                // Shift + Insert
-                if(event.keyCode == 45) {
-                    handleClickAdd()
-                    event.preventDefault()
-                }
-                // Shift + Enter
-                else if(event.keyCode == 13) {
-                    handleClickEdit()
-                    event.preventDefault()
-                }
-                // Shift + Backspace and Shift + Delete
-                else if(event.keyCode == 8 || event.keyCode == 46) {
-                    handleClickDelete()
-                    event.preventDefault()
-                }
+            // Insert outside of textboxes
+            if(event.keyCode == 45 && document.activeElement.type !== "text") {
+                handleClickAdd()
+                event.preventDefault()
+            }
+            // Shift + Enter outside of textboxes
+            else if(event.shiftKey && event.keyCode == 13 && document.activeElement.type !== "text") {
+                handleClickEdit()
+                event.preventDefault()
+            }
+            // Delete outside of textboxes
+            else if(event.keyCode == 46 && document.activeElement.type !== "text") {
+                handleClickDelete()
+                event.preventDefault()
             }
             // Escape
-            else if(event.keyCode == 27)
+            else if(event.keyCode == 27) {
                 handleClickProperties()
-            // Left arrow key
-            if(event.keyCode == 37)
-                moveSelectedLoad(-beamProperties["Length of Beam"]/100,1,10)
-            // Up arrow key (Jump)
-            else if(event.keyCode == 38)
-                moveSelectedLoad(0,5,10)
-            // Right arrow key
-            else if(event.keyCode == 39)
-                moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)
-            
-            // Disable the screen scroll from arrow keys
-            if([37,38,39,40].includes(event.keyCode))
                 event.preventDefault()
+            }
+            // Left arrow outside of textboxes
+            else if(event.keyCode == 37 && document.activeElement.type !== "text") {
+                moveSelectedLoad(-beamProperties["Length of Beam"]/100,1,10)
+                event.preventDefault()
+            }
+            // Up arrow (Jump) outside of textboxes
+            else if(event.keyCode == 38 && document.activeElement.type !== "text") {
+                moveSelectedLoad(0,5,10)
+                event.preventDefault()
+            }
+            // Right arrow outside of textboxes
+            else if(event.keyCode == 39 && document.activeElement.type !== "text") {
+                moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)
+                event.preventDefault()
+            }
+            // Down arrow outside of textboxes (just preventing scroll-down)
+            else if(event.keyCode == 40 && document.activeElement.type !== "text"){
+                event.preventDefault()
+            }
         }
     }
 
@@ -460,13 +463,13 @@ function CombinedLoadApp(){
                         <DialogContent>
                             <Table sx={{minWidth: 500}}>
                                 <TableHead>Keyboard Shortcuts</TableHead>
-                                <TableBody>{[
-                                    ["Left/Right Arrows:", "Move Selected Load"],
-                                    ["Up Arrow:", "Jump"],
-                                    ["Shift + Insert:", "Add Load"],
-                                    ["Shift + Enter:", "Edit Selected Load"],
-                                    ["Shift + Delete:", "Delete Selected Load"],
-                                    ["Esc:", "Edit Properties"]].map(row=>
+                                <TableBody>{[["Left/Right Arrows:", "Move Selected Load"],
+                                             ["Up Arrow:", "Jump"],
+                                             ["Insert:", "Add Load"],
+                                             ["Shift + Enter:", "Edit Selected Load"],
+                                             ["Delete:", "Delete Selected Load"],
+                                             ["Esc:", "Edit Properties"]]
+                                    .map(row=>
                                         <TableRow key={row[0]}>
                                             {row.map(col=>
                                                 <TableCell>{col}</TableCell>
@@ -477,7 +480,7 @@ function CombinedLoadApp(){
                         </DialogContent>
                     </Dialog>
                 </div>
-                {/* Middle Column */}
+                {/* Right Columns */}
                 <div style={{height:window.innerHeight - 100, width:window.innerWidth * 2/3, overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
                     {/* Deflection Diagram */}
