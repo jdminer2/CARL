@@ -484,13 +484,13 @@ function CombinedLoadApp(){
                 <div style={{height:window.innerHeight - 100, width:"60%", overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
                     {/* Deflection Diagram */}
-                    <SidePlot loads={loads} beamProperties={beamProperties} singleLoadFunction={deflectionSingleLoad} title="Deflection Diagram" showReactions showGlobalExtreme />
+                    <SidePlot loads={loads} beamProperties={beamProperties} title="Deflection Diagram" showReactions showGlobalExtreme />
                     
                     {/* Bending Moment Diagram */}
-                    <SidePlot loads={loads} beamProperties={beamProperties} singleLoadFunction={bendingMomentSingleLoad} title="Bending Moment Diagram" color="black" showGlobalExtreme />
+                    <SidePlot loads={loads} beamProperties={beamProperties} title="Bending Moment Diagram" color="black" showGlobalExtreme />
                     
                     {/* Shear Force Diagram */}
-                    <SidePlot loads={loads} beamProperties={beamProperties} singleLoadFunction={shearForceSingleLoad} title="Shear Force Diagram" color="red" />
+                    <SidePlot loads={loads} beamProperties={beamProperties} title="Shear Force Diagram" color="red" />
                 </div>
             </div>
         )
@@ -584,156 +584,6 @@ function getCantileverSupportDisplay(beamLength) {
     support.push(<LineSeries data = {[{x : 0, y : 10}, {x : -2/100 * beamLength, y : 10}]} color = "#12939A"/>)
     support.push(<LineSeries data = {[{x : 0, y : -10}, {x : -2/100 * beamLength, y : -10}]} color = "#12939A"/>)
     return support
-}
-
-// Integral of integral of bending moment. 
-// For cantilever, deflection and d/dx deflection are 0 at x=0.
-// For simply supported beam, deflection is 0 at x=0 and x=beam length.
-function deflectionSingleLoad(x, load, beamProperties) {
-    // Get relevant variables
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
-    let Lb = beamProperties["Length of Beam"]
-    let EI = beamProperties.EI
-
-    let y = 0
-    if(load.Type === "Point") {
-        if(x < X)
-            y = (x**3-3*x**2*X) / 6
-        else
-            y = (X**3-3*X**2*x) / 6
-
-        if(beamProperties["Support Type"] === "Simply Supported")
-            y += (-2*Lb**2*X*x + 3*Lb*X*x**2 + 3*Lb*x*X**2 - X*x**3 - x*X**3) / 6 / Lb
-    }
-    else if(load.Type === "Distributed") {
-        if(x < X)
-            y = (-3*L**2*x**2 - 6*L*X*x**2 + 2*L*x**3) / 12
-        else if(x < X + L)
-            y = (-1*(X-x)**4 - 6*L**2*x**2 - 12*L*X*x**2 + 4*L*x**3) / 24
-        else
-            y = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
-
-        if(beamProperties["Support Type"] === "Simply Supported")
-            y += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
-    }
-    else if(load.Type === "Triangular") {
-        if(x < X)
-            y = (-3*L**2*x**2 - 6*L*X*x**2 + 2*L*x**3) / 12
-        else if(x < X + L)
-            y = (-1*(X-x)**4 - 6*L**2*x**2 - 12*L*X*x**2 + 4*L*x**3) / 24
-        else
-            y = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
-
-        if(beamProperties["Support Type"] === "Simply Supported")
-            y += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
-    }
-
-    y *= F / EI
-
-    // Prevent floating point errors when there is only 1 point mass and it's on top of a supported end of the beam. It should be 0 but sometimes floating point errors happen here.
-    if(Math.abs(y) < 10**-18)
-        y = 0
-
-    return y
-}
-
-// Integral of shear force. Bending moment is 0 at x=beam length, for both support types.
-function bendingMomentSingleLoad(x, load, beamProperties) {
-    // Get relevant variables
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
-    let Lb = beamProperties["Length of Beam"]
-
-    let y = 0
-    if(load.Type === "Point") {
-        if(x < X)
-            y = F * (x - X)
-        else
-            y = 0
-
-        if(beamProperties["Support Type"] === "Simply Supported")
-            y -= F * X / Lb * (x-Lb)
-    }
-    else if(load.Type === "Distributed") {
-        if(x < X)
-            y = F * L * (x-X-L/2)
-        else if(x < X + L)
-            y = F * (L*x - X*L + X*x - (L**2+X**2+x**2)/2)
-        else
-            y = 0
-        
-        if(beamProperties["Support Type"] === "Simply Supported")
-            y -= F * L * (2*X+L) / 2 / Lb * (x-Lb)
-    }
-    else if(load.Type === "Triangular") {
-        if(x < X)
-            y = F * L * (x-X-L/2)
-        else if(x < X + L)
-            y = F * (L*x - X*L + X*x - (L**2+X**2+x**2)/2)
-        else
-            y = 0
-        
-        if(beamProperties["Support Type"] === "Simply Supported")
-            y -= F * L * (2*X+L) / 2 / Lb * (x-Lb)
-    }
-    return y
-}
-
-function shearForceSingleLoad(x, load, beamProperties) {
-    // Get relevant variables
-    let X = load.Location
-    let F = load.Mass * beamProperties.Gravity
-    let L = load.Length
-    let Lb = beamProperties["Length of Beam"]
-
-    let y = 0
-    if(load.Type === "Point") {
-        if(x < X)
-            y = F
-        else if(x == X)
-            // Array represents instantaneous change in y
-            y = [F,0]
-        else
-            y = 0
-
-        // For Cantilever, shear force at x=0 is F. For Simply Supported, it is something else, and the whole graph is translated down.
-        if(beamProperties["Support Type"] === "Simply Supported") {
-            if(Array.isArray(y)) {
-                y[0] -= F * X / Lb
-                y[1] -= F * X / Lb
-            }
-            else
-                y -= F * X / Lb
-        }
-    }
-    else if(load.Type === "Distributed") {
-        if(x < X)
-            y = F * L
-        else if(x < X + L)
-            y = F * (L - (x-X))
-        else
-            y = 0
-        
-        // For Cantilever, shear force at x=0 is F*L. For Simply Supported, it is something else, and the whole graph is translated down.
-        if(beamProperties["Support Type"] === "Simply Supported")
-            y -= F * L * (2*X+L) / 2 / Lb
-    }
-    else if(load.Type === "Triangular") {
-        if(x < X)
-            y = F * L
-        else if(x < X + L)
-            y = F * (L - (x-X))
-        else
-            y = 0
-        
-        // For Cantilever, shear force at x=0 is F*L. For Simply Supported, it is something else, and the whole graph is translated down.
-        if(beamProperties["Support Type"] === "Simply Supported")
-            y -= F * L * (2*X+L) / 2 / Lb
-    }
-    return y
 }
 
 // This function returns a formatting function for numbers, using the given scale.

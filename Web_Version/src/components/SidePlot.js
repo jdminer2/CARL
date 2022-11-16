@@ -35,7 +35,7 @@ function SidePlot (props) {
         // Calculate the y values.
         let plotData = []
         xValues.forEach(xValue => {
-            let yValue = sumFunction(props.singleLoadFunction, xValue, props.loads, props.beamProperties)
+            let yValue = sumFunction(chooseSingleLoadFunction(props.title), xValue, props.loads, props.beamProperties)
             plotData.push({x:xValue, y:yValue[0]}, {x:xValue, y:yValue[1]})
         })
 
@@ -70,7 +70,7 @@ function SidePlot (props) {
             x = Number(x)
             x = formatVal(x)(x)
             if(x >= 0 && x <= props.beamProperties["Length of Beam"]) {
-                y = sumFunction(props.singleLoadFunction, x, props.loads, props.beamProperties)[0]
+                y = sumFunction(chooseSingleLoadFunction(props.title), x, props.loads, props.beamProperties)[0]
                 y = formatVal(y)(y)
             }
         }
@@ -117,7 +117,7 @@ function SidePlot (props) {
                     {props.showGlobalExtreme?
                     <div>
                         Global Extreme:<br/>
-                        {globalExtreme(props.loads,props.beamProperties,props.singleLoadFunction)}
+                        {globalExtreme(props.loads,props.beamProperties,chooseSingleLoadFunction(props.title))}
                     </div>
                     :""}
                 </div>
@@ -183,6 +183,171 @@ function sumFunction(singleLoadFunction, x, loads, beamProperties) {
     return y
 }
 
+// Integral of integral of bending moment. 
+// For cantilever, deflection and d/dx deflection are 0 at x=0.
+// For simply supported beam, deflection is 0 at x=0 and x=beam length.
+function deflectionSingleLoad(x, load, beamProperties) {
+    // Get relevant variables
+    let F = load.Mass * beamProperties.Gravity
+    let X = load.Location
+    let L = load.Length
+    let Lb = beamProperties["Length of Beam"]
+    let EI = beamProperties.EI
+
+    let y = 0
+    if(load.Type === "Point") {
+        if(x < X)
+            y = (x**3-3*x**2*X) / 6
+        else
+            y = (X**3-3*X**2*x) / 6
+
+        if(beamProperties["Support Type"] === "Simply Supported")
+            y += (-2*Lb**2*X*x + 3*Lb*X*x**2 + 3*Lb*x*X**2 - X*x**3 - x*X**3) / 6 / Lb
+    }
+    else if(load.Type === "Distributed") {
+        if(x < X)
+            y = (-3*L**2*x**2 - 6*L*X*x**2 + 2*L*x**3) / 12
+        else if(x < X + L)
+            y = (-1*(X-x)**4 - 6*L**2*x**2 - 12*L*X*x**2 + 4*L*x**3) / 24
+        else
+            y = ((L+X)**4 - X**4 - 4*L**3*x - 12*L**2*X*x - 12*L*X**2*x) / 24
+
+        if(beamProperties["Support Type"] === "Simply Supported")
+            y += (x*X**4 - x*(L+X)**4 -2*L**2*x**3 - 4*L*x**3*X - 4*L**2*Lb**2*x + 4*L**3*Lb*x + 6*L**2*Lb*x**2 - 8*L*Lb**2*x*X + 12*L**2*Lb*x*X + 12*L*Lb*x*X**2 + 12*L*Lb*X*x**2) / 24 / Lb
+    }
+    else if(load.Type === "Triangular") {
+        if(load["Taller End"] === "Left") {
+            let subLoad1 = {Mass:load.Mass, Location:load.Location, Length:load.Length, Type:"Distributed"}
+            let subLoad2 = {Mass:-1*load.Mass, Location:load.Location, Length:load.Length, Type:"Triangular", ["Taller End"]:"Right"}
+            return deflectionSingleLoad(x, subLoad1, beamProperties) + deflectionSingleLoad(x, subLoad2, beamProperties)
+        }
+        if(x < X)
+            y = L/2 * (x**3/6 - X*x**2/2 - L*x**2/3)
+        else if(x < X + L)
+            y = L/2 * (X**3/6 - x*X**2/2 - L*x**2/3 + (x-X)**3/6 - (x-X)**5/60/L**2)
+        else
+            y = L/2 * (X**3/6 + L**3/6 - (X+L)*X**2/2 - L*(X+L)**2/3 - L**3/60 - (L**2/4 + X**2/2 + 2*L*X/3)*(x-X-L))
+
+        if(beamProperties["Support Type"] === "Simply Supported")
+            y += L/2 * (-30*x*X**3 - 60*L*x*X**2 + 90*x*X**2*Lb - 30*x**3*X - 45*L**2*x*X - 60*x*X*Lb**2 + 90*x**2*X*Lb + 120*L*x*X*Lb - 20*L*x**3 - 12*L**3*x - 40*L*x*Lb**2 + 60*L*x**2*Lb + 45*L**2*x*Lb) / 180 / Lb
+    }
+
+    y *= F / EI
+
+    // Prevent floating point errors when there is only 1 point mass and it's on top of a supported end of the beam. It should be 0 but sometimes floating point errors happen here.
+    if(Math.abs(y) < 10**-18)
+        y = 0
+
+    return y
+}
+
+// Integral of shear force. Bending moment is 0 at x=beam length, for both support types.
+function bendingMomentSingleLoad(x, load, beamProperties) {
+    // Get relevant variables
+    let F = load.Mass * beamProperties.Gravity
+    let X = load.Location
+    let L = load.Length
+    let Lb = beamProperties["Length of Beam"]
+
+    let y = 0
+    if(load.Type === "Point") {
+        if(x < X)
+            y = F * (x - X)
+        else
+            y = 0
+
+        if(beamProperties["Support Type"] === "Simply Supported")
+            y -= F * X / Lb * (x-Lb)
+    }
+    else if(load.Type === "Distributed") {
+        if(x < X)
+            y = F * L * (x-X-L/2)
+        else if(x < X + L)
+            y = F * (L*x - X*L + X*x - (L**2+X**2+x**2)/2)
+        else
+            y = 0
+        
+        if(beamProperties["Support Type"] === "Simply Supported")
+            y -= F*L * (X + L/2)/Lb * (x-Lb)
+    }
+    else if(load.Type === "Triangular") {
+        if(load["Taller End"] === "Left") {
+            let subLoad1 = {Mass:load.Mass, Location:load.Location, Length:load.Length, Type:"Distributed"}
+            let subLoad2 = {Mass:-1*load.Mass, Location:load.Location, Length:load.Length, Type:"Triangular", ["Taller End"]:"Right"}
+            return bendingMomentSingleLoad(x, subLoad1, beamProperties) + bendingMomentSingleLoad(x, subLoad2, beamProperties)
+        }
+        if(x < X)
+            y = F*L/2 * (x-X-L*2/3)
+        else if(x < X + L)
+            y = F*L/2 * ((x-X) - (x-X)**3/3/L**2 - 2*L/3)
+        else
+            y = 0
+        
+        if(beamProperties["Support Type"] === "Simply Supported")
+            y -= F*L/2 * (X + L * 2/3)/Lb * (x-Lb)
+    }
+    return y
+}
+
+function shearForceSingleLoad(x, load, beamProperties) {
+    // Get relevant variables
+    let X = load.Location
+    let F = load.Mass * beamProperties.Gravity
+    let L = load.Length
+    let Lb = beamProperties["Length of Beam"]
+
+    let y = 0
+    if(load.Type === "Point") {
+        if(x < X)
+            y = F
+        else if(x == X)
+            // Array represents instantaneous change in y
+            y = [F,0]
+        else
+            y = 0
+
+        // For Cantilever, shear force at x=0 is F. For Simply Supported, it is something else, and the whole graph is translated down.
+        if(beamProperties["Support Type"] === "Simply Supported") {
+            if(Array.isArray(y)) {
+                y[0] -= F * X / Lb
+                y[1] -= F * X / Lb
+            }
+            else
+                y -= F * X / Lb
+        }
+    }
+    else if(load.Type === "Distributed") {
+        if(x < X)
+            y = F * L
+        else if(x < X + L)
+            y = F * (L - (x-X))
+        else
+            y = 0
+        
+        // For Cantilever, shear force at x=0 is F*L. For Simply Supported, it is something else, and the whole graph is translated down.
+        if(beamProperties["Support Type"] === "Simply Supported")
+            y -= F*L * (X + L/2)/Lb
+    }
+    else if(load.Type === "Triangular") {
+        if(load["Taller End"] === "Left") {
+            let subLoad1 = {Mass:load.Mass, Location:load.Location, Length:load.Length, Type:"Distributed"}
+            let subLoad2 = {Mass:-1*load.Mass, Location:load.Location, Length:load.Length, Type:"Triangular", ["Taller End"]:"Right"}
+            return shearForceSingleLoad(x, subLoad1, beamProperties) + shearForceSingleLoad(x, subLoad2, beamProperties)
+        }
+        if(x < X)
+            y = F * L / 2
+        else if(x < X + L)
+            y = F * (L - (x-X)**2/L) / 2 
+        else
+            y = 0
+        
+        // For Cantilever, shear force at x=0 is F*L. For Simply Supported, it is something else, and the whole graph is translated down.
+        if(beamProperties["Support Type"] === "Simply Supported")
+            y -= F*L/2 * (X + L * 2/3)/Lb
+    }
+    return y
+}
+
 function reactionsSingleLoad(_, load, beamProperties){
     // Get relevant variables
     let F = load.Mass * beamProperties.Gravity
@@ -203,10 +368,16 @@ function reactionsSingleLoad(_, load, beamProperties){
             return [F*L * (Lb - X - L/2)/Lb, F*L * (X + L/2)/Lb]
     }
     else if(load.Type === "Triangular") {
+        if(load["Taller End"] === "Left") {
+            let subLoad1 = {Mass:load.Mass, Location:load.Location, Length:load.Length, Type:"Distributed"}
+            let subLoad2 = {Mass:-1*load.Mass, Location:load.Location, Length:load.Length, Type:"Triangular", ["Taller End"]:"Right"}
+            return [reactionsSingleLoad(_, subLoad1, beamProperties)[0] + reactionsSingleLoad(_, subLoad2, beamProperties)[0],
+                    reactionsSingleLoad(_, subLoad1, beamProperties)[1] + reactionsSingleLoad(_, subLoad2, beamProperties)[1]]
+        }
         if(beamProperties["Support Type"] === "Cantilever")
-            return [F*L,0]
+            return [F*L/2,0]
         else
-            return [F*L * (Lb - X - L/2)/Lb, F*L * (X + L/2)/Lb]
+            return [F*L/2 * (Lb - X - L * 2/3)/Lb, F*L/2 * (X + L * 2/3)/Lb]
     }
     return null
 }
@@ -223,7 +394,10 @@ function getScale(dataList) {
     if(maxAbsVal == 0)
         return 1
     
+    // Extreme stays in place while plot scale changes
     return maxAbsVal * 1.5
+    // Plot scale stays in place while extreme changes, until extreme is no longer between the 50% and 100% marks
+    //return 2 ** Math.ceil(Math.log2(maxAbsVal))
 }
 
 // This function returns a formatting function for numbers, using the given scale.
@@ -242,6 +416,15 @@ function formatVal(scale) {
         }
     // Both functions round the vals to a precision of 6 to avoid floating point trails.
     // They must also be concatenated with a string or some labels will not display 0 (they view it as false and put no label)
+}
+
+function chooseSingleLoadFunction(title) {
+    if(title === "Deflection Diagram")
+        return deflectionSingleLoad
+    if(title === "Bending Moment Diagram")
+        return bendingMomentSingleLoad
+    if(title === "Shear Force Diagram")
+        return shearForceSingleLoad
 }
 
 export default SidePlot
