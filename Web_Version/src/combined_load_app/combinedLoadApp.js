@@ -398,8 +398,8 @@ function CombinedLoadApp(){
                             (beamProperties["Support Type"] === "Simply Supported")
                             ?
                                 // Simply Supported supports
-                                <LabelSeries data={[{x: beamProperties["Pinned Support Position"], y: -11, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                                    {x: beamProperties["Roller Support Position"], y: -11, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                <LabelSeries data={[{x: beamProperties["Pinned Support Position"], y: -11 * window.devicePixelRatio, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                                    {x: beamProperties["Roller Support Position"], y: -11 * window.devicePixelRatio, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                             :
                                 // Cantilever support
                                 getCantileverSupportDisplay(beamProperties["Length of Beam"])
@@ -412,12 +412,12 @@ function CombinedLoadApp(){
                                 return
                             let data
                             if(load.Type === "Distributed")
-                                data = [{x: load.Location, y: 8}, {x: (load.Location+load.Length), y: 8}]
+                                data = [{x: load.Location, y: 8 * window.devicePixelRatio}, {x: (load.Location+load.Length), y: 8 * window.devicePixelRatio}]
                             else if(load.Type === "Triangular"){
                                 if(load["Taller End"]==="Left")
-                                    data = [{x: load.Location, y: 8}, {x: load.Location, y: 20}, {x: (load.Location+load.Length), y: 8}, {x: load.Location, y: 8}]
+                                    data = [{x: load.Location, y: 8 * window.devicePixelRatio}, {x: load.Location, y: 20 * window.devicePixelRatio}, {x: (load.Location+load.Length), y: 8 * window.devicePixelRatio}, {x: load.Location, y: 8 * window.devicePixelRatio}]
                                 else
-                                    data = [{x: load.Location, y: 8}, {x: (load.Location+load.Length), y: 20}, {x: (load.Location+load.Length), y: 8}, {x: load.Location, y: 8}]
+                                    data = [{x: load.Location, y: 8 * window.devicePixelRatio}, {x: (load.Location+load.Length), y: 20 * window.devicePixelRatio}, {x: (load.Location+load.Length), y: 8 * window.devicePixelRatio}, {x: load.Location, y: 8 * window.devicePixelRatio}]
                             }
                             return (
                                 <LineSeries
@@ -528,6 +528,7 @@ function loadRadioButtonsCreator(loads){
 function labelMakerForLoads(loads, selectedLoadID, beamProperties){
     var data = []
     loads.forEach((load,loadID)=>{
+        console.log(window.devicePixelRatio)
         // Check if the load is a point load, and if it is the selected load.
         let isPoint = load.Type === "Point"
         let isSelected = loadID == selectedLoadID
@@ -541,12 +542,12 @@ function labelMakerForLoads(loads, selectedLoadID, beamProperties){
             statsLabel += ", " + (isSelected?"L=":"") + load.Length
 
         // Load name and stats labels. For point loads it will be 10 units higher.
-        data.push({x: xLoc, y: isPoint?35:25, label: load.Name, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        data.push({x: xLoc, y: isPoint?30:20, label: statsLabel, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: xLoc, y: (isPoint?35:25) * window.devicePixelRatio, label: load.Name, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: xLoc, y: (isPoint?30:20) * window.devicePixelRatio, label: statsLabel, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
 
         // Point Loads have a big arrow, distributed loads have mini arrows
         if(load.Type === "Point")
-            data.push({x: xLoc, y: -5, label: "\u2193", loadID: loadID, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            data.push({x: xLoc, y: -5 * window.devicePixelRatio, label: "\u2193", loadID: loadID, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         else
             getDistributedLoadMiniArrows(data, load, loadID, beamProperties["Length of Beam"])
     })
@@ -568,21 +569,21 @@ function getDistributedLoadMiniArrows(data, load, loadID, beamLength){
     // Evenly spaced
     for(let i = 0; i <= numArrows; i++) {
         let x = load.Location + (i/numArrows) * load.Length
-        data.push({x: x, y: -3, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle", fill: load.Color}})
+        data.push({x: x, y: -3 * window.devicePixelRatio, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle", fill: load.Color}})
     }
 }
 
 // Function for adding the cantilever support visual display.
 function getCantileverSupportDisplay(beamLength) {
     let support = []
-    support.push(<LineSeries data = {[{x : 0, y : -10}, {x : 0, y : 10}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : 10}, {x : -2/100 * beamLength, y : 6}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : 6}, {x : -2/100 * beamLength, y : 2}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : 2}, {x : -2/100 * beamLength, y : -2}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : -2}, {x : -2/100 * beamLength, y : -6}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : -6}, {x : -2/100 * beamLength, y : -10}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : 10}, {x : -2/100 * beamLength, y : 10}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : -10}, {x : -2/100 * beamLength, y : -10}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : -10 * window.devicePixelRatio}, {x : 0, y : 10 * window.devicePixelRatio}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : 10 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : 6 * window.devicePixelRatio}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : 6 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : 2 * window.devicePixelRatio}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : 2 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : -2 * window.devicePixelRatio}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : -2 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : -6 * window.devicePixelRatio}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : -6 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : -10 * window.devicePixelRatio}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : 10 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : 10 * window.devicePixelRatio}]} color = "#12939A"/>)
+    support.push(<LineSeries data = {[{x : 0, y : -10 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : -10 * window.devicePixelRatio}]} color = "#12939A"/>)
     return support
 }
 
