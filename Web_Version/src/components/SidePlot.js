@@ -53,12 +53,12 @@ function SidePlot (props) {
 
         let reactionLabels = []
         // Left side reaction label (R1)
-        reactionLabels.push({x: 2.5/100 * props.beamProperties["Length of Beam"], y: -40/100 * scale, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
-        reactionLabels.push({x: 2.5/100 * props.beamProperties["Length of Beam"], y: -35/100 * scale, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+        reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -40/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
+        reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -35/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
         // Right side reaction label (R2), only for Simply Supported
         if(props.beamProperties["Support Type"] === "Simply Supported") {
-            reactionLabels.push({x: 97.5/100 * props.beamProperties["Length of Beam"], y: -40/100 * scale, label: formatVal(R2)(R2),  style: {fontSize: 15, textAnchor: "middle"}})
-            reactionLabels.push({x: 97.5/100 * props.beamProperties["Length of Beam"], y: -35/100 * scale, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+            reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -40/100 * scale * window.devicePixelRatio, label: formatVal(R2)(R2),  style: {fontSize: 15, textAnchor: "middle"}})
+            reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -35/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
         }
         return reactionLabels
     }
