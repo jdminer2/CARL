@@ -151,14 +151,6 @@ const AddEditForm = (props) => {
                 newLoad[field] = Number(newLoad[field])
             }
 
-            if(field === "Mass") {
-                if(newLoad[field] < 0) {
-                    setWarning("Mass must be at least 0.")
-                    newInvalidAddEditFields.push(field)
-                    return
-                }
-            }
-
             if(field === "Length" && newLoad.Type !== "Point") {
                 if(newLoad[field] <= 0) {
                     setWarning("Length must be greater than 0.")
