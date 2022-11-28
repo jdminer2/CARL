@@ -48,10 +48,15 @@ function SidePlot (props) {
     }
 
     function reactions() {
-        // Plot the reactions, R1 and R2.
+        let reactionLabels = []
+
+        // If the supports are on top of each other, don't display reactions because they will be infinite or invalid
+        if(props.beamProperties["Pinned Support Position"] == props.beamProperties["Roller Support Position"])
+            return reactionLabels
+
+        // Compute the reactions, R1 and R2.
         let [R1,R2] = sumFunction(reactionsSingleLoad, null, props.loads, props.beamProperties)
 
-        let reactionLabels = []
         // Left side reaction label (R1)
         reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -40/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
         reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -35/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
@@ -70,8 +75,12 @@ function SidePlot (props) {
             x = Number(x)
             x = formatVal(x)(x)
             if(x >= 0 && x <= props.beamProperties["Length of Beam"]) {
-                y = sumFunction(chooseSingleLoadFunction(props.title), x, props.loads, props.beamProperties)[0]
-                y = formatVal(y)(y)
+                y = sumFunction(chooseSingleLoadFunction(props.title), x, props.loads, props.beamProperties)
+                if(y[0] != y[1]) {
+                    y = ""
+                }
+                else
+                    y = formatVal(y[0])(y[0])
             }
         }
         setCoord({title:coord.title, x:(isTyping?enteredX:x), y:y})
@@ -200,7 +209,7 @@ function getSubloads(loads, beamProperties) {
 }
 
 // Integral of integral of bending moment. 
-// For cantilever, deflection and d/dx deflection are 0 at x=0.
+// For cantilever, deflection and slope are 0 at x=0.
 // For simply supported beam, deflection is 0 at x=0 and x=beam length.
 function deflectionSingleLoad(x, load, beamProperties) {
     // Get relevant variables
@@ -215,6 +224,8 @@ function deflectionSingleLoad(x, load, beamProperties) {
     let y
     let rTerm
     let coeff
+    // Only used if b == 0
+    let cSlope
 
     if(load.Type === "Point") {
         rTerm = 0
@@ -224,6 +235,10 @@ function deflectionSingleLoad(x, load, beamProperties) {
             y = (x**3 - 3*x**2*(X+L*rTerm)) / 6
         else
             y = (X**3 - 3*X**2*x) / 6
+
+        cSlope = [a**2/2 - a*(X+L*rTerm), 
+                  -1*X**2/2,
+                  -1*X**2/2]
     }
     else if(load.Type === "Distributed") {
         rTerm = 1/2
@@ -235,6 +250,11 @@ function deflectionSingleLoad(x, load, beamProperties) {
             y = (x**3 - 3*x**2*(X+L*rTerm)) / 6 - (x-X)**4/24/L
         else
             y = ((X+L)**3 - 3*(X+L)**2*(X+L*rTerm)) / 6 - L**3/24 + ((X+L)**2/2 - (X+L)*(X+L*rTerm) - L**2/6)*(x - (X + L))
+
+        
+        cSlope = [a**2/2 - a*(X+L*rTerm), 
+                  a**2/2 - a*(X+L*rTerm) - (a-X)**3/6/L, 
+                  (X+L)**2/2 - (X+L)*(X+L*rTerm) - L**2/6] 
     }
     else if(load.Type === "Triangular") {
         rTerm = 2/3
@@ -246,6 +266,10 @@ function deflectionSingleLoad(x, load, beamProperties) {
             y = (x**3 - 3*x**2*(X+L*rTerm)) / 6 - (x-X)**5/60/L**2
         else
             y = ((X+L)**3 - 3*(X+L)**2*(X+L*rTerm)) / 6 - L**3/60 + (3*L**2 + 8*L*X + 6*X**2)*(X+L-x)/12
+
+        cSlope = [a**2/2 - a*(X+L*rTerm), 
+                  a**2/2 - a*(X+L*rTerm) - (a-X)**4/12/L**2, 
+                  -1*(X+L)*(X/2 + L/6) - L**2/12] 
     }
 
 
@@ -255,9 +279,20 @@ function deflectionSingleLoad(x, load, beamProperties) {
         else if(x < a+b)
             y += a**2/2*(x - a/3) + (a - X - L*rTerm)*(a**2*x + x**3/3 - a**3/3 - a*x**2 - b*x**2)/2/b
         else
-            y += a**2/2*(x - a/3) + (a - X - L*rTerm)*(a**2*b + b**3/3 + a*b**2 - x*b**2 - 2*b*a*x)/2/b
+            y += a**2/2*(x - a/3) + (a - X - L*rTerm)*(a**2 + b**2/3 + a*b - x*b - 2*a*x)/2
         
         // From solving arbitrary constanst to make y=0 at support positions
+        if(b == 0) {
+            y += ((3*a**2*x - 2*a**3) + (3*a**2 - 6*a*x)*(X+L*rTerm))/6
+            if(a < X)
+                cSlope = cSlope[0]
+            else if(a < X+L)
+                cSlope = cSlope[1]
+            else
+                cSlope = cSlope[2]
+            y += cSlope * (a-x)
+        }
+        else
         y += ((3*a**2*x + 2*a*x*b - 2*a**3 - 2*a**2*b) - (6*a*x + 2*x*b - 3*a**2 - 2*a*b)*(X+L*rTerm))/6
     }
     
@@ -268,8 +303,12 @@ function deflectionSingleLoad(x, load, beamProperties) {
         let cantileverBeamProperties = {...beamProperties}
         cantileverBeamProperties["Support Type"] = "Cantilever"
 
+        if(b == 0)
+            y -= deflectionSingleLoad(a, load, cantileverBeamProperties)
+        else {
         y += (x - a - b) / b * deflectionSingleLoad(a, load, cantileverBeamProperties)
         y += (a - x) / b * deflectionSingleLoad(a + b, load, cantileverBeamProperties)
+        }
     }
 
     // Prevent floating point errors.
@@ -329,10 +368,18 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
     if(beamProperties["Support Type"] === "Simply Supported") {
         if(x < a)
             y -= x - X - L * rTerm
+        else if(x == a && b==0)
+            y = [y - (x - X - L * rTerm), y]
         else if(x < a+b)
             y -= (a - X - L * rTerm) * (a + b - x) / b
+        
     }
 
+    if(Array.isArray(y)) {
+        y[0] *= coeff
+        y[1] *= coeff
+    }
+    else
     y *= coeff
 
     return y
