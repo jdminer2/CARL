@@ -149,7 +149,7 @@ function CombinedLoadApp(){
 
             // Length of Beam and EI cannot be 0
             if(["Length of Beam", "EI"].includes(field))
-                if(beamProperties[field] == 0) {
+                if(beamProperties[field] < 10**-7) {
                     setPropertiesFormWarning(field + " cannot be 0.")
                     newInvalidPropertiesFields.push(field)
                     return
@@ -528,7 +528,6 @@ function loadRadioButtonsCreator(loads){
 function labelMakerForLoads(loads, selectedLoadID, beamProperties){
     var data = []
     loads.forEach((load,loadID)=>{
-        console.log(window.devicePixelRatio)
         // Check if the load is a point load, and if it is the selected load.
         let isPoint = load.Type === "Point"
         let isSelected = loadID == selectedLoadID
@@ -588,21 +587,25 @@ function getCantileverSupportDisplay(beamLength) {
 }
 
 // This function returns a formatting function for numbers, using the given scale.
+// More documentation is in SidePlot.
 function formatVal(scale) {
     // If the scale is very large or tiny, return a function that converts vals to scientific notation.
-    if(scale >= 10**5 || (scale <= 10**-4 && scale != 0))
+    if(Math.abs(scale) >= 10**5 || (10**-4 >= Math.abs(scale) && Math.abs(scale) >= 10**-10))
         return val => {
-            val = Number(val.toPrecision(6))
+            val = Number(Number(val.toPrecision(6)))
+            if(Math.abs(val) <= 10**-10)
+                val = 0
             return "" + (val == 0 ? val : val.toExponential())
         }
     // If scale is normal or scale is exactly 0, return a function that just returns val.
     else
         return val => {
-            val = Number(val.toPrecision(6))
+            val = Number(Number(val.toPrecision(6)))
+            if(Math.abs(val) <= 10**-10)
+                val = 0
             return "" + val
         }
-    // Both functions round the vals to a precision of 6 to avoid floating point trails.
-    // They must also be concatenated with a string or some labels will not display 0 (they view it as false and put no label)
+    // The returned values must be Strings for XYPlot's tickFormat, else 0 will be read as false and will not display
 }
 
 

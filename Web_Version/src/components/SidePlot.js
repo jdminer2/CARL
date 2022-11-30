@@ -2,6 +2,7 @@ import '../App.css'
 import React, {useEffect, useState} from 'react'
 import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField} from '@mui/material'
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis"
+import {complex,add,subtract,multiply,divide,sqrt,cbrt,abs} from 'mathjs'
 
 /**
  * Props:
@@ -11,7 +12,7 @@ import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, 
  * title
  * color
  * showReactions
- * showGlobalExtreme
+ * showGlobalMin
  */
 function SidePlot (props) {
     // The scale of the plot
@@ -51,7 +52,7 @@ function SidePlot (props) {
         let reactionLabels = []
 
         // If the supports are on top of each other, don't display reactions because they will be infinite or invalid
-        if(props.beamProperties["Pinned Support Position"] == props.beamProperties["Roller Support Position"])
+        if(abs(props.beamProperties["Pinned Support Position"] - props.beamProperties["Roller Support Position"]) <= 10**-10)
             return reactionLabels
 
         // Compute the reactions, R1 and R2.
@@ -76,7 +77,7 @@ function SidePlot (props) {
             x = formatVal(x)(x)
             if(x >= 0 && x <= props.beamProperties["Length of Beam"]) {
                 y = sumFunction(chooseSingleLoadFunction(props.title), x, props.loads, props.beamProperties)
-                if(y[0] != y[1]) {
+                if(abs(y[0]-y[1]) >= 10**-10) {
                     y = ""
                 }
                 else
@@ -123,10 +124,10 @@ function SidePlot (props) {
                             updateCoord(e.target.value, true)
                         }}
                     />, y={coord.y}<br/>
-                    {props.showGlobalExtreme?
+                    {props.title === "Deflection Diagram"?
                     <div>
-                        Global Extreme:<br/>
-                        {globalExtreme(props.loads,props.beamProperties,chooseSingleLoadFunction(props.title))}
+                        Global Minimum:<br/>
+                        {globalMin(props.loads,props.beamProperties)}
                     </div>
                     :""}
                 </div>
@@ -136,41 +137,166 @@ function SidePlot (props) {
 }
 
 /**
- * Finds the global min/max of the plot, [x,y]. This is only valid for plots that have one local extreme. If there are multiple peaks, it does not work.
- * As long as mass and gravity are positive, this will work for all the graphs.
  * 
- * Since bending moment is always positive, integral of bending moment a.k.a derivative of deflection is always increasing.
- * If it's always increasing it can only cross 0 once, so there's only one critical point for deflection, so there's only one local minimum.
- * This means I can find it by just going down the slope.
  */ 
-function globalExtreme(loads, beamProperties, singleLoadFunction) {
-    let yAtX = x => sumFunction(singleLoadFunction,x,loads,beamProperties)[0]
-
-    let xA = 0
-    let xD = beamProperties["Length of Beam"]
-
-    // Each iteration reduces the search interval (xA to xD) to 0.51 of the previous.
-    // 0.51^25 is about 4.9*10^-8, which is small enough that formatVal erases any further detail, so 25 is enough iterations.
-    let numIterations = 25
-    for(let i = 0; i < numIterations; i++) {
-        let xB = 0.51 * xA + 0.49 * xD
-        let xC = 0.49 * xA + 0.51 * xD
-        let yB = Math.abs(yAtX(xB))
-        let yC = Math.abs(yAtX(xC))
-
-        // If the 49% mark is greater than the 51% mark, discard everything right of the 51% mark
-        if(yB > yC)
-            xD = xC
-        // If the 51% mark is greater than the 49% mark, discard everything left of the 49% mark
+function globalMin(loads, beamProperties) {
+    // Split the beam into segments at each changePoint. changePoints are points where the polynomial of the beam may change.
+    let changePoints = []
+    // Edges of the beam
+    changePoints.push(0, beamProperties["Pinned Support Position"])
+    // Supports in the beam
+    changePoints.push(beamProperties["Roller Support Position"], beamProperties["Length of Beam"])
+    // Edges of all loads
+    loads.forEach(load => 
+        changePoints.push(load.Location, load.Location+load.Length)
+    )
+    
+    // Sort ascending and remove duplicates
+    changePoints.sort((a,b)=>(a > b)? 1 : -1)
+    let prev = -1
+    for(let i = 0; i < changePoints.length; i++) {
+        if(changePoints[i] == prev) {
+            changePoints.splice(i,1)
+            i--
+        }
         else
-            xA = xB
+            prev = changePoints[i]
     }
 
-    let x = formatVal(xA)(xA)
-    let yA = yAtX(xA)
-    let y = formatVal(yA)(yA)
+    // By the first derivative test, candidate extrema for deflection only occur when slope is 0 or undefined, or can occur at endpoints.
+    let candidateExtrema = []
+    candidateExtrema.push(changePoints[0])
+    // Each segment of the beam
+    for(let i = 0; i < changePoints.length - 1; i++) {
+        let x = (changePoints[i] + changePoints[i+1])/2
+        let polynomial = [0,0,0,0,0]
+        // Find slope polynomial at the center of the segment, summing all single-load polynomials
+        getSubloads(loads,beamProperties).forEach(load=>{
+            slopeSingleLoad(x, load, beamProperties).forEach((a,i)=>{
+                polynomial[i] += a
+            })
+        })
+        // Get all the zeroes of this polynomial that are inside the segment
+        findRoots(polynomial, x).forEach(value => {
+            if(changePoints[i] <= value && value <= changePoints[i + 1])
+                candidateExtrema.push(value)
+        })
+        // Get endpoints of the segments
+        candidateExtrema.push(changePoints[i+1])
+    }
+
+    // Deflection function
+    let yAtX = x => sumFunction(deflectionSingleLoad,x,loads,beamProperties)[0]
+
+    // Get the min and max of the segments
+    //let maxX = "None"
+    //let maxY = "None"
+    let minX = "None"
+    let minY = "None"
+    candidateExtrema.forEach(x => {
+        let y = yAtX(x)
+        //if(maxY === "None" || y > maxY) {
+        //    maxX = x
+        //    maxY = y
+        //}
+        if(minY === "None" || y < minY) {
+            minX = x
+            minY = y
+        }
+    })
+    // It's impossible for the values to still be "None" at this point
+
+    let x = formatVal(minX)(minX)
+    let y = yAtX(minX)
+    y = formatVal(y)(y)
 
     return "x=" + x + ", y=" + y
+}
+
+// Function to find zeroes of a polynomial up to quartic
+function findRoots(polynomial, middleOfInterval) {
+    // https://en.wikipedia.org/wiki/Quartic_equation
+    if(abs(polynomial[4]) >= 10**-10) {
+        // read in Ax^4 + Bx^3 + Cx^2 + Dx^1 + E
+        let A,B,C,D,E
+        [E,D,C,B,A] = polynomial
+        // convert to x^4 + ax^2 + bx^1 + c
+        let a,b,c
+        [a,b,c] = [-3*B**2/8/A**2 + C/A, B**3/8/A**3 - B*C/2/A**2 + D/A, -3*B**4/256/A**4 + C*B**2/16/A**3 - B*D/4/A**2 + E/A]
+
+        if(abs(b) <= 10**-10) {
+            // x^4 + ax^2 + c -> quadratic equation
+            let roots = []
+            findRoots([c,a,1,0,0],null).forEach(value=> {
+                if(value >= 0)
+                    roots.push(sqrt(value) - B/4/A, -1*sqrt(value) - B/4/A)
+            })
+            return roots
+        }
+        else {
+            let y = findRoots([a*c-b**2/4,-2*c,-1*a,2,0],null)[0]
+            let roots = [];
+            [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(option =>{
+                let q1 = multiply(option[0],sqrt(2*y-a))
+                let q2 = multiply(option[1],sqrt(subtract(-2*y-a,divide(2*b,q1))))
+                let r = complex(add(q1,q2))
+                if(abs(r.im) <= 10**-10)
+                    roots.push(r.re/2 - B/4/A)
+            })
+            return roots
+        }
+    // https://en.wikipedia.org/wiki/Cubic_equation
+    } else if(abs(polynomial[3]) >= 10**-10) {
+        // read in ax^3 + bx^2 + cx^1 + d
+        let a,b,c,d
+        [d,c,b,a,] = polynomial
+
+        let d0 = b**2 - 3*a*c
+        let d1 = 2*b**3 - 9*a*b*c + 27*a**2*d
+
+        let C = complex(cbrt(divide(add(d1,sqrt(d1**2 - 4*d0**3)),2)))
+        if(abs(C) <= 10**-10)
+            C = complex(cbrt(divide(subtract(d1,sqrt(d1**2 - 4*d0**3)),2)))
+
+        if(abs(C) <= 10**-10)
+            return [-1/3/a*b]
+        else {
+            let roots = []
+            for(let i = 0; i < 3; i++) {
+                let r = complex(multiply(-1/3/a,add(add(b,C),divide(d0,C))))
+                if(abs(r.im) <= 10**-10)
+                    roots.push(r.re)
+                C = complex(multiply(C,complex(-1/2,sqrt(3)/2)))
+            }
+            return roots
+        }
+    // Quadratic Equation
+    } else if(abs(polynomial[2]) >= 10**-10) {
+        // read in ax^2 + bx + c
+        let a,b,c
+        [c,b,a,,] = polynomial
+
+        let q = b**2 - 4*a*c
+        if(q >= 0) {
+            return [(-1*b + sqrt(q))/2/a, (-1*b - sqrt(q))/2/a]
+        }
+        else
+            return []
+    // Linear
+    } else if(abs(polynomial[1]) >= 10**-10) {
+        // read in ax + b
+        let a,b
+        [b,a,,,] = polynomial
+        return [-1*b/a]
+    // Constant
+    } else if(abs(polynomial[0]) >= 10**-10) {
+        // never 0
+        return []
+    // Zero
+    } else {
+        // always 0 but we only need to look at the middle of the interval
+        return [middleOfInterval]
+    }
 }
 
 // Takes a function that applies to a single load, applies it to every load and returns the sum. Can also sum arrays of length 2.
@@ -282,19 +408,23 @@ function deflectionSingleLoad(x, load, beamProperties) {
             y += a**2/2*(x - a/3) + (a - X - L*rTerm)*(a**2 + b**2/3 + a*b - x*b - 2*a*x)/2
         
         // From solving arbitrary constanst to make y=0 at support positions
-        if(b == 0) {
-            y += ((3*a**2*x - 2*a**3) + (3*a**2 - 6*a*x)*(X+L*rTerm))/6
+        y += ((3*a**2*x - 2*a**3) + (3*a**2 - 6*a*x)*(X+L*rTerm))/6
+        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
             if(a < X)
                 cSlope = cSlope[0]
             else if(a < X+L)
                 cSlope = cSlope[1]
             else
                 cSlope = cSlope[2]
-            y += cSlope * (a-x)
+            y += (a-x) * cSlope
         }
         else
-        y += ((3*a**2*x + 2*a*x*b - 2*a**3 - 2*a**2*b) - (6*a*x + 2*x*b - 3*a**2 - 2*a*b)*(X+L*rTerm))/6
+            y += ((2*a*b*x - 2*a**2*b) + (-2*b*x + 2*a*b)*(X+L*rTerm))/6
     }
+
+    // Prevent floating point errors.
+    if(abs(y) < 10**-10)
+        y = 0
     
     y *= coeff / beamProperties.EI
 
@@ -303,19 +433,149 @@ function deflectionSingleLoad(x, load, beamProperties) {
         let cantileverBeamProperties = {...beamProperties}
         cantileverBeamProperties["Support Type"] = "Cantilever"
 
-        if(b == 0)
+        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10)
             y -= deflectionSingleLoad(a, load, cantileverBeamProperties)
         else {
-        y += (x - a - b) / b * deflectionSingleLoad(a, load, cantileverBeamProperties)
-        y += (a - x) / b * deflectionSingleLoad(a + b, load, cantileverBeamProperties)
+            y += (x - a - b) / b * deflectionSingleLoad(a, load, cantileverBeamProperties)
+            y += (a - x) / b * deflectionSingleLoad(a + b, load, cantileverBeamProperties)
         }
     }
 
-    // Prevent floating point errors.
-    if(Math.abs(y) < 10**-18)
-        y = 0
-
     return y
+}
+
+// Integral of bending moment. 
+// For cantilever, deflection and slope are 0 at x=0.
+// For simply supported beam, deflection is 0 at x=0 and x=beam length.
+// This function returns an array representing the polynomial for y at this point, instead of returning the y at this point
+// [a0,a1,a2,a3,a4] represents a0*x^0 + a1*x^1 + a2*x^2 + a3*x^3 + a4*x^4
+// This function also won't be used when x is at an instant change of slope, so does not contain the if statements for that
+function slopeSingleLoad(x, load, beamProperties) {
+    // Get relevant variables
+    let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    let c = beamProperties["Length of Beam"] - b
+    
+    let F = load.Mass * beamProperties.Gravity
+    let L = load.Length
+    let X = load.Location
+
+    let a0,a1,a2,a3,a4
+    [a0,a1,a2,a3,a4] = [0,0,0,0,0]
+    let rTerm
+    let coeff
+
+    if(load.Type === "Point") {
+        rTerm = 0
+        coeff = F
+
+        if(x < X) {
+            // y = x**2/2 - x*(X+L*rTerm)
+            a2 = 1/2
+            a1 = -1*(X+L*rTerm)
+        }
+        else {
+            // y = -1*X**2/2
+            a0 = -1*X**2/2
+        }
+    }
+    else if(load.Type === "Distributed") {
+        rTerm = 1/2
+        coeff = F * L
+
+        if(x < X) {
+            // y = x**2/2 - x*(X+L*rTerm)
+            a2 = 1/2
+            a1 = -1*(X+L*rTerm)
+        }
+        else if(x < X + L) {
+            // y = x**2/2 - x*(X+L*rTerm) - (x-X)**3/6/L
+            a3 = -1 /6/L
+            a2 = 3*X /6/L + 1/2
+            a1 = -3*X**2 /6/L + -1*(X+L*rTerm)
+            a0 = X**3 /6/L
+        }
+        else {
+            // y = (X+L)**2/2 - (X+L)*(X+L*rTerm) - L**2/6
+            a0 = (X+L)**2/2 - (X+L)*(X+L*rTerm) - L**2/6
+        }
+    }
+    else if(load.Type === "Triangular") {
+        rTerm = 2/3
+        coeff = F * L / 2
+
+        if(x < X) {
+            // y = x**2/2 - x*(X+L*rTerm)
+            a2 = 1/2
+            a1 = -1*(X+L*rTerm)
+        }
+        else if(x < X + L) {
+            // y = x**2/2 - x*(X+L*rTerm) - (x-X)**4/12/L**2
+            a4 = -1 /12/L**2
+            a3 = 4*X /12/L**2
+            a2 = -6*X**2 /12/L**2 + 1/2
+            a1 = 4*X**3 /12/L**2 + -1*(X+L*rTerm)
+            a0 = -1*X**4 /12/L**2
+        }
+        else {
+            // y = -1*(X+L)*(X/2 + L/6) - L**2/12
+            a0 = -1*(X+L)*(X/2 + L/6) - L**2/12
+        }
+    }
+
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        if(x < a) {
+            // y += -x**2/2 + x*(X+L*rTerm)
+            a2 += -1/2
+            a1 += X+L*rTerm
+        }
+        else if(x < a+b) {
+            // y += a**2/2 + (a - X - L * rTerm) * (a**2 + x**2 - 2*a*x - 2*b*x) / 2 / b
+            a2 += (a - X - L*rTerm)/2/b
+            a1 += (a - X - L*rTerm)*-1*(a+b)/b
+            a0 += (a - X - L*rTerm)*a**2/2/b + a**2/2
+        }
+        else {
+            // y += a**2/2 - (a - X - L * rTerm) * (a + b/2)
+            a0 += a**2/2 - (a - X - L * rTerm) * (a + b/2)
+        }
+
+        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
+            // y += a**2/2 - a*(X+L*rTerm)
+            a0 += a**2/2 - a*(X+L*rTerm)
+        }
+        else {
+            // y += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * rTerm)) / 6
+            a0 += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * rTerm)) / 6
+        }
+    }
+
+    // y *= coeff
+    [a0,a1,a2,a3,a4] = [a0*coeff,a1*coeff,a2*coeff,a3*coeff,a4*coeff]
+
+    // From solving arbitrary constants to make y=0 at support positions
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        let cantileverBeamProperties = {...beamProperties}
+        cantileverBeamProperties["Support Type"] = "Cantilever"
+
+        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
+            // y -= slopeSingleLoad(a, load, cantileverBeamProperties)
+            let vals = slopeSingleLoad(a, load, cantileverBeamProperties)
+            a0 -= vals[0]
+            a1 -= vals[1]
+            a2 -= vals[2]
+            a3 -= vals[3]
+            a4 -= vals[4]
+        }
+        else {
+            // y += deflectionSingleLoad(a, load, cantileverBeamProperties)/b
+            a0 += deflectionSingleLoad(a, load, cantileverBeamProperties)*cantileverBeamProperties.EI/b
+            // y -= deflectionSingleLoad(a+b, load, cantileverBeamProperties)/b
+            a0 -= deflectionSingleLoad(a+b, load, cantileverBeamProperties)*cantileverBeamProperties.EI/b
+        }
+    }
+
+    return [a0,a1,a2,a3,a4]
 }
 
 // Integral of shear force. Bending moment is 0 at x=beam length, for all support types.
@@ -368,7 +628,7 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
     if(beamProperties["Support Type"] === "Simply Supported") {
         if(x < a)
             y -= x - X - L * rTerm
-        else if(x == a && b==0)
+        else if(x == a && abs(b/beamProperties["Length of Beam"]) <= 10**-10)
             y = [y - (x - X - L * rTerm), y]
         else if(x < a+b)
             y -= (a - X - L * rTerm) * (a + b - x) / b
@@ -376,11 +636,22 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
     }
 
     if(Array.isArray(y)) {
+        // Prevent floating point errors.
+        if(abs(y[0]) < 10**-10)
+            y[0] = 0
+        if(abs(y[1]) < 10**-10)
+            y[1] = 0
+
         y[0] *= coeff
         y[1] *= coeff
     }
-    else
-    y *= coeff
+    else {
+        // Prevent floating point errors.
+        if(abs(y) < 10**-10)
+            y = 0
+
+        y *= coeff
+    }
 
     return y
 }
@@ -450,11 +721,22 @@ function shearForceSingleLoad(x, load, beamProperties) {
     }
 
     if(Array.isArray(y)) {
+        // Prevent floating point errors.
+        if(abs(y[0]) < 10**-10)
+            y[0] = 0
+        if(abs(y[1]) < 10**-10)
+            y[1] = 0
+
         y[0] *= coeff
         y[1] *= coeff
     }
-    else
+    else {
+        // Prevent floating point errors.
+        if(abs(y) < 10**-10)
+            y = 0
+        
         y *= coeff
+    }
 
     return y
 }
@@ -495,11 +777,11 @@ function getScale(dataList) {
     // Find the biggest absolute value in datalist
     let maxAbsVal = 0
     dataList.forEach(dataPoint =>
-        maxAbsVal = Math.max(maxAbsVal, Math.abs(dataPoint.y))
+        maxAbsVal = Math.max(maxAbsVal, abs(dataPoint.y))
     )
     
     // If the line is all 0, scale will be 1
-    if(maxAbsVal == 0)
+    if(maxAbsVal <= 10**-10)
         return 1
     
     // Extreme stays in place while plot scale changes
@@ -508,22 +790,28 @@ function getScale(dataList) {
     //return 2 ** Math.ceil(Math.log2(maxAbsVal))
 }
 
-// This function returns a formatting function for numbers, using the given scale.
+// This function returns another function so it can be used in XYPlot's tickFormat.
+// To use formatting in areas other than the tickFormat, the function must be called like "formatVal(value)(value)"
+// Values are rounded to 6 significant digits, and values tinier than 10^-10 are rounded to 0.
+// If the scale is large or tiny enough (but not 0), numbers will be displayed in scientific notation.
 function formatVal(scale) {
     // If the scale is very large or tiny, return a function that converts vals to scientific notation.
-    if(Math.abs(scale) >= 10**5 || (Math.abs(scale) <= 10**-4 && scale != 0))
+    if(abs(scale) >= 10**5 || (10**-4 >= abs(scale) && abs(scale) >= 10**-10))
         return val => {
             val = Number(Number(val).toPrecision(6))
+            if(abs(val) <= 10**-10)
+                val = 0
             return "" + (val == 0 ? val : val.toExponential())
         }
     // If scale is normal or scale is exactly 0, return a function that just returns val.
     else
         return val => {
             val = Number(Number(val).toPrecision(6))
+            if(abs(val) <= 10**-10)
+                val = 0
             return "" + val
         }
-    // Both functions round the vals to a precision of 6 to avoid floating point trails.
-    // They must also be concatenated with a string or some labels will not display 0 (they view it as false and put no label)
+    // The returned values must be Strings for XYPlot's tickFormat, else 0 will be read as false and will not display
 }
 
 function chooseSingleLoadFunction(title) {
