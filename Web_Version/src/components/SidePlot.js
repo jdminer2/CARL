@@ -58,13 +58,24 @@ function SidePlot (props) {
         // Compute the reactions, R1 and R2.
         let [R1,R2] = sumFunction(reactionsSingleLoad, null, props.loads, props.beamProperties)
 
-        // Left side reaction label (R1)
-        reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -40/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
-        reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -35/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-        // Right side reaction label (R2), only for Simply Supported
         if(props.beamProperties["Support Type"] === "Simply Supported") {
-            reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -40/100 * scale * window.devicePixelRatio, label: formatVal(R2)(R2),  style: {fontSize: 15, textAnchor: "middle"}})
-            reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -35/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+            // If the supports are in the same spot, don't put any labels because the reactions are infinite.
+            if(abs(props.beamProperties["Pinned Support Position"] - props.beamProperties["Roller Support Position"]) <= 10**-10);
+            else {
+                let pinnedLeft = props.beamProperties["Pinned Support Position"] < props.beamProperties["Roller Support Position"]
+                // Left side reaction label
+                reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -60/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
+                reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -55/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+                reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -40/100 * scale * window.devicePixelRatio,  label: (pinnedLeft?"\u25b2":"\u2b24"), style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
+                // Right side reaction label
+                reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -60/100 * scale * window.devicePixelRatio, label: formatVal(R2)(R2),  style: {fontSize: 15, textAnchor: "middle"}})
+                reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -55/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+                reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -40/100 * scale * window.devicePixelRatio,  label: (pinnedLeft?"\u2b24":"\u25b2"), style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
+            }
+        }
+        else {
+            reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -40/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
+            reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -35/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
         }
         return reactionLabels
     }
@@ -195,6 +206,7 @@ function globalMin(loads, beamProperties) {
     let minY = "None"
     candidateExtrema.forEach(x => {
         let y = yAtX(x)
+        y = formatVal(y)(y)
         //if(maxY === "None" || y > maxY) {
         //    maxX = x
         //    maxY = y
