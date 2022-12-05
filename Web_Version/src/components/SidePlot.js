@@ -1,6 +1,5 @@
 import '../App.css'
-import React, {useEffect, useState} from 'react'
-import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField} from '@mui/material'
+import React, {useState} from 'react'
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis"
 import {complex,add,subtract,multiply,divide,sqrt,cbrt,abs} from 'mathjs'
 
@@ -17,9 +16,10 @@ import {complex,add,subtract,multiply,divide,sqrt,cbrt,abs} from 'mathjs'
 function SidePlot (props) {
     // The scale of the plot
     const [scale, setScale] = useState(1)
+    // The selected coordinate on the plot
     const [coord,setCoord] = useState({title:props.title, x:0, y:0})
     
-    // Returns LineSeries plot points for deflection diagram. Also updates the scale for the plot.
+    // Gives (x,y) plot points for diagram, and updates the scale for the plot.
     function diagram() {
         // The list of x-values to plot in a line plot.
         const xValues = []
@@ -48,47 +48,17 @@ function SidePlot (props) {
         return plotData
     }
 
-    function reactions() {
-        let reactionLabels = []
-        let pinnedSupportPos = props.beamProperties["Pinned Support Position"]
-        let rollerSupportPos = props.beamProperties["Roller Support Position"]
-
-        // If the supports are on top of each other, don't display reactions because they will be infinite or invalid
-        if(abs(pinnedSupportPos - rollerSupportPos) <= 10**-10)
-            return reactionLabels
-
-        // Compute the reactions, R1 and R2.
-        let [R1,R2] = sumFunction(reactionsSingleLoad, null, props.loads, props.beamProperties)
-
-        if(props.beamProperties["Support Type"] === "Simply Supported") {
-            // If the supports are in the same spot, don't put any labels because the reactions are infinite.
-            if(abs(pinnedSupportPos - rollerSupportPos) <= 10**-10);
-            else {
-                let pinnedLeft = pinnedSupportPos < rollerSupportPos
-                let tooCloseTogether = abs(pinnedSupportPos - rollerSupportPos) < props.beamProperties["Length of Beam"] * 20/100
-                // Left side reaction label
-                reactionLabels.push({x: pinnedSupportPos, y: -30/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R1)(R1):formatVal(R2)(R2)), style: {fontSize: 15, textAnchor: "middle"}})
-                reactionLabels.push({x: pinnedSupportPos, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-                reactionLabels.push({x: pinnedSupportPos, y: -11/100 * scale * window.devicePixelRatio,  label: "\u25b2", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
-                // Right side reaction label
-                reactionLabels.push({x: rollerSupportPos, y: (tooCloseTogether?-40:-30)/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R2)(R2):formatVal(R1)(R1)),  style: {fontSize: 15, textAnchor: "middle"}})
-                reactionLabels.push({x: rollerSupportPos, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-                reactionLabels.push({x: rollerSupportPos, y: -11/100 * scale * window.devicePixelRatio,  label: "\u2b24", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
-            }
-        }
-        else {
-            reactionLabels.push({x: 0, y: -30/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
-            reactionLabels.push({x: 0, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-        }
-        return reactionLabels
-    }
-
+    /**
+     * Update the selected coordinate of the plot
+     * enteredX is the x-value to update to
+     * isTyping is true if the coordinate was changed via the textbox, false if it was changed via mouse movement
+     */ 
     function updateCoord(enteredX, isTyping){
         let x = enteredX
         let y = coord.y
         if(parseFloat(x) == x) {
             x = Number(x)
-            x = formatVal(x)(x)
+            x = Number(formatVal(x)(x))
             if(x >= 0 && x <= props.beamProperties["Length of Beam"]) {
                 y = sumFunction(chooseSingleLoadFunction(props.title), x, props.loads, props.beamProperties)
                 if(abs(y[0]-y[1]) >= 10**-10) {
@@ -98,14 +68,19 @@ function SidePlot (props) {
                     y = formatVal(y[0])(y[0])
             }
         }
+        // Do not update x if isTyping, or else textbox's contents will be changed as the user is typing
         setCoord({title:coord.title, x:(isTyping?enteredX:x), y:y})
     }
 
+    // Returns whether coord.x is a number and in-bounds.
+    // If it is, then a grey line can be drawn to represent the current coordinate
     function validX() {
         let x = coord.x
+        // Check if number
         if(parseFloat(x) == x) {
             x = Number(x)
-            x = formatVal(x)(x)
+            x = Number(formatVal(x)(x))
+            // Check if in-bounds
             if(x >= 0 && x <= props.beamProperties["Length of Beam"])
                 return true
         }
@@ -114,22 +89,25 @@ function SidePlot (props) {
 
     return (
         <div className={"rowC"}>
+            {/* Plot */}
             <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth * 0.4} xDomain={[0,props.beamProperties["Length of Beam"]]} yDomain ={[scale, scale]} margin = {{left:60, right:60}}>
-                {/*<h1>Shear Force Diagram</h1>*/}
                 <VerticalGridLines/>
                 <HorizontalGridLines/>
                 <XAxis tickFormat = {formatVal(props.beamProperties["Length of Beam"])} title = {props.title}/>
                 <YAxis tickFormat = {formatVal(scale)}/>
                 {/* Beam */}
                 <LineSeries data = {[{x:0, y:0}, {x:props.beamProperties["Length of Beam"],y:0}]} />
-                {/* Plot */}
+                {/* Function being plotted */}
                 <LineSeries data={diagram()} onNearestX = {(datapoint,e) => updateCoord(datapoint.x, false)} color={props.color}/>
-                {/* Current X */}
-                {validX() ? <LineSeries data = {[{x:coord.x, y:scale}, {x:coord.x, y:-1*scale}]} color="grey" strokeWidth="1px"/> : []}
-                {props.showReactions?<LabelSeries data={reactions()} />:[]}
+                {/* Current X indicator (if valid X) */}
+                {validX() ? <LineSeries data = {[{x:coord.x, y:scale}, {x:coord.x, y:-1*scale}]} color="grey" strokeWidth="1px"/>:[]}
+                {/* Reaction labels (optional) */}
+                {props.showReactions ? <LabelSeries data={reactions(props.loads, props.beamProperties, scale)} />:[]}
             </XYPlot>
+            {/* Side Info */}
             <div style={{display:"flex", alignItems:"center", justifyContent:"center", width:"100%"}}>
                 <div>
+                    {/* Current coordinates */}
                     {coord.title}<br/>
                     x=<input type="text"
                         value={coord.x}
@@ -139,9 +117,10 @@ function SidePlot (props) {
                         }}
                     />, y={coord.y}<br/>
                     {props.title === "Deflection Diagram"?
+                    /* Global minimum (Deflection Plot only) */
                     <div>
                         Global Minimum:<br/>
-                        {globalMin(props.loads,props.beamProperties)}
+                        {getExtremaInRange(props.loads, props.beamProperties, props.title, 0, props.beamProperties["Length of Beam"])}
                     </div>
                     :""}
                 </div>
@@ -151,85 +130,156 @@ function SidePlot (props) {
 }
 
 /**
+ * Get reaction labels
+ */
+function reactions(loads, beamProperties, scale) {
+    let reactionLabels = []
+    let pinnedSupportPos = beamProperties["Pinned Support Position"]
+    let rollerSupportPos = beamProperties["Roller Support Position"]
+
+    // If the supports are on top of each other, don't display reactions because they will be infinite or invalid
+    if(abs(pinnedSupportPos - rollerSupportPos) <= 10**-10)
+        return reactionLabels
+
+    // Compute the reactions, R1 (left support) and R2 (right support)
+    let [R1,R2] = sumFunction(reactionsSingleLoad, null, loads, beamProperties)
+
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        // pinnedLeft is true if the left support is the pinned support
+        let pinnedLeft = pinnedSupportPos < rollerSupportPos
+        let tooCloseTogether = abs(pinnedSupportPos - rollerSupportPos) < beamProperties["Length of Beam"] * 20/100
+
+        // Pinned reaction label
+        reactionLabels.push({x: pinnedSupportPos, y: -11/100 * scale * window.devicePixelRatio,  label: "\u25b2", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
+        reactionLabels.push({x: pinnedSupportPos, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+        reactionLabels.push({x: pinnedSupportPos, y: -30/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R1)(R1):formatVal(R2)(R2)), style: {fontSize: 15, textAnchor: "middle"}})
+        
+        // Roller reaction label
+        reactionLabels.push({x: rollerSupportPos, y: -11/100 * scale * window.devicePixelRatio,  label: "\u2b24", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
+        reactionLabels.push({x: rollerSupportPos, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+        reactionLabels.push({x: rollerSupportPos, y: (tooCloseTogether?-40:-30)/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R2)(R2):formatVal(R1)(R1)),  style: {fontSize: 15, textAnchor: "middle"}})
+    }
+    else {
+        // Left side reaction label only
+        reactionLabels.push({x: 0, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+        reactionLabels.push({x: 0, y: -30/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
+    }
+    return reactionLabels
+}
+
+/**
+ * Finds the minimum in the given range from left to right.
+ * Requires left <= right
  * 
+ * This only works for the deflection function.
+ * Finding the maximum in the range is implemented, but commented out.
  */ 
-function globalMin(loads, beamProperties) {
-    // Split the beam into segments at each changePoint. changePoints are points where the polynomial of the beam may change.
-    let changePoints = []
-    // Edges of the beam
-    changePoints.push(0, beamProperties["Pinned Support Position"])
-    // Supports in the beam
-    changePoints.push(beamProperties["Roller Support Position"], beamProperties["Length of Beam"])
-    // Edges of all loads
-    loads.forEach(load => 
-        changePoints.push(load.Location, load.Location+load.Length)
-    )
+ function getExtremaInRange(loads, beamProperties, title, left, right) {
+    // Get all candidate points for min/max
+    let criticalPoints = getCriticalPoints(loads, beamProperties, title, left, right)
     
-    // Sort ascending and remove duplicates
-    changePoints.sort((a,b)=>(a > b)? 1 : -1)
-    let prev = -1
-    for(let i = 0; i < changePoints.length; i++) {
-        if(changePoints[i] == prev) {
-            changePoints.splice(i,1)
-            i--
-        }
-        else
-            prev = changePoints[i]
-    }
-
-    // By the first derivative test, candidate extrema for deflection only occur when slope is 0 or undefined, or can occur at endpoints.
-    let candidateExtrema = []
-    candidateExtrema.push(changePoints[0])
-    // Each segment of the beam
-    for(let i = 0; i < changePoints.length - 1; i++) {
-        let x = (changePoints[i] + changePoints[i+1])/2
-        let polynomial = [0,0,0,0,0]
-        // Find slope polynomial at the center of the segment, summing all single-load polynomials
-        getSubloads(loads,beamProperties).forEach(load=>{
-            slopeSingleLoad(x, load, beamProperties).forEach((a,i)=>{
-                polynomial[i] += a
-            })
-        })
-        // Get all the zeroes of this polynomial that are inside the segment
-        findRoots(polynomial, x).forEach(value => {
-            if(changePoints[i] <= value && value <= changePoints[i + 1])
-                candidateExtrema.push(value)
-        })
-        // Get endpoints of the segments
-        candidateExtrema.push(changePoints[i+1])
-    }
-
     // Deflection function
-    let yAtX = x => sumFunction(deflectionSingleLoad,x,loads,beamProperties)[0]
+    let yAtX = x => sumFunction(chooseSingleLoadFunction(title),x,loads,beamProperties)
 
-    // Get the min and max of the segments
-    //let maxX = "None"
-    //let maxY = "None"
+    // Find the lowest/highest of the candidate points
     let minX = "None"
     let minY = "None"
-    candidateExtrema.forEach(x => {
+    //let maxX = "None"
+    //let maxY = "None"
+    criticalPoints.forEach(x => {
         let y = yAtX(x)
-        y = formatVal(y)(y)
-        //if(maxY === "None" || y > maxY) {
-        //    maxX = x
-        //    maxY = y
-        //}
-        if(minY === "None" || y < minY) {
-            minX = x
-            minY = y
-        }
+        y.forEach(yVal => {
+            yVal = Number(formatVal(yVal)(yVal))
+            if(minY === "None" || yVal < minY) {
+                minX = x
+                minY = yVal
+            }
+            //if(maxY === "None" || yVal > maxY) {
+            //    maxX = x
+            //    maxY = yVal
+            //}
+        })
     })
     // It's impossible for the values to still be "None" at this point
 
-    let x = formatVal(minX)(minX)
+    let x = Number(formatVal(minX)(minX))
     let y = yAtX(minX)
-    y = formatVal(y)(y)
+    y = Math.min(Number(formatVal(y[0])(y[0])),Number(formatVal(y[1])(y[1])))
 
     return "x=" + x + ", y=" + y
 }
 
-// Function to find zeroes of a polynomial up to quartic
-function findRoots(polynomial, middleOfInterval) {
+/**
+ * According to the first derivative test, max/min can only occur when slope is 0 or undefined, or at endpoints.
+ * This function finds all of the points where slope is 0 or undefined, or endpoints.
+ */
+function getCriticalPoints(loads, beamProperties, title, left, right) {
+    // Get the segments of the beam.
+    let segmentEndpoints = getSegmentEndpoints(loads, beamProperties, left, right)
+
+    let criticalPoints = []
+    // For each segment of the beam
+    for(let i = 0; i < segmentEndpoints.length - 1; i++) {
+        let midpoint = (segmentEndpoints[i] + segmentEndpoints[i+1])/2
+        // Find slope polynomial for this segment, summing all single-load polynomials
+        let polynomial = [0,0,0,0,0]
+        getSubloads(loads,beamProperties).forEach(load=>{
+            chooseDerivativeSingleLoadFunction(title)(midpoint, load, beamProperties).forEach((a,i)=>{
+                polynomial[i] += a
+            })
+        })
+        // Get all the zeroes of the slope polynomial that are between the segment's endpoints
+        findRoots(polynomial, midpoint).forEach(value => {
+            if(segmentEndpoints[i] <= value && value <= segmentEndpoints[i + 1])
+                criticalPoints.push(value)
+        })
+    }
+    // Get segment endpoints
+    for(let i = 0; i < segmentEndpoints.length; i++)
+        criticalPoints.push(segmentEndpoints[i])
+
+    return criticalPoints
+}
+
+/**
+ * The beam has segments, where each segment has its own polynomial.
+ * This function finds the endpoints of each segment, sorted in ascending order.
+ */
+function getSegmentEndpoints(loads, beamProperties, left, right) {
+    let segmentEndpoints = []
+    // Edges of the range to find extrema in
+    segmentEndpoints.push(left, right)
+    // Supports in the beam
+    segmentEndpoints.push(beamProperties["Roller Support Position"], beamProperties["Length of Beam"])
+    // Locations/Endpoints of all loads
+    loads.forEach(load => 
+        segmentEndpoints.push(load.Location, load.Location+load.Length)
+    )
+    
+    // Sort ascending and remove duplicates or out-of-range values
+    segmentEndpoints.sort((a,b)=>(a > b)? 1 : -1)
+    let prev = -1
+    for(let i = 0; i < segmentEndpoints.length; i++) {
+        let val = segmentEndpoints[i]
+        if(val == prev || val > right || val < left) {
+            // Delete val
+            segmentEndpoints.splice(i,1)
+            i--
+        }
+        else
+            prev = segmentEndpoints[i]
+    }
+
+    return segmentEndpoints
+}
+
+/**
+ * Function to find zeroes of the given polynomial. 
+ * Works for polynomials up to quartic.
+ * 
+ * polynomial must be [a0,a1,a2,a3,a4], representing a polynomial a4*x^4 + a3*x^3 = a2*x^2 + a1*x + a0.
+ */ 
+function findRoots(polynomial) {
     // https://en.wikipedia.org/wiki/Quartic_equation
     if(abs(polynomial[4]) >= 10**-10) {
         // read in Ax^4 + Bx^3 + Cx^2 + Dx^1 + E
@@ -304,19 +354,19 @@ function findRoots(polynomial, middleOfInterval) {
         [b,a,,,] = polynomial
         return [-1*b/a]
     // Constant
-    } else if(abs(polynomial[0]) >= 10**-10) {
-        // never 0
+    } else
+        // If constant non-zero, never 0. If constant zero, always 0 but no points need to be returned.
         return []
-    // Zero
-    } else {
-        // always 0 but we only need to look at the middle of the interval
-        return [middleOfInterval]
-    }
 }
 
-// Takes a function that applies to a single load, applies it to every load and returns the sum. Can also sum arrays of length 2.
-// Can represent instantaneous change in y. [0] is before (connects to the plot to the left), [1] is after (connects to the plot to the right).
-// The array format is also used for reactions, in which case [0] is the left reaction and [1] is the right.
+/** 
+ * Takes a function that applies to a single load, applies it to every load and returns the sum. 
+ * Can also sum arrays of length 2.
+ * For plots, if [0] and [1] are different, it means instant increase/decrease. [0] connects to the plot to the left, and [1] connects to the plot on the right.
+ * For reactions, [0] is the left reaction, [1] is the right reaction.
+ * 
+ * Even if the function being summed does not return an array, the result of the sum will always be a 2-length array.
+ */
 function sumFunction(singleLoadFunction, x, loads, beamProperties) {
     let y = [0,0]
     getSubloads(loads, beamProperties).forEach(load => {
@@ -333,14 +383,17 @@ function sumFunction(singleLoadFunction, x, loads, beamProperties) {
     return y
 }
 
+/**
+ * Convert each taller-end-left triangle into a taller-end-right triangle subtracted from a rectangle
+ */
 function getSubloads(loads, beamProperties) {
     let newLoads = []
 
     // Convert triangles with taller left-end to taller right-end
     loads.forEach(load => {
         if(load.Type === "Triangular" && load["Taller End"] === "Left") {
-            newLoads.push({Mass:load.Mass, Location:load.Location, Length:load.Length, Type:"Distributed"})
             newLoads.push({Mass:-1*load.Mass, Location:load.Location, Length:load.Length, Type:"Triangular", ["Taller End"]:"Right"})
+            newLoads.push({Mass:load.Mass, Location:load.Location, Length:load.Length, Type:"Distributed"})
         }
         else
             newLoads.push(load)
@@ -349,101 +402,116 @@ function getSubloads(loads, beamProperties) {
     return newLoads
 }
 
-// Integral of integral of bending moment. 
-// For cantilever, deflection and slope are 0 at x=0.
-// For simply supported beam, deflection is 0 at x=0 and x=beam length.
+/**
+ * Second integral of bending moment divided by EI.
+ * 
+ * To eliminate arbitrary constants:
+ * For cantilever, deflection and slope at x=0 are 0.
+ * For simply supported beam where supports are at the same location, deflection and slope at support location are 0.
+ * For simply supported beam where supports are at different locations, deflection at each support location is 0.
+ */
 function deflectionSingleLoad(x, load, beamProperties) {
-    // Get relevant variables
+    // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
     let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
 
     let F = load.Mass * beamProperties.Gravity
     let X = load.Location
     let L = load.Length
 
-    let y
-    let rTerm
+    // Multiplier using mass, gravity, and EI
     let coeff
-    // Only used if b == 0
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+    // Deflection
+    let y
+    // Extra term for simply supported beam where b==0, depends on load type and whether load is in the a-segment, b-segment, or c-segment
     let cSlope
 
     if(load.Type === "Point") {
-        rTerm = 0
-        coeff = F
+        coeff = F / beamProperties.EI
+        lCoeff = 0
 
+        // Get base deflection
         if(x < X)
-            y = (x**3 - 3*x**2*(X+L*rTerm)) / 6
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
         else
             y = (X**3 - 3*X**2*x) / 6
 
-        cSlope = [a**2/2 - a*(X+L*rTerm), 
-                  -1*X**2/2,
-                  -1*X**2/2]
+        // Get cSlope
+        if(a < X)
+            cSlope = a**2/2 - a*(X+L*lCoeff)
+        else 
+            cSlope = -1*X**2/2
     }
     else if(load.Type === "Distributed") {
-        rTerm = 1/2
-        coeff = F * L
+        coeff = F * L / beamProperties.EI
+        lCoeff = 1/2
 
+        // Get base deflection
         if(x < X)
-            y = (x**3 - 3*x**2*(X+L*rTerm)) / 6
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
         else if(x < X + L)
-            y = (x**3 - 3*x**2*(X+L*rTerm)) / 6 - (x-X)**4/24/L
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6 - (x-X)**4/24/L
         else
-            y = ((X+L)**3 - 3*(X+L)**2*(X+L*rTerm)) / 6 - L**3/24 + ((X+L)**2/2 - (X+L)*(X+L*rTerm) - L**2/6)*(x - (X + L))
+            y = ((X+L)**3 - 3*(X+L)**2*(X+L*lCoeff)) / 6 - L**3/24 + ((X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6)*(x - (X + L))
 
-        
-        cSlope = [a**2/2 - a*(X+L*rTerm), 
-                  a**2/2 - a*(X+L*rTerm) - (a-X)**3/6/L, 
-                  (X+L)**2/2 - (X+L)*(X+L*rTerm) - L**2/6] 
+        // Get cSlope
+        if(a < X)
+            cSlope = a**2/2 - a*(X+L*lCoeff)
+        else if(a < X + L)
+            cSlope = a**2/2 - a*(X+L*lCoeff) - (a-X)**3/6/L
+        else
+            cSlope = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
     }
     else if(load.Type === "Triangular") {
-        rTerm = 2/3
-        coeff = F * L / 2
+        coeff = F * L / 2 / beamProperties.EI
+        lCoeff = 2/3
 
+        // Get base deflection
         if(x < X)
-            y = (x**3 - 3*x**2*(X+L*rTerm)) / 6
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
         else if(x < X + L)
-            y = (x**3 - 3*x**2*(X+L*rTerm)) / 6 - (x-X)**5/60/L**2
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6 - (x-X)**5/60/L**2
         else
-            y = ((X+L)**3 - 3*(X+L)**2*(X+L*rTerm)) / 6 - L**3/60 + (3*L**2 + 8*L*X + 6*X**2)*(X+L-x)/12
+            y = ((X+L)**3 - 3*(X+L)**2*(X+L*lCoeff)) / 6 - L**3/60 + (3*L**2 + 8*L*X + 6*X**2)*(X+L-x)/12
 
-        cSlope = [a**2/2 - a*(X+L*rTerm), 
-                  a**2/2 - a*(X+L*rTerm) - (a-X)**4/12/L**2, 
-                  -1*(X+L)*(X/2 + L/6) - L**2/12] 
+        // Get cSlope
+        if(a < X)
+            cSlope = a**2/2 - a*(X+L*lCoeff)
+        else if(a < X + L)
+            cSlope = a**2/2 - a*(X+L*lCoeff) - (a-X)**4/12/L**2
+        else
+            cSlope = -1*(X+L)*(X/2 + L/6) - L**2/12
     }
 
 
     if(beamProperties["Support Type"] === "Simply Supported") {
         if(x < a)
-            y -= (x**3 - 3*x**2*(X+L*rTerm)) / 6
+            y -= (x**3 - 3*x**2*(X+L*lCoeff)) / 6
         else if(x < a+b)
-            y += a**2/2*(x - a/3) + (a - X - L*rTerm)*(a**2*x + x**3/3 - a**3/3 - a*x**2 - b*x**2)/2/b
+            y += a**2/2*(x - a/3) + (a - X - L*lCoeff)*(a**2*x + x**3/3 - a**3/3 - a*x**2 - b*x**2)/2/b
         else
-            y += a**2/2*(x - a/3) + (a - X - L*rTerm)*(a**2 + b**2/3 + a*b - x*b - 2*a*x)/2
+            y += a**2/2*(x - a/3) + (a - X - L*lCoeff)*(a**2 + b**2/3 + a*b - x*b - 2*a*x)/2
         
-        // From solving arbitrary constanst to make y=0 at support positions
-        y += ((3*a**2*x - 2*a**3) + (3*a**2 - 6*a*x)*(X+L*rTerm))/6
-        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
-            if(a < X)
-                cSlope = cSlope[0]
-            else if(a < X+L)
-                cSlope = cSlope[1]
-            else
-                cSlope = cSlope[2]
+        // From solving arbitrary constants
+        y += ((3*a**2*x - 2*a**3) + (3*a**2 - 6*a*x)*(X+L*lCoeff))/6
+        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10)
             y += (a-x) * cSlope
-        }
         else
-            y += ((2*a*b*x - 2*a**2*b) + (-2*b*x + 2*a*b)*(X+L*rTerm))/6
+            y += ((2*a*b*x - 2*a**2*b) + (-2*b*x + 2*a*b)*(X+L*lCoeff))/6
     }
 
-    // Prevent floating point errors.
+    // Round off floating point errors.
     if(abs(y) < 10**-10)
         y = 0
     
-    y *= coeff / beamProperties.EI
+    y *= coeff
 
-    // From solving arbitrary constants to make y=0 at support positions
+    // From solving arbitrary constants
     if(beamProperties["Support Type"] === "Simply Supported") {
         let cantileverBeamProperties = {...beamProperties}
         cantileverBeamProperties["Support Type"] = "Cantilever"
@@ -459,35 +527,45 @@ function deflectionSingleLoad(x, load, beamProperties) {
     return y
 }
 
-// Integral of bending moment. 
-// For cantilever, deflection and slope are 0 at x=0.
-// For simply supported beam, deflection is 0 at x=0 and x=beam length.
-// This function returns an array representing the polynomial for y at this point, instead of returning the y at this point
-// [a0,a1,a2,a3,a4] represents a0*x^0 + a1*x^1 + a2*x^2 + a3*x^3 + a4*x^4
-// This function also won't be used when x is at an instant change of slope, so does not contain the if statements for that
-function slopeSingleLoad(x, load, beamProperties) {
-    // Get relevant variables
+/**
+ * Integral of bending moment; slope of deflection times EI. 
+ * Cannot use true slope or else some coefficients will be too small and root-finder will consider it equal to 0.
+ * This function returns an array instead of a value. [a0,a1,a2,a3,a4] represents a0*x^0 + a1*x^1 + a2*x^2 + a3*x^3 + a4*x^4.
+ * This function also won't be used when x is at an instant change of slope. It may not work in those cases.
+ * 
+ * To eliminate arbitrary constants:
+ * For cantilever, deflection and slope at x=0 are 0.
+ * For simply supported beam where supports are at the same location, deflection and slope at support location are 0.
+ * For simply supported beam where supports are at different locations, deflection at each support location is 0.
+ */
+function deflectionSlopePolynomialSingleLoad(x, load, beamProperties) {
+    // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
     let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
-    
-    let F = load.Mass * beamProperties.Gravity
-    let L = load.Length
-    let X = load.Location
 
+    let F = load.Mass * beamProperties.Gravity
+    let X = load.Location
+    let L = load.Length
+
+    // Multiplier using mass and gravity
+    let coeff
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+    // Polynomial array
     let a0,a1,a2,a3,a4
     [a0,a1,a2,a3,a4] = [0,0,0,0,0]
-    let rTerm
-    let coeff
 
     if(load.Type === "Point") {
-        rTerm = 0
         coeff = F
+        lCoeff = 0
 
         if(x < X) {
-            // y = x**2/2 - x*(X+L*rTerm)
+            // y = x**2/2 - x*(X+L*lCoeff)
             a2 = 1/2
-            a1 = -1*(X+L*rTerm)
+            a1 = -1*(X+L*lCoeff)
         }
         else {
             // y = -1*X**2/2
@@ -495,41 +573,41 @@ function slopeSingleLoad(x, load, beamProperties) {
         }
     }
     else if(load.Type === "Distributed") {
-        rTerm = 1/2
         coeff = F * L
+        lCoeff = 1/2
 
         if(x < X) {
-            // y = x**2/2 - x*(X+L*rTerm)
+            // y = x**2/2 - x*(X+L*lCoeff)
             a2 = 1/2
-            a1 = -1*(X+L*rTerm)
+            a1 = -1*(X+L*lCoeff)
         }
         else if(x < X + L) {
-            // y = x**2/2 - x*(X+L*rTerm) - (x-X)**3/6/L
+            // y = x**2/2 - x*(X+L*lCoeff) - (x-X)**3/6/L
             a3 = -1 /6/L
             a2 = 3*X /6/L + 1/2
-            a1 = -3*X**2 /6/L + -1*(X+L*rTerm)
+            a1 = -3*X**2 /6/L + -1*(X+L*lCoeff)
             a0 = X**3 /6/L
         }
         else {
-            // y = (X+L)**2/2 - (X+L)*(X+L*rTerm) - L**2/6
-            a0 = (X+L)**2/2 - (X+L)*(X+L*rTerm) - L**2/6
+            // y = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
+            a0 = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
         }
     }
     else if(load.Type === "Triangular") {
-        rTerm = 2/3
         coeff = F * L / 2
+        lCoeff = 2/3
 
         if(x < X) {
-            // y = x**2/2 - x*(X+L*rTerm)
+            // y = x**2/2 - x*(X+L*lCoeff)
             a2 = 1/2
-            a1 = -1*(X+L*rTerm)
+            a1 = -1*(X+L*lCoeff)
         }
         else if(x < X + L) {
-            // y = x**2/2 - x*(X+L*rTerm) - (x-X)**4/12/L**2
+            // y = x**2/2 - x*(X+L*lCoeff) - (x-X)**4/12/L**2
             a4 = -1 /12/L**2
             a3 = 4*X /12/L**2
             a2 = -6*X**2 /12/L**2 + 1/2
-            a1 = 4*X**3 /12/L**2 + -1*(X+L*rTerm)
+            a1 = 4*X**3 /12/L**2 + -1*(X+L*lCoeff)
             a0 = -1*X**4 /12/L**2
         }
         else {
@@ -540,42 +618,42 @@ function slopeSingleLoad(x, load, beamProperties) {
 
     if(beamProperties["Support Type"] === "Simply Supported") {
         if(x < a) {
-            // y += -x**2/2 + x*(X+L*rTerm)
+            // y += -x**2/2 + x*(X+L*lCoeff)
             a2 += -1/2
-            a1 += X+L*rTerm
+            a1 += X+L*lCoeff
         }
         else if(x < a+b) {
-            // y += a**2/2 + (a - X - L * rTerm) * (a**2 + x**2 - 2*a*x - 2*b*x) / 2 / b
-            a2 += (a - X - L*rTerm)/2/b
-            a1 += (a - X - L*rTerm)*-1*(a+b)/b
-            a0 += (a - X - L*rTerm)*a**2/2/b + a**2/2
+            // y += a**2/2 + (a - X - L * lCoeff) * (a**2 + x**2 - 2*a*x - 2*b*x) / 2 / b
+            a2 += (a - X - L*lCoeff)/2/b
+            a1 += (a - X - L*lCoeff)*-1*(a+b)/b
+            a0 += (a - X - L*lCoeff)*a**2/2/b + a**2/2
         }
         else {
-            // y += a**2/2 - (a - X - L * rTerm) * (a + b/2)
-            a0 += a**2/2 - (a - X - L * rTerm) * (a + b/2)
+            // y += a**2/2 - (a - X - L * lCoeff) * (a + b/2)
+            a0 += a**2/2 - (a - X - L * lCoeff) * (a + b/2)
         }
 
         if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
-            // y += a**2/2 - a*(X+L*rTerm)
-            a0 += a**2/2 - a*(X+L*rTerm)
+            // y += a**2/2 - a*(X+L*lCoeff)
+            a0 += a**2/2 - a*(X+L*lCoeff)
         }
         else {
-            // y += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * rTerm)) / 6
-            a0 += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * rTerm)) / 6
+            // y += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * lCoeff)) / 6
+            a0 += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * lCoeff)) / 6
         }
     }
 
     // y *= coeff
     [a0,a1,a2,a3,a4] = [a0*coeff,a1*coeff,a2*coeff,a3*coeff,a4*coeff]
 
-    // From solving arbitrary constants to make y=0 at support positions
+    // From solving arbitrary constants
     if(beamProperties["Support Type"] === "Simply Supported") {
         let cantileverBeamProperties = {...beamProperties}
         cantileverBeamProperties["Support Type"] = "Cantilever"
 
         if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
-            // y -= slopeSingleLoad(a, load, cantileverBeamProperties)
-            let vals = slopeSingleLoad(a, load, cantileverBeamProperties)
+            // y -= deflectionSingleLoad(a, load, cantileverBeamProperties)
+            let vals = deflectionSlopePolynomialSingleLoad(a, load, cantileverBeamProperties)
             a0 -= vals[0]
             a1 -= vals[1]
             a2 -= vals[2]
@@ -593,65 +671,76 @@ function slopeSingleLoad(x, load, beamProperties) {
     return [a0,a1,a2,a3,a4]
 }
 
-// Integral of shear force. Bending moment is 0 at x=beam length, for all support types.
+/**
+ * Integral of shear force.
+ * If a 2-length array is returned, that represents instantaneous change, which only occurs if both supports are at the same location in simply supported beam.
+ * 
+ * To eliminate arbitrary constant:
+ * For simply supported beam, bending moment is 0 at all support positions.
+ * For cantilever beam, bending moment is 0 at the free end (right end) of the beam.
+ */
 function bendingMomentSingleLoad(x, load, beamProperties) {
-    // Get relevant variables
+    // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
     let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
-    
-    let F = load.Mass * beamProperties.Gravity
-    let L = load.Length
-    let X = load.Location
 
-    let y
-    let rTerm
+    let F = load.Mass * beamProperties.Gravity
+    let X = load.Location
+    let L = load.Length
+
+    // Multiplier using mass and gravity
     let coeff
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+    let y
 
     if(load.Type === "Point") {
-        rTerm = 0
         coeff = F
+        lCoeff = 0
 
         if(x < X)
-            y = x - X - L*rTerm
+            y = x - X - L*lCoeff
         else
             y = 0
     }
     else if(load.Type === "Distributed") {
-        rTerm = 1/2
         coeff = F * L
+        lCoeff = 1/2
 
         if(x < X)
-            y = x - X - L*rTerm
+            y = x - X - L*lCoeff
         else if(x < X + L)
-            y = x - X - L*rTerm - (x-X)**2/2 / L
+            y = x - X - L*lCoeff - (x-X)**2/2 / L
         else
             y = 0
     }
     else if(load.Type === "Triangular") {
-        rTerm = 2/3
         coeff = F * L / 2
+        lCoeff = 2/3
 
         if(x < X)
-            y = x - X - L*rTerm
+            y = x - X - L*lCoeff
         else if(x < X + L)
-            y = x - X - L*rTerm - (x-X)**3/3 / L**2
+            y = x - X - L*lCoeff - (x-X)**3/3 / L**2
         else
             y = 0
     }
 
     if(beamProperties["Support Type"] === "Simply Supported") {
         if(x < a)
-            y -= x - X - L * rTerm
+            y -= x - X - L * lCoeff
         else if(x == a && abs(b/beamProperties["Length of Beam"]) <= 10**-10)
-            y = [y - (x - X - L * rTerm), y]
+            y = [y - (x - X - L * lCoeff), y]
         else if(x < a+b)
-            y -= (a - X - L * rTerm) * (a + b - x) / b
+            y -= (a - X - L * lCoeff) * (a + b - x) / b
         
     }
 
+    // Round off floating point errors and multiply by coeff. If array, do it to both elements of array.
     if(Array.isArray(y)) {
-        // Prevent floating point errors.
         if(abs(y[0]) < 10**-10)
             y[0] = 0
         if(abs(y[1]) < 10**-10)
@@ -661,7 +750,6 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
         y[1] *= coeff
     }
     else {
-        // Prevent floating point errors.
         if(abs(y) < 10**-10)
             y = 0
 
@@ -671,23 +759,30 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
     return y
 }
 
+/**
+ * If a 2-length array is returned, that represents instantaneous change, which occurs at point loads and support locations.
+ */
 function shearForceSingleLoad(x, load, beamProperties) {
-    // Get relevant variables
+    // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
     let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
-    
-    let F = load.Mass * beamProperties.Gravity
-    let L = load.Length
-    let X = load.Location
 
-    let y
-    let rTerm
+    let F = load.Mass * beamProperties.Gravity
+    let X = load.Location
+    let L = load.Length
+
+    // Multiplier using mass and gravity
     let coeff
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+    let y
 
     if(load.Type === "Point") {
-        rTerm = 0
         coeff = F
+        lCoeff = 0
 
         if(x < X)
             y = 1
@@ -698,8 +793,8 @@ function shearForceSingleLoad(x, load, beamProperties) {
             y = 0
     }
     else if(load.Type === "Distributed") {
-        rTerm = 1/2
         coeff = F * L
+        lCoeff = 1/2
 
         if(x < X)
             y = 1
@@ -709,8 +804,8 @@ function shearForceSingleLoad(x, load, beamProperties) {
             y = 0
     }
     else if(load.Type === "Triangular") {
-        rTerm = 2/3
         coeff = F * L / 2
+        lCoeff = 2/3
 
         if(x < X)
             y = 1
@@ -720,23 +815,22 @@ function shearForceSingleLoad(x, load, beamProperties) {
             y = 0
     }
 
-    // For Simply Supported, the support reactions will shift parts of shear force down
     if(beamProperties["Support Type"] === "Simply Supported") {
         if(!Array.isArray(y))
             y = [y,y]
         if(x <= a)
             y[0] -= 1
         else if(x <= a+b)
-            y[0] -= (X + L * rTerm - a) / b
+            y[0] -= (X + L * lCoeff - a) / b
 
         if(x < a)
             y[1] -= 1
         else if(x < a+b)
-            y[1] -= (X + L * rTerm - a) / b
+            y[1] -= (X + L * lCoeff - a) / b
     }
 
+    // Round off floating point errors and multiply by coeff. If array, do it to both elements of array.
     if(Array.isArray(y)) {
-        // Prevent floating point errors.
         if(abs(y[0]) < 10**-10)
             y[0] = 0
         if(abs(y[1]) < 10**-10)
@@ -746,7 +840,6 @@ function shearForceSingleLoad(x, load, beamProperties) {
         y[1] *= coeff
     }
     else {
-        // Prevent floating point errors.
         if(abs(y) < 10**-10)
             y = 0
         
@@ -756,40 +849,208 @@ function shearForceSingleLoad(x, load, beamProperties) {
     return y
 }
 
-function reactionsSingleLoad(_, load, beamProperties){
-    // Get relevant variables
+/**
+ * 
+ */
+ function bendingMomentSlopePolynomialSingleLoad(x, load, beamProperties) {
+    // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
     let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
+
     let F = load.Mass * beamProperties.Gravity
     let X = load.Location
     let L = load.Length
 
-    let rTerm
+    // Multiplier using mass and gravity
     let coeff
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+    // Polynomial array
+    let a0,a1,a2
+    [a0,a1,a2] = [0,0,0]
 
     if(load.Type === "Point") {
-        rTerm = 0
         coeff = F
+        lCoeff = 0
+
+        if(x < X)
+            // y = 1
+            a0 = 1
+        else
+            // y = 0
+            a0 = 0
     }
     else if(load.Type === "Distributed") {
-        rTerm = 1/2
         coeff = F * L
+        lCoeff = 1/2
+
+        if(x < X)
+            // y = 1
+            a0 = 1
+        else if(x < X + L) {
+            // y = 1 - (x-X)/L
+            a1 = -1/L
+            a0 = 1 + X/L
+        }
+        else
+            // y = 0
+            a0 = 0
     }
     else if(load.Type === "Triangular") {
-        rTerm = 2/3
         coeff = F * L / 2
+        lCoeff = 2/3
+
+        if(x < X)
+            // y = 1
+            a0 = 1
+        else if(x < X + L) {
+            // y = 1 - (x-X)**2/L**2
+            a2 = -1/L**2
+            a1 = 2*X/L**2
+            a0 = 1 - X**2/L**2
+        }
+        else
+            // y = 0
+            a0 = 0
+    }
+
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        if(x < a)
+            // y -= 1
+            a0 -= 1
+        else if(x < a+b)
+            // y -= (X + L * lCoeff - a) / b
+            a0 -= (X + L * lCoeff - a) / b
+    }
+
+    // Multiply by coeff.
+    [a0,a1,a2] = [a0*coeff,a1*coeff,a2*coeff]
+
+    return [a0,a1,a2,0,0]
+}
+
+/**
+ * 
+ */
+ function shearForceSlopePolynomialSingleLoad(x, load, beamProperties) {
+    // a-segment is to the left of both supports
+    let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
+    let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
+    let c = beamProperties["Length of Beam"] - b
+
+    let F = load.Mass * beamProperties.Gravity
+    let X = load.Location
+    let L = load.Length
+
+    // Multiplier using mass and gravity
+    let coeff
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+    // Polynomial array
+    let a0,a1
+    [a0,a1] = [0,0]
+
+    if(load.Type === "Point") {
+        coeff = F
+        lCoeff = 0
+
+        if(x < X);
+            // y = 1
+        else;
+            // y = 0
+    }
+    else if(load.Type === "Distributed") {
+        coeff = F * L
+        lCoeff = 1/2
+
+        if(x < X);
+            // y = 1
+        else if(x < X + L) {
+            // y = 1 - (x-X)/L
+            a1 = -1/L
+        }
+        else;
+            // y = 0
+    }
+    else if(load.Type === "Triangular") {
+        coeff = F * L / 2
+        lCoeff = 2/3
+
+        if(x < X);
+            // y = 1
+        else if(x < X + L) {
+            // y = 1 - (x-X)**2/L**2
+            a1 = -2/L**2
+            a0 = 2*X/L**2
+        }
+        else;
+            // y = 0
+    }
+
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        if(x < a);
+            // y -= 1
+        else if(x < a+b);
+            // y -= (X + L * lCoeff - a) / b
+    }
+
+    // Multiply by coeff.
+    [a0,a1] = [a0*coeff,a1*coeff]
+
+    return [a0,a1,0,0,0]
+}
+
+/**
+ * Return the reactions.
+ * For cantilever: [0] is reaction, [1] is 0.
+ * For simply supported: [0] is left support, [1] is right support.
+ */
+function reactionsSingleLoad(_, load, beamProperties){
+    // a-segment is to the left of both supports
+    let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
+    let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
+    let c = beamProperties["Length of Beam"] - b
+
+    let F = load.Mass * beamProperties.Gravity
+    let X = load.Location
+    let L = load.Length
+
+    // Multiplier using mass and gravity
+    let coeff
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+
+    if(load.Type === "Point") {
+        coeff = F
+        lCoeff = 0
+    }
+    else if(load.Type === "Distributed") {
+        coeff = F * L
+        lCoeff = 1/2
+    }
+    else if(load.Type === "Triangular") {
+        coeff = F * L / 2
+        lCoeff = 2/3
     }
 
     if(beamProperties["Support Type"] === "Cantilever")
         return [coeff, 0]
     else
-        return [coeff * (1 - (X + L * rTerm - a)/b), coeff * (X + L * rTerm - a)/b]
+        return [coeff * (1 - (X + L * lCoeff - a)/b), coeff * (X + L * lCoeff - a)/b]
 }
 
-// Find a scale for the y axis that comfortably fits the graph.
+/**
+ * Find a scale for the y axis that comfortably fits the given dataList.
+ */
 function getScale(dataList) {
-    // Find the biggest absolute value in datalist
+    // Find the biggest absolute y-value in datalist
     let maxAbsVal = 0
     dataList.forEach(dataPoint =>
         maxAbsVal = Math.max(maxAbsVal, abs(dataPoint.y))
@@ -799,26 +1060,32 @@ function getScale(dataList) {
     if(maxAbsVal <= 10**-10)
         return 1
     
-    // Extreme stays in place while plot scale changes
+    // Peak of the graph stays at a constant height on the graph as scale continuously changes.
     return maxAbsVal * 1.5
-    // Plot scale stays in place while extreme changes, until extreme is no longer between the 50% and 100% marks
+
+    // Plot scale stays constant, until extreme forces a change by becoming too small (<50%) or too large (>100%).
     //return 2 ** Math.ceil(Math.log2(maxAbsVal))
 }
 
-// This function returns another function so it can be used in XYPlot's tickFormat.
-// To use formatting in areas other than the tickFormat, the function must be called like "formatVal(value)(value)"
-// Values are rounded to 6 significant digits, and values tinier than 10^-10 are rounded to 0.
-// If the scale is large or tiny enough (but not 0), numbers will be displayed in scientific notation.
+/**
+ * Number formatting function used in XYPlot's tickFormat and other areas.
+ * XYPlot's tickFormat requires this function to return another function.
+ * Areas that need it to return a function form will use "formatVal(scale)", and areas that do not will use "formatVal(scale)(val)".
+ * Often, areas will use "formatVal(val)(val)" to round a value neatly without considering a scale.
+ * 
+ * Values are rounded to 6 significant digits, and values smaller than 10^-10 are rounded to 0.
+ * If the scale is large or small enough (but not 0), numbers will be displayed in scientific notation.
+ */
 function formatVal(scale) {
-    // If the scale is very large or tiny, return a function that converts vals to scientific notation.
-    if(abs(scale) >= 10**5 || (10**-4 >= abs(scale) && abs(scale) >= 10**-10))
+    // If the scale is very large or small, return a function that converts vals to scientific notation.
+    if(abs(scale) >= 10**5 || (abs(scale) <= 10**-4 && abs(scale) >= 10**-10))
         return val => {
             val = Number(Number(val).toPrecision(6))
             if(abs(val) <= 10**-10)
                 val = 0
             return "" + (val == 0 ? val : val.toExponential())
         }
-    // If scale is normal or scale is exactly 0, return a function that just returns val.
+    // If scale is regular or scale is exactly 0, return a function that just returns val.
     else
         return val => {
             val = Number(Number(val).toPrecision(6))
@@ -829,6 +1096,9 @@ function formatVal(scale) {
     // The returned values must be Strings for XYPlot's tickFormat, else 0 will be read as false and will not display
 }
 
+/**
+ * Uses the plot's title to determine which function to graph.
+ */
 function chooseSingleLoadFunction(title) {
     if(title === "Deflection Diagram")
         return deflectionSingleLoad
@@ -836,6 +1106,17 @@ function chooseSingleLoadFunction(title) {
         return bendingMomentSingleLoad
     if(title === "Shear Force Diagram")
         return shearForceSingleLoad
+}
+/**
+ * Uses the plot's title to determine which function is the derivative of the graphed function.
+ */
+ function chooseDerivativeSingleLoadFunction(title) {
+    if(title === "Deflection Diagram")
+        return deflectionSlopePolynomialSingleLoad
+    if(title === "Bending Moment Diagram")
+        return bendingMomentSlopePolynomialSingleLoad
+    if(title === "Shear Force Diagram")
+        return shearForceSlopePolynomialSingleLoad
 }
 
 export default SidePlot
