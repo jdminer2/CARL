@@ -64,13 +64,13 @@ function SidePlot (props) {
             else {
                 let pinnedLeft = props.beamProperties["Pinned Support Position"] < props.beamProperties["Roller Support Position"]
                 // Left side reaction label
-                reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -60/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
-                reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -55/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-                reactionLabels.push({x: 7.5/100 * props.beamProperties["Length of Beam"] * window.devicePixelRatio, y: -40/100 * scale * window.devicePixelRatio,  label: (pinnedLeft?"\u25b2":"\u2b24"), style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
+                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -60/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R1)(R1):formatVal(R2)(R2)), style: {fontSize: 15, textAnchor: "middle"}})
+                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -55/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -40/100 * scale * window.devicePixelRatio,  label: "\u25b2", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
                 // Right side reaction label
-                reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -60/100 * scale * window.devicePixelRatio, label: formatVal(R2)(R2),  style: {fontSize: 15, textAnchor: "middle"}})
-                reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -55/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-                reactionLabels.push({x: (1 - 7.5/100 * window.devicePixelRatio) * props.beamProperties["Length of Beam"], y: -40/100 * scale * window.devicePixelRatio,  label: (pinnedLeft?"\u2b24":"\u25b2"), style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
+                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -70/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R2)(R2):formatVal(R1)(R1)),  style: {fontSize: 15, textAnchor: "middle"}})
+                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -55/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -40/100 * scale * window.devicePixelRatio,  label: "\u2b24", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
             }
         }
         else {
