@@ -64,13 +64,13 @@ function SidePlot (props) {
             else {
                 let pinnedLeft = props.beamProperties["Pinned Support Position"] < props.beamProperties["Roller Support Position"]
                 // Left side reaction label
-                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -60/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R1)(R1):formatVal(R2)(R2)), style: {fontSize: 15, textAnchor: "middle"}})
-                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -55/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -40/100 * scale * window.devicePixelRatio,  label: "\u25b2", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
+                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -30/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R1)(R1):formatVal(R2)(R2)), style: {fontSize: 15, textAnchor: "middle"}})
+                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+                reactionLabels.push({x: props.beamProperties["Pinned Support Position"], y: -11/100 * scale * window.devicePixelRatio,  label: "\u25b2", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
                 // Right side reaction label
-                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -70/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R2)(R2):formatVal(R1)(R1)),  style: {fontSize: 15, textAnchor: "middle"}})
-                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -55/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -40/100 * scale * window.devicePixelRatio,  label: "\u2b24", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
+                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -40/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R2)(R2):formatVal(R1)(R1)),  style: {fontSize: 15, textAnchor: "middle"}})
+                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
+                reactionLabels.push({x: props.beamProperties["Roller Support Position"], y: -11/100 * scale * window.devicePixelRatio,  label: "\u2b24", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
             }
         }
         else {
