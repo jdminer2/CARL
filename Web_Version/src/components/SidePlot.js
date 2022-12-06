@@ -36,7 +36,7 @@ function SidePlot (props) {
         // Calculate the y values.
         let plotData = []
         xValues.forEach(xValue => {
-            let yValue = sumFunction(chooseSingleLoadFunction(props.title), xValue, props.loads, props.beamProperties)
+            let yValue = sumFunction(chooseSingleLoadFunction(props.title), props.loads, props.beamProperties, xValue)
             plotData.push({x:xValue, y:yValue[0]}, {x:xValue, y:yValue[1]})
         })
 
@@ -60,7 +60,7 @@ function SidePlot (props) {
             x = Number(x)
             x = Number(formatVal(x)(x))
             if(x >= 0 && x <= props.beamProperties["Length of Beam"]) {
-                y = sumFunction(chooseSingleLoadFunction(props.title), x, props.loads, props.beamProperties)
+                y = sumFunction(chooseSingleLoadFunction(props.title), props.loads, props.beamProperties, x)
                 if(abs(y[0]-y[1]) >= 10**-10) {
                     y = ""
                 }
@@ -120,7 +120,7 @@ function SidePlot (props) {
                     /* Global minimum (Deflection Plot only) */
                     <div>
                         Global Minimum:<br/>
-                        {getExtremaInRange(props.loads, props.beamProperties, props.title, 0, props.beamProperties["Length of Beam"])}
+                        {getExtremaInRange(props.title, props.loads, props.beamProperties, 0, props.beamProperties["Length of Beam"])}
                     </div>
                     :""}
                 </div>
@@ -138,31 +138,42 @@ function reactions(loads, beamProperties, scale) {
     let rollerSupportPos = beamProperties["Roller Support Position"]
 
     // If the supports are on top of each other, don't display reactions because they will be infinite or invalid
-    if(abs(pinnedSupportPos - rollerSupportPos) <= 10**-10)
-        return reactionLabels
 
     // Compute the reactions, R1 (left support) and R2 (right support)
-    let [R1,R2] = sumFunction(reactionsSingleLoad, null, loads, beamProperties)
+    let [R1,R2] = sumFunction(reactionsSingleLoad, loads, beamProperties, 0)
 
-    if(beamProperties["Support Type"] === "Simply Supported") {
-        // pinnedLeft is true if the left support is the pinned support
-        let pinnedLeft = pinnedSupportPos < rollerSupportPos
-        let tooCloseTogether = abs(pinnedSupportPos - rollerSupportPos) < beamProperties["Length of Beam"] * 20/100
-
-        // Pinned reaction label
-        reactionLabels.push({x: pinnedSupportPos, y: -11/100 * scale * window.devicePixelRatio,  label: "\u25b2", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
-        reactionLabels.push({x: pinnedSupportPos, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-        reactionLabels.push({x: pinnedSupportPos, y: -30/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R1)(R1):formatVal(R2)(R2)), style: {fontSize: 15, textAnchor: "middle"}})
-        
-        // Roller reaction label
-        reactionLabels.push({x: rollerSupportPos, y: -11/100 * scale * window.devicePixelRatio,  label: "\u2b24", style: {fontSize: 25, textAnchor: "middle", font: "verdana", fill: "#12939A"}})
-        reactionLabels.push({x: rollerSupportPos, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-        reactionLabels.push({x: rollerSupportPos, y: (tooCloseTogether?-40:-30)/100 * scale * window.devicePixelRatio, label: (pinnedLeft?formatVal(R2)(R2):formatVal(R1)(R1)),  style: {fontSize: 15, textAnchor: "middle"}})
-    }
-    else {
+    // Cantilever reaction arrow
+    if(beamProperties["Support Type"] === "Cantilever") {
         // Left side reaction label only
-        reactionLabels.push({x: 0, y: -25/100 * scale * window.devicePixelRatio, label: "\u2191", style: {fontSize: 35, textAnchor: "middle"}})
-        reactionLabels.push({x: 0, y: -30/100 * scale * window.devicePixelRatio, label: formatVal(R1)(R1), style: {fontSize: 15, textAnchor: "middle"}})
+        reactionLabels.push({x: 0, y: 0, yOffset: 32, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        reactionLabels.push({x: 0, y: 0, yOffset: 43, label: formatVal(R1)(R1), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+    }
+    // Simply supported reaction arrows
+    else {
+        // Pinned and Roller Shapes
+        reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 24,  label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: 24,  label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        
+        // If supports at the same spot, just one reaction arrow representing their sum.
+        if(abs(pinnedSupportPos - rollerSupportPos) <= 10**-10) {
+            reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 65, label: formatVal(R1)(R1), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        }
+
+        // Else one reaction arrow for each support.
+        else {
+            // pinnedLeft is true if the pinned support is on the left and the roller support is on the right
+            let pinnedLeft = pinnedSupportPos < rollerSupportPos
+            let tooCloseTogether = abs(pinnedSupportPos - rollerSupportPos) < 8/100 * beamProperties["Length of Beam"] * (1920 / (window.innerWidth - 300))
+
+            // Pinned reaction label
+            reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 70, label: (pinnedLeft?formatVal(R1)(R1):formatVal(R2)(R2)), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            
+            // Roller reaction label
+            reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: tooCloseTogether?60:54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: tooCloseTogether?90:70, label: (pinnedLeft?formatVal(R2)(R2):formatVal(R1)(R1)),  style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        }
     }
     return reactionLabels
 }
@@ -174,12 +185,12 @@ function reactions(loads, beamProperties, scale) {
  * This only works for the deflection function.
  * Finding the maximum in the range is implemented, but commented out.
  */ 
- function getExtremaInRange(loads, beamProperties, title, left, right) {
+ function getExtremaInRange(title, loads, beamProperties, left, right) {
     // Get all candidate points for min/max
-    let criticalPoints = getCriticalPoints(loads, beamProperties, title, left, right)
+    let criticalPoints = getCriticalPoints(title, loads, beamProperties, left, right)
     
     // Deflection function
-    let yAtX = x => sumFunction(chooseSingleLoadFunction(title),x,loads,beamProperties)
+    let yAtX = x => sumFunction(chooseSingleLoadFunction(title), loads, beamProperties, x)
 
     // Find the lowest/highest of the candidate points
     let minX = "None"
@@ -202,9 +213,10 @@ function reactions(loads, beamProperties, scale) {
     })
     // It's impossible for the values to still be "None" at this point
 
-    let x = Number(formatVal(minX)(minX))
+    let x = formatVal(minX)(minX)
     let y = yAtX(minX)
     y = Math.min(Number(formatVal(y[0])(y[0])),Number(formatVal(y[1])(y[1])))
+    y = formatVal(y)(y)
 
     return "x=" + x + ", y=" + y
 }
@@ -213,7 +225,7 @@ function reactions(loads, beamProperties, scale) {
  * According to the first derivative test, max/min can only occur when slope is 0 or undefined, or at endpoints.
  * This function finds all of the points where slope is 0 or undefined, or endpoints.
  */
-function getCriticalPoints(loads, beamProperties, title, left, right) {
+function getCriticalPoints(title, loads, beamProperties, left, right) {
     // Get the segments of the beam.
     let segmentEndpoints = getSegmentEndpoints(loads, beamProperties, left, right)
 
@@ -224,7 +236,7 @@ function getCriticalPoints(loads, beamProperties, title, left, right) {
         // Find slope polynomial for this segment, summing all single-load polynomials
         let polynomial = [0,0,0,0,0]
         getSubloads(loads,beamProperties).forEach(load=>{
-            chooseDerivativeSingleLoadFunction(title)(midpoint, load, beamProperties).forEach((a,i)=>{
+            chooseDerivativeSingleLoadFunction(title)(load, beamProperties, midpoint).forEach((a,i)=>{
                 polynomial[i] += a
             })
         })
@@ -367,10 +379,10 @@ function findRoots(polynomial) {
  * 
  * Even if the function being summed does not return an array, the result of the sum will always be a 2-length array.
  */
-function sumFunction(singleLoadFunction, x, loads, beamProperties) {
+function sumFunction(singleLoadFunction, loads, beamProperties, x) {
     let y = [0,0]
     getSubloads(loads, beamProperties).forEach(load => {
-        let individualY = singleLoadFunction(x, load, beamProperties)
+        let individualY = singleLoadFunction(load, beamProperties, x)
         if(Array.isArray(individualY)) {
             y[0] += individualY[0]
             y[1] += individualY[1]
@@ -410,7 +422,7 @@ function getSubloads(loads, beamProperties) {
  * For simply supported beam where supports are at the same location, deflection and slope at support location are 0.
  * For simply supported beam where supports are at different locations, deflection at each support location is 0.
  */
-function deflectionSingleLoad(x, load, beamProperties) {
+function deflectionSingleLoad(load, beamProperties, x) {
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -517,10 +529,10 @@ function deflectionSingleLoad(x, load, beamProperties) {
         cantileverBeamProperties["Support Type"] = "Cantilever"
 
         if(abs(b/beamProperties["Length of Beam"]) <= 10**-10)
-            y -= deflectionSingleLoad(a, load, cantileverBeamProperties)
+            y -= deflectionSingleLoad(load, cantileverBeamProperties, a)
         else {
-            y += (x - a - b) / b * deflectionSingleLoad(a, load, cantileverBeamProperties)
-            y += (a - x) / b * deflectionSingleLoad(a + b, load, cantileverBeamProperties)
+            y += (x - a - b) / b * deflectionSingleLoad(load, cantileverBeamProperties, a)
+            y += (a - x) / b * deflectionSingleLoad(load, cantileverBeamProperties, a + b)
         }
     }
 
@@ -538,7 +550,7 @@ function deflectionSingleLoad(x, load, beamProperties) {
  * For simply supported beam where supports are at the same location, deflection and slope at support location are 0.
  * For simply supported beam where supports are at different locations, deflection at each support location is 0.
  */
-function deflectionSlopePolynomialSingleLoad(x, load, beamProperties) {
+function deflectionSlopePolynomialSingleLoad(load, beamProperties, x) {
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -652,8 +664,8 @@ function deflectionSlopePolynomialSingleLoad(x, load, beamProperties) {
         cantileverBeamProperties["Support Type"] = "Cantilever"
 
         if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
-            // y -= deflectionSingleLoad(a, load, cantileverBeamProperties)
-            let vals = deflectionSlopePolynomialSingleLoad(a, load, cantileverBeamProperties)
+            // y -= deflectionSingleLoad(load, cantileverBeamProperties, a)
+            let vals = deflectionSlopePolynomialSingleLoad(load, cantileverBeamProperties, a)
             a0 -= vals[0]
             a1 -= vals[1]
             a2 -= vals[2]
@@ -662,9 +674,9 @@ function deflectionSlopePolynomialSingleLoad(x, load, beamProperties) {
         }
         else {
             // y += deflectionSingleLoad(a, load, cantileverBeamProperties)/b
-            a0 += deflectionSingleLoad(a, load, cantileverBeamProperties)*cantileverBeamProperties.EI/b
+            a0 += deflectionSingleLoad(load, cantileverBeamProperties, a)*cantileverBeamProperties.EI/b
             // y -= deflectionSingleLoad(a+b, load, cantileverBeamProperties)/b
-            a0 -= deflectionSingleLoad(a+b, load, cantileverBeamProperties)*cantileverBeamProperties.EI/b
+            a0 -= deflectionSingleLoad(load, cantileverBeamProperties, a + b)*cantileverBeamProperties.EI/b
         }
     }
 
@@ -679,7 +691,7 @@ function deflectionSlopePolynomialSingleLoad(x, load, beamProperties) {
  * For simply supported beam, bending moment is 0 at all support positions.
  * For cantilever beam, bending moment is 0 at the free end (right end) of the beam.
  */
-function bendingMomentSingleLoad(x, load, beamProperties) {
+function bendingMomentSingleLoad(load, beamProperties, x) {
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -762,7 +774,7 @@ function bendingMomentSingleLoad(x, load, beamProperties) {
 /**
  * If a 2-length array is returned, that represents instantaneous change, which occurs at point loads and support locations.
  */
-function shearForceSingleLoad(x, load, beamProperties) {
+function shearForceSingleLoad(load, beamProperties, x) {
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -852,7 +864,7 @@ function shearForceSingleLoad(x, load, beamProperties) {
 /**
  * 
  */
- function bendingMomentSlopePolynomialSingleLoad(x, load, beamProperties) {
+ function bendingMomentSlopePolynomialSingleLoad(load, beamProperties, x) {
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -935,7 +947,7 @@ function shearForceSingleLoad(x, load, beamProperties) {
 /**
  * 
  */
- function shearForceSlopePolynomialSingleLoad(x, load, beamProperties) {
+ function shearForceSlopePolynomialSingleLoad(load, beamProperties, x) {
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -1010,7 +1022,7 @@ function shearForceSingleLoad(x, load, beamProperties) {
  * For cantilever: [0] is reaction, [1] is 0.
  * For simply supported: [0] is left support, [1] is right support.
  */
-function reactionsSingleLoad(_, load, beamProperties){
+function reactionsSingleLoad(load, beamProperties, x){
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -1040,7 +1052,7 @@ function reactionsSingleLoad(_, load, beamProperties){
         lCoeff = 2/3
     }
 
-    if(beamProperties["Support Type"] === "Cantilever")
+    if(beamProperties["Support Type"] === "Cantilever" || b <= 10**-10)
         return [coeff, 0]
     else
         return [coeff * (1 - (X + L * lCoeff - a)/b), coeff * (X + L * lCoeff - a)/b]

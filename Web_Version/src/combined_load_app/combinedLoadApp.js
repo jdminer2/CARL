@@ -18,7 +18,7 @@ function CombinedLoadApp(){
                                                          ["Damping Ratio"]:0.02, 
                                                          rA: 85000.0, 
                                                          EI: 210000000000.0, 
-                                                         Gravity:9.8,
+                                                         Gravity:1,
                                                          ["Support Type"]: "Simply Supported",
                                                          ["Pinned Support Position"]: 0,
                                                          ["Roller Support Position"]: 100})
@@ -140,8 +140,8 @@ function CombinedLoadApp(){
                 return
             }
             beamProperties[field] = Number(beamProperties[field])
-            // Check that field >= 0
-            if(beamProperties[field] < 0) {
+            // Check that field >= 0. Gravity can be negative.
+            if(beamProperties[field] < 0 && field !== "Gravity") {
                 setPropertiesFormWarning(field + " must be at least 0.")
                 newInvalidPropertiesFields.push(field)
                 return
@@ -398,27 +398,26 @@ function CombinedLoadApp(){
                             (beamProperties["Support Type"] === "Simply Supported")
                             ?
                                 // Simply Supported supports
-                                <LabelSeries data={[{x: beamProperties["Pinned Support Position"], y: -11 * window.devicePixelRatio, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                                    {x: beamProperties["Roller Support Position"], y: -11 * window.devicePixelRatio, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                <LabelSeries data={[{x: beamProperties["Pinned Support Position"], y: 0, yOffset: 24, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                                    {x: beamProperties["Roller Support Position"], y: 0, yOffset: 24, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                             :
                                 // Cantilever support
                                 getCantileverSupportDisplay(beamProperties["Length of Beam"])
                         }
                         {/* Display the labels and arrows for loads. */}
-                        <LabelSeries data={labelMakerForLoads(loads,selectedLoadID,beamProperties)} onValueClick={handleClickLoad} />
+                        <LabelSeries data={labelMakerForLoads(loads,beamProperties,selectedLoadID)} onValueClick={handleClickLoad} />
                         {/* Display the line parts of distributed and triangular loads. */}
                         {loads.map((load, loadID) => {
                             if(load.Type === "Point")
                                 return
-                            let data
-                            if(load.Type === "Distributed")
-                                data = [{x: load.Location, y: 8 * window.devicePixelRatio}, {x: (load.Location+load.Length), y: 8 * window.devicePixelRatio}]
-                            else if(load.Type === "Triangular"){
-                                if(load["Taller End"]==="Left")
-                                    data = [{x: load.Location, y: 8 * window.devicePixelRatio}, {x: load.Location, y: 20 * window.devicePixelRatio}, {x: (load.Location+load.Length), y: 8 * window.devicePixelRatio}, {x: load.Location, y: 8 * window.devicePixelRatio}]
-                                else
-                                    data = [{x: load.Location, y: 8 * window.devicePixelRatio}, {x: (load.Location+load.Length), y: 20 * window.devicePixelRatio}, {x: (load.Location+load.Length), y: 8 * window.devicePixelRatio}, {x: load.Location, y: 8 * window.devicePixelRatio}]
+
+                            let data = [{x: load.Location, y: 8 * (819 / (window.innerHeight - 150))}, 
+                                        {x: (load.Location+load.Length), y: 8 * (819 / (window.innerHeight - 150))}]
+                            if(load.Type === "Triangular") {
+                                data.push({x: load.Location + ((load["Taller End"]==="Right")?load.Length:0), y: 20 * (819 / (window.innerHeight - 150))},
+                                          {x: load.Location, y: 8 * (819 / (window.innerHeight - 150))})
                             }
+
                             return (
                                 <LineSeries
                                     data={data}
@@ -470,9 +469,9 @@ function CombinedLoadApp(){
                                              ["Delete:", "Delete Selected Load"],
                                              ["Esc:", "Edit Properties"]]
                                     .map(row=>
-                                        <TableRow key={row[0]}>
+                                        <TableRow key={row}>
                                             {row.map(col=>
-                                                <TableCell>{col}</TableCell>
+                                                <TableCell key={col}>{col}</TableCell>
                                             )}
                                         </TableRow>
                                 )}</TableBody>
@@ -517,15 +516,13 @@ function loadRadioButtonsCreator(loads){
 }
 
 /**
- * Function for load labels for the Load Location plot.
- * For point loads it puts load name, position, and mass.
- * For distributed loads it puts load name, position, mass, and length. 
+ * Function to create load labels and arrows for the Load Location plot.
+ * For point loads it puts load name, position, and mass, with an arrow.
+ * For long loads it also includes length, and puts many mini-arrows.
+ * This function is not responsible for the line/triangle parts of long loads.
  * Point load labels are higher than the rest to reduce the amount of overlapping text.
- * 
- * This function also creates arrow text characters to indicate the positions of loads.
- * This function is not responsible for displaying the line part of the distributed loads, but it does give the arrows.
  */
-function labelMakerForLoads(loads, selectedLoadID, beamProperties){
+function labelMakerForLoads(loads, beamProperties, selectedLoadID){
     var data = []
     loads.forEach((load,loadID)=>{
         // Check if the load is a point load, and if it is the selected load.
@@ -541,48 +538,57 @@ function labelMakerForLoads(loads, selectedLoadID, beamProperties){
             statsLabel += ", " + (isSelected?"L=":"") + load.Length
 
         // Load name and stats labels. For point loads it will be 10 units higher.
-        data.push({x: xLoc, y: (isPoint?35:25) * window.devicePixelRatio, label: load.Name, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        data.push({x: xLoc, y: (isPoint?30:20) * window.devicePixelRatio, label: statsLabel, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: xLoc, y: 0, yOffset: (isPoint?-75:-55), label: load.Name, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: xLoc, y: 0, yOffset: (isPoint?-65:-45), label: statsLabel, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
 
         // Point Loads have a big arrow, distributed loads have mini arrows
-        if(load.Type === "Point")
-            data.push({x: xLoc, y: -5 * window.devicePixelRatio, label: "\u2193", loadID: loadID, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        else
-            getDistributedLoadMiniArrows(data, load, loadID, beamProperties["Length of Beam"])
+        getLoadArrows(data, load, loadID, beamProperties["Length of Beam"])
     })
     return data
 }
 
 /**
- * Function for adding mini arrows under the distributed loads.
- * Loads will have at least one arrow per 5% of the beam, and always have an arrow on each end. 
+ * Function for adding the arrows representing point loads, or the mini-arrows under loads with length
+ * 
+ * For point loads:
+ * One big black arrow at the location
+ * For loads with length:
+ * At least one arrow per 5% beamlength, plus arrows on each end. 
  * The arrows match the color and loadID of the load.
  * 
- * array is the data array for a LabelSeries that will display these arrows.
- * pos and len are the position and length of the load.
- * color is the color of the load line, so that the arrows can match that color.
- * loadID is the index of the load that these arrows belong to. It is part of allowing users to click on these arrows to select the load to move/delete it.
+ * loadID is the index of the load that these arrows belong to. It helps users click on loads to select them
  */
-function getDistributedLoadMiniArrows(data, load, loadID, beamLength){
-    let numArrows = Math.floor(load.Length / beamLength * 20) + 1
-    // Evenly spaced
-    for(let i = 0; i <= numArrows; i++) {
-        let x = load.Location + (i/numArrows) * load.Length
-        data.push({x: x, y: -3 * window.devicePixelRatio, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle", fill: load.Color}})
+function getLoadArrows(data, load, loadID, beamLength){
+    if(load.Type === "Point")
+        data.push({x: load.Location, y: 0, yOffset: 10, label: "\u2193", loadID: loadID, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+    else {
+        let numArrows = Math.floor(load.Length / beamLength * 20) + 1
+        // Evenly spaced
+        for(let i = 0; i <= numArrows; i++) {
+            let x = load.Location + (i/numArrows) * load.Length
+            data.push({x: x, y: 0, yOffset: 6, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", fill: load.Color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        }
     }
 }
 
 // Function for adding the cantilever support visual display.
 function getCantileverSupportDisplay(beamLength) {
     let support = []
-    support.push(<LineSeries data = {[{x : 0, y : -10 * window.devicePixelRatio}, {x : 0, y : 10 * window.devicePixelRatio}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : 10 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : 6 * window.devicePixelRatio}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : 6 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : 2 * window.devicePixelRatio}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : 2 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : -2 * window.devicePixelRatio}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : -2 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : -6 * window.devicePixelRatio}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : -6 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : -10 * window.devicePixelRatio}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : 10 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : 10 * window.devicePixelRatio}]} color = "#12939A"/>)
-    support.push(<LineSeries data = {[{x : 0, y : -10 * window.devicePixelRatio}, {x : -2/100 * beamLength, y : -10 * window.devicePixelRatio}]} color = "#12939A"/>)
+    let leftSide = -2/100 * beamLength * (1920 / (window.innerWidth - 300))
+    console.log(window.innerHeight, window.innerWidth)
+    // Outer rectangle parts
+    support.push(<LineSeries data = {[{x : leftSide, y : 10 * (819 / (window.innerHeight - 150))},
+                                      {x : 0, y : 10 * (819 / (window.innerHeight - 150))},
+                                      {x : 0, y : -10 * (819 / (window.innerHeight - 150))},
+                                      {x : leftSide, y : -10 * (819 / (window.innerHeight - 150))}]}
+                             color = "#12939A"/>)
+    // Diagonal parts
+    support = support.concat([-10,-6,-2,2,6].map(val=>
+        <LineSeries data = {[{x: leftSide, y: val * (819 / (window.innerHeight - 150))},
+                             {x: 0, y: (val+4) * (819 / (window.innerHeight - 150))}]}
+                    color = "#12939A"
+                    key = {val}/>
+    ))
     return support
 }
 
