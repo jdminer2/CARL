@@ -35,13 +35,10 @@ const PropertiesForm = (props) => {
             formRef.current.focus()
     },[props.open])
 
-    // Receive messages from the outside via the action prop to close the menu
+    // Receive messages from the outside via the action prop to close the menu (it does not exist when it is being opened)
     useEffect(() => {
         if(props.action === "Close") {
-            validateInputs(["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity","Pinned Support Position", "Roller Support Position"])
-            if(warning === "") {
-                props.setOpen(false)
-            } 
+            handleClose("close")
             props.setAction("")
         }
     },[props.action])
@@ -51,6 +48,14 @@ const PropertiesForm = (props) => {
     useEffect(() => {
         validateInputs("Length of Beam")
     },[props.loads.length,props.openAddEditForm])
+
+    // Function to submit the properties form
+    function handleClose(e) {
+        validateInputs(["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity","Pinned Support Position", "Roller Support Position"])
+        if(warning === "") {
+            props.setOpen(false)
+        } 
+    }
 
     /**
      * This function checks the properties form inputs to ensure that they are valid. 
