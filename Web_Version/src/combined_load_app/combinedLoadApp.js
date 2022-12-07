@@ -140,6 +140,7 @@ function CombinedLoadApp(){
                 return
             }
             beamProperties[field] = Number(beamProperties[field])
+
             // Check that field >= 0. Gravity can be negative.
             if(beamProperties[field] < 0 && field !== "Gravity") {
                 setPropertiesFormWarning(field + " must be at least 0.")
@@ -197,80 +198,63 @@ function CombinedLoadApp(){
      function handleKeyDown(event){
         // On the add/edit form
         if(openAddEditForm){
+            // Escape already works, no code here needed. It closes the form without making the add/edit.
             // Enter
-            if(event.keyCode == 13) {
+            if(event.keyCode == 13)
                 if(addEditFormAction === "")
                     setAddEditFormAction("Confirm")
-                event.preventDefault()
-            }
-            // Escape already works, no code here needed. It closes the form without making the add/edit.
+            else
+                return
         }
         // On the properties form
         else if(openPropertiesForm) {
-            // Insert outside of textboxes
-            if(event.keyCode == 45 && document.activeElement.type !== "text") {
-                handleClickAdd()
-                event.preventDefault()
-            }
-            // Shift + Enter outside of textboxes
-            else if(event.shiftKey && event.keyCode == 13 && document.activeElement.type !== "text") {
-                handleClickEdit()
-                event.preventDefault()
-            }
-            // Delete outside of textboxes
-            else if(event.keyCode == 46 && document.activeElement.type !== "text") {
-                handleClickDelete()
-                event.preventDefault()
-            }
-            // Enter
-            else if(event.keyCode == 13) {
-                handleClosePropertiesForm(null)
-                event.preventDefault()
-            }
             // Escape is not intended to do anything here.
+            // Insert outside of textboxes
+            if(event.keyCode == 45 && document.activeElement.type !== "text")
+                handleClickAdd()
+            // Shift + Enter outside of textboxes
+            else if(event.shiftKey && event.keyCode == 13 && document.activeElement.type !== "text")
+                handleClickEdit()
+            // Delete outside of textboxes
+            else if(event.keyCode == 46 && document.activeElement.type !== "text")
+                handleClickDelete()
+            // Enter
+            else if(event.keyCode == 13)
+                handleClosePropertiesForm(null)
+            else
+                return
         }
         // On the main plots screen
         else {
-            // Insert outside of textboxes
-            if(event.keyCode == 45 && document.activeElement.type !== "text") {
-                handleClickAdd()
-                event.preventDefault()
-            }
-            // Shift + Enter outside of textboxes
-            else if(event.shiftKey && event.keyCode == 13 && document.activeElement.type !== "text") {
-                handleClickEdit()
-                event.preventDefault()
-            }
-            // Delete outside of textboxes
-            else if(event.keyCode == 46 && document.activeElement.type !== "text") {
-                handleClickDelete()
-                event.preventDefault()
-            }
             // Escape
-            else if(event.keyCode == 27) {
+            if(event.keyCode == 27)
                 handleClickProperties()
-                event.preventDefault()
-            }
+            // Insert outside of textboxes
+            else if(event.keyCode == 45 && document.activeElement.type !== "text")
+                handleClickAdd()
+            // Shift + Enter outside of textboxes
+            else if(event.shiftKey && event.keyCode == 13 && document.activeElement.type !== "text")
+                handleClickEdit()
+            // Delete outside of textboxes
+            else if(event.keyCode == 46 && document.activeElement.type !== "text")
+                handleClickDelete()
             // Left arrow outside of textboxes
-            else if(event.keyCode == 37 && document.activeElement.type !== "text") {
+            else if(event.keyCode == 37 && document.activeElement.type !== "text")
                 moveSelectedLoad(-beamProperties["Length of Beam"]/100,1,10)
-                event.preventDefault()
-            }
             // Up arrow (Jump) outside of textboxes
-            else if(event.keyCode == 38 && document.activeElement.type !== "text") {
+            else if(event.keyCode == 38 && document.activeElement.type !== "text")
                 moveSelectedLoad(0,5,10)
-                event.preventDefault()
-            }
             // Right arrow outside of textboxes
-            else if(event.keyCode == 39 && document.activeElement.type !== "text") {
+            else if(event.keyCode == 39 && document.activeElement.type !== "text")
                 moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)
-                event.preventDefault()
-            }
             // Down arrow outside of textboxes (just preventing scroll-down)
-            else if(event.keyCode == 40 && document.activeElement.type !== "text"){
-                event.preventDefault()
-            }
+            else if(event.keyCode == 40 && document.activeElement.type !== "text")
+                ;
+            else
+                return
         }
+        // If any of the above were triggered, preventDefault prevents scrolling and other unwanted effects from the keys.
+        event.preventDefault()
     }
 
     // Move the selected load
@@ -383,10 +367,10 @@ function CombinedLoadApp(){
         // Display the main plots screen
         return(
             <div className={"rowC"} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
-                <div style={{height:window.innerHeight - 100, width:"40%", overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
+                <div style={{height:window.innerHeight * window.devicePixelRatio - 100, width:"40%", overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
                     <h1>CARL</h1>
                     {/* Main Plot */}
-                    <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth * 0.4} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
+                    <XYPlot height={window.innerHeight * window.devicePixelRatio * 0.5} width={window.innerWidth * window.devicePixelRatio * 0.4} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
                         <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title = {"Load Locations"}/>
@@ -411,11 +395,11 @@ function CombinedLoadApp(){
                             if(load.Type === "Point")
                                 return
 
-                            let data = [{x: load.Location, y: 8 * (819 / (window.innerHeight - 150))}, 
-                                        {x: (load.Location+load.Length), y: 8 * (819 / (window.innerHeight - 150))}]
+                            let data = [{x: load.Location, y: 8 * (819 / (window.innerHeight * window.devicePixelRatio - 150))}, 
+                                        {x: (load.Location+load.Length), y: 8 * (819 / (window.innerHeight * window.devicePixelRatio - 150))}]
                             if(load.Type === "Triangular") {
-                                data.push({x: load.Location + ((load["Taller End"]==="Right")?load.Length:0), y: 20 * (819 / (window.innerHeight - 150))},
-                                          {x: load.Location, y: 8 * (819 / (window.innerHeight - 150))})
+                                data.push({x: load.Location + ((load["Taller End"]==="Right")?load.Length:0), y: 20 * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
+                                          {x: load.Location, y: 8 * (819 / (window.innerHeight * window.devicePixelRatio - 150))})
                             }
 
                             return (
@@ -480,16 +464,30 @@ function CombinedLoadApp(){
                     </Dialog>
                 </div>
                 {/* Right Columns */}
-                <div style={{height:window.innerHeight - 100, width:"60%", overflowX:"clip", overflowY:"auto"}}>
+                <div style={{height:window.innerHeight * window.devicePixelRatio - 100, width:"60%", overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
                     {/* Deflection Diagram */}
-                    <SidePlot loads={loads} beamProperties={beamProperties} title="Deflection Diagram" showReactions showGlobalExtreme />
+                    <SidePlot title="Deflection Diagram"
+                              loads={loads}
+                              beamProperties={beamProperties}
+                              showReactions
+                              showGlobalExtreme
+                    />
                     
                     {/* Bending Moment Diagram */}
-                    <SidePlot loads={loads} beamProperties={beamProperties} title="Bending Moment Diagram" color="black" showGlobalExtreme />
+                    <SidePlot title="Bending Moment Diagram"
+                              loads={loads}
+                              beamProperties={beamProperties}
+                              color="black"
+                              showGlobalExtreme
+                    />
                     
                     {/* Shear Force Diagram */}
-                    <SidePlot loads={loads} beamProperties={beamProperties} title="Shear Force Diagram" color="red" />
+                    <SidePlot title="Shear Force Diagram"
+                              loads={loads}
+                              beamProperties={beamProperties}
+                              color="red"
+                    />
                 </div>
             </div>
         )
@@ -574,18 +572,17 @@ function getLoadArrows(data, load, loadID, beamLength){
 // Function for adding the cantilever support visual display.
 function getCantileverSupportDisplay(beamLength) {
     let support = []
-    let leftSide = -2/100 * beamLength * (1920 / (window.innerWidth - 300))
-    console.log(window.innerHeight, window.innerWidth)
+    let leftSide = -2/100 * beamLength * (1920 / (window.innerWidth * window.devicePixelRatio - 300))
     // Outer rectangle parts
-    support.push(<LineSeries data = {[{x : leftSide, y : 10 * (819 / (window.innerHeight - 150))},
-                                      {x : 0, y : 10 * (819 / (window.innerHeight - 150))},
-                                      {x : 0, y : -10 * (819 / (window.innerHeight - 150))},
-                                      {x : leftSide, y : -10 * (819 / (window.innerHeight - 150))}]}
+    support.push(<LineSeries data = {[{x : leftSide, y : 10 * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
+                                      {x : 0, y : 10 * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
+                                      {x : 0, y : -10 * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
+                                      {x : leftSide, y : -10 * (819 / (window.innerHeight * window.devicePixelRatio - 150))}]}
                              color = "#12939A"/>)
     // Diagonal parts
     support = support.concat([-10,-6,-2,2,6].map(val=>
-        <LineSeries data = {[{x: leftSide, y: val * (819 / (window.innerHeight - 150))},
-                             {x: 0, y: (val+4) * (819 / (window.innerHeight - 150))}]}
+        <LineSeries data = {[{x: leftSide, y: val * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
+                             {x: 0, y: (val+4) * (819 / (window.innerHeight * window.devicePixelRatio - 150))}]}
                     color = "#12939A"
                     key = {val}/>
     ))

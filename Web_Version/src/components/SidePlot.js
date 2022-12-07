@@ -5,13 +5,11 @@ import {complex,add,subtract,multiply,divide,sqrt,cbrt,abs} from 'mathjs'
 
 /**
  * Props:
+ * title
  * loads
  * beamProperties
- * singleLoadFunction
- * title
  * color
  * showReactions
- * showGlobalMin
  */
 function SidePlot (props) {
     // The scale of the plot
@@ -102,7 +100,7 @@ function SidePlot (props) {
                 {/* Current X indicator (if valid X) */}
                 {validX() ? <LineSeries data = {[{x:coord.x, y:scale}, {x:coord.x, y:-1*scale}]} color="grey" strokeWidth="1px"/>:[]}
                 {/* Reaction labels (optional) */}
-                {props.showReactions ? <LabelSeries data={reactions(props.loads, props.beamProperties, scale)} />:[]}
+                {props.showReactions ? <LabelSeries data={reactions(props.loads, props.beamProperties)} />:[]}
             </XYPlot>
             {/* Side Info */}
             <div style={{display:"flex", alignItems:"center", justifyContent:"center", width:"100%"}}>
@@ -132,7 +130,7 @@ function SidePlot (props) {
 /**
  * Get reaction labels
  */
-function reactions(loads, beamProperties, scale) {
+function reactions(loads, beamProperties) {
     let reactionLabels = []
     let pinnedSupportPos = beamProperties["Pinned Support Position"]
     let rollerSupportPos = beamProperties["Roller Support Position"]
@@ -247,8 +245,7 @@ function getCriticalPoints(title, loads, beamProperties, left, right) {
         })
     }
     // Get segment endpoints
-    for(let i = 0; i < segmentEndpoints.length; i++)
-        criticalPoints.push(segmentEndpoints[i])
+    criticalPoints = criticalPoints.concat(segmentEndpoints)
 
     return criticalPoints
 }
