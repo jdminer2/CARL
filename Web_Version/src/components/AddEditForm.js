@@ -30,7 +30,9 @@ const AddEditForm = (props) => {
                                             ["Taller End"]: "Left", 
                                             Color:getRandomColor()})
 
+    // The warning text in the form
     const [warning, setWarning] = useState("")
+    // The fields that need to be validated before submitting
     const [invalidFields, setInvalidFields] = useState([])
 
     // Receive messages from the outside via the action prop to close the menu and confirm, open menu for adding, or open menu for editing
@@ -101,7 +103,6 @@ const AddEditForm = (props) => {
         }
         else
             props.loads[props.selectedLoadID] = newLoad
-
     }
     
     /**
@@ -234,7 +235,6 @@ const AddEditForm = (props) => {
                 </FormControl>
                 {/* location textbox */}
                 <TextField
-                    autoFocus
                     margin="dense"
                     label="Location"
                     type="text"
@@ -249,7 +249,6 @@ const AddEditForm = (props) => {
                 {/* mass textbox
                     Point Load -> mass, Distributed Load -> mass per meter, Triangular Load -> mass per meter at the taller end */}
                 <TextField
-                    autoFocus
                     margin="dense"
                     label={newLoad.Type==="Point"?"Mass":newLoad.Type==="Distributed"?"Mass Per Meter":"Mass Per Meter at Taller End"}
                     defaultValue={newLoad.Mass}
@@ -263,7 +262,6 @@ const AddEditForm = (props) => {
                 />
                 {/* length textbox, disabled for point loads */}
                 <TextField
-                    autoFocus
                     margin="dense"
                     label="Length (Non-Point Loads Only)"
                     type="text"

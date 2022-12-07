@@ -1,8 +1,9 @@
 import '../App.css'
 import React, { useEffect, useState} from 'react'
-import {Button, Dialog, DialogContent, FormControlLabel, Radio, RadioGroup, Table, TableBody, TableCell, TableHead, TableRow} from '@mui/material'
+import {Button, Dialog, DialogContent, Table, TableBody, TableCell, TableHead, TableRow} from '@mui/material'
 import AddEditForm from '../components/AddEditForm'
 import LoadSelector from '../components/LoadSelector'
+import PropertiesForm from '../components/PropertiesForm'
 import SidePlot from '../components/SidePlot'
 import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis} from "react-vis"
 
@@ -10,6 +11,7 @@ import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, 
 function CombinedLoadApp(){
     // Data
     const [loads,setLoads] = useState([])
+    // Elasticity, Inertia, Density, Area, Damping Ratio, and rA are used in dynamic beam swaying, which is not implemented currently
     const [beamProperties,setBeamProperties] = useState({["Length of Beam"]: 100, 
                                                          Elasticity: 1.0, 
                                                          Inertia: 1.0, 
@@ -22,17 +24,15 @@ function CombinedLoadApp(){
                                                          ["Support Type"]: "Simply Supported",
                                                          ["Pinned Support Position"]: 0,
                                                          ["Roller Support Position"]: 100})
-    // The current load to move/modify/delete
+    // The index of the load to move/modify/delete
     const [selectedLoadID, setSelectedLoadID] = useState(-1)
     // Whether forms should be shown
     const [openHelpMenu, setOpenHelpMenu] = useState(false)
     const [openPropertiesForm, setOpenPropertiesForm] = useState(true)
     const [openAddEditForm, setOpenAddEditForm] = useState(false)
-    // Warning and validation for properties form
-    const [propertiesFormWarning, setPropertiesFormWarning] = useState("")
-    const [invalidPropertiesFields, setInvalidPropertiesFields] = useState([])
-    // Communication with add/edit form
+    // Communication with the forms
     const [addEditFormAction, setAddEditFormAction] = useState("")
+    const [propertiesFormAction, setPropertiesFormAction] = useState("")
 
     // Automatically re-renders the screen when called
     const [render, setRender] = useState(false)
@@ -49,12 +49,7 @@ function CombinedLoadApp(){
     },[])
 
     // Automatically sets the focus on the page so the user can use keyboard controls
-    const propertiesFormRef = React.useRef(null)
     const plotScreenRef = React.useRef(null)
-    useEffect(()=>{
-        if(propertiesFormRef.current)
-            propertiesFormRef.current.focus()
-    },[openPropertiesForm])
     useEffect(()=>{
         if(plotScreenRef.current)
             plotScreenRef.current.focus()
@@ -96,99 +91,6 @@ function CombinedLoadApp(){
         setSelectedLoadID(element.loadID)
     }
     
-    // Function to submit the properties form
-    function handleClosePropertiesForm(e){
-        validateInputsPropertiesForm(["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity","Pinned Support Position", "Roller Support Position"])
-        if(propertiesFormWarning === "") {
-            setOpenPropertiesForm(false)
-            reRender()
-        } 
-        else if(e != null)
-            e.preventDefault()
-    }
-    /**
-     * This function checks the properties form inputs to ensure that they are valid. 
-     * All inputs must be nonnegative numbers. Beam length and EI must be nonzero. 
-     * Support positions must be in-bounds (between 0 and beam length inclusive), and beam length must not be decreased to make any load out-of-bounds.
-     * This function also converts the string inputs into number inputs.
-     * Fields include "Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity","Support Type","Pinned Support Position","Roller Support Position"
-     */
-     function validateInputsPropertiesForm(fields){
-        // Clear the errors
-        setPropertiesFormWarning("")
-        let newInvalidPropertiesFields = []
-
-        // Add entered fields to the list of fields to check
-        if(Array.isArray(fields))
-            fields.forEach(field => {
-                if(!invalidPropertiesFields.includes(field))
-                    invalidPropertiesFields.push(field)
-            })
-        else
-            if(!invalidPropertiesFields.includes(fields))
-                invalidPropertiesFields.push(fields)
-
-        invalidPropertiesFields.forEach(field=> {
-            // Skip validating supports if not simply supported.
-            if(["Pinned Support Position", "Roller Support Position"].includes(field) && beamProperties["Support Type"] !== "Simply Supported")
-                return
-
-            // Check that field is a number.
-            if(parseFloat(beamProperties[field]) != beamProperties[field]){
-                setPropertiesFormWarning(field + " must be a number.")
-                newInvalidPropertiesFields.push(field)
-                return
-            }
-            beamProperties[field] = Number(beamProperties[field])
-
-            // Check that field >= 0. Gravity can be negative.
-            if(beamProperties[field] < 0 && field !== "Gravity") {
-                setPropertiesFormWarning(field + " must be at least 0.")
-                newInvalidPropertiesFields.push(field)
-                return
-            }
-
-            // Length of Beam and EI cannot be 0
-            if(["Length of Beam", "EI"].includes(field))
-                if(beamProperties[field] < 10**-7) {
-                    setPropertiesFormWarning(field + " cannot be 0.")
-                    newInvalidPropertiesFields.push(field)
-                    return
-                }
-
-            // Pinned and Roller Support Positions must be <= Length of Beam, but it doesn't matter for cantilever beam.
-            if(["Length of Beam", "Pinned Support Position", "Roller Support Position"].includes(field) && beamProperties["Support Type"] === "Simply Supported") {
-                if(beamProperties["Pinned Support Position"] > beamProperties["Length of Beam"]) {
-                    setPropertiesFormWarning("Pinned Support Position must be less than or equal to Length of Beam.")
-                    newInvalidPropertiesFields.push(field)
-                    return
-                }
-                if(beamProperties["Roller Support Position"] > beamProperties["Length of Beam"]) {
-                    setPropertiesFormWarning("Roller Support Position must be less than or equal to Length of Beam.")
-                    newInvalidPropertiesFields.push(field)
-                    return
-                }
-            }
-
-            // If Length of Beam is decreased, preexisting loads might become out of bounds.
-            if(field === "Length of Beam")
-                // Check that existing loads are not invalidated by length of beam change.
-                loads.forEach(load =>{
-                    if(load.Type === "Point" && load.Location > beamProperties["Length of Beam"]) {
-                        setPropertiesFormWarning(load.Name + " location must be less than or equal to Length of Beam.")
-                        if(!newInvalidPropertiesFields.includes(field))
-                            newInvalidPropertiesFields.push(field)
-                    }
-                    else if(load.Type !== "Point" && load.Location + load.Length > beamProperties["Length of Beam"]) {
-                        setPropertiesFormWarning("Right end of " + load.Name + " is out of bounds (Location is " + (load.Location + load.Length) + ", must be less than or equal to Length of Beam).")
-                        if(!newInvalidPropertiesFields.includes(field))
-                            newInvalidPropertiesFields.push(field)
-                    }
-                })
-        })
-        setInvalidPropertiesFields(newInvalidPropertiesFields)
-    }
-    
     /**
      * Function that manages keyboard controls.
      * User may submit forms by pressing Enter, 
@@ -200,9 +102,10 @@ function CombinedLoadApp(){
         if(openAddEditForm){
             // Escape already works, no code here needed. It closes the form without making the add/edit.
             // Enter
-            if(event.keyCode == 13)
+            if(event.keyCode == 13) {
                 if(addEditFormAction === "")
                     setAddEditFormAction("Confirm")
+            }
             else
                 return
         }
@@ -212,15 +115,15 @@ function CombinedLoadApp(){
             // Insert outside of textboxes
             if(event.keyCode == 45 && document.activeElement.type !== "text")
                 handleClickAdd()
-            // Shift + Enter outside of textboxes
-            else if(event.shiftKey && event.keyCode == 13 && document.activeElement.type !== "text")
+            // Shift + End outside of textboxes
+            else if(event.keyCode == 35 && document.activeElement.type !== "text")
                 handleClickEdit()
             // Delete outside of textboxes
             else if(event.keyCode == 46 && document.activeElement.type !== "text")
                 handleClickDelete()
             // Enter
             else if(event.keyCode == 13)
-                handleClosePropertiesForm(null)
+                setPropertiesFormAction("Close")
             else
                 return
         }
@@ -232,8 +135,8 @@ function CombinedLoadApp(){
             // Insert outside of textboxes
             else if(event.keyCode == 45 && document.activeElement.type !== "text")
                 handleClickAdd()
-            // Shift + Enter outside of textboxes
-            else if(event.shiftKey && event.keyCode == 13 && document.activeElement.type !== "text")
+            // End outside of textboxes
+            else if(event.keyCode == 35 && document.activeElement.type !== "text")
                 handleClickEdit()
             // Delete outside of textboxes
             else if(event.keyCode == 46 && document.activeElement.type !== "text")
@@ -247,9 +150,9 @@ function CombinedLoadApp(){
             // Right arrow outside of textboxes
             else if(event.keyCode == 39 && document.activeElement.type !== "text")
                 moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)
-            // Down arrow outside of textboxes (just preventing scroll-down)
+            // Down arrow outside of textboxes
             else if(event.keyCode == 40 && document.activeElement.type !== "text")
-                ;
+                ; // Do nothing. Just prevent scroll-down
             else
                 return
         }
@@ -258,6 +161,7 @@ function CombinedLoadApp(){
     }
 
     // Move the selected load
+    // mag and tl are used in dynamic beam swaying, not implemented currently
     function moveSelectedLoad(disp,mag,tl){
         if(selectedLoadID < 0)
             return
@@ -273,96 +177,45 @@ function CombinedLoadApp(){
 
         reRender()
     }
+    function addEditForm(){
+        return (
+            <AddEditForm
+                loads={loads}
+                beamProperties={beamProperties}
+                selectedLoadID={selectedLoadID}
+                setSelectedLoadID={setSelectedLoadID}
+
+                action={addEditFormAction}
+                setAction={setAddEditFormAction}
+                open={openAddEditForm}
+                setOpen={setOpenAddEditForm}
+            />
+        )
+    }
+
 
     // Display the properties form
     if(openPropertiesForm){
         return(
-            <form onKeyDown={handleKeyDown} onSubmit={handleClosePropertiesForm} ref={propertiesFormRef} tabIndex="0">
-                <h1>CARL</h1>
-                {/* Enter beam properties */}
-                <div>
-                    <h3 style={{marginBottom: 0}}>Beam Properties</h3>
-                    {["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity"].map(field=>{
-                        return(
-                        <div key={field}>{field}:
-                            <input type="text"
-                                defaultValue={beamProperties[field]}
-                                onChange={(e) => {
-                                    beamProperties[field] = e.target.value
-                                    validateInputsPropertiesForm(field)
-                                }}
-                                style={{width:100}}
-                            />
-                        </div>)
-                    })}
-                </div>
-                {/* Enter support properties */}
-                <div>
-                    <h3 style={{marginBottom: 0}}>Support Properties</h3>
-                    {/* Support type radio button selection */}
-                    <RadioGroup
-                        value={beamProperties["Support Type"]}
-                        onChange={(val)=>{
-                            beamProperties["Support Type"] = val.target.value
-                            validateInputsPropertiesForm(["Length of Beam", "Pinned Support Position", "Roller Support Position"])
-                            reRender()
-                        }}
-                        sx={{display:'inline-flex'}}
-                        row
-                    >
-                        <FormControlLabel control={<Radio />} value="Simply Supported" label="Simply Supported" />
-                        <FormControlLabel control={<Radio />} value="Cantilever" label="Cantilever" />
-                    </RadioGroup>
-                    {["Pinned Support Position","Roller Support Position"].map(field=>{
-                        return(
-                        <div key={field}>{field}:
-                            <input type="text"
-                                defaultValue={beamProperties[field]}
-                                onChange={(e) => {
-                                    beamProperties[field] = e.target.value
-                                    validateInputsPropertiesForm(field)
-                                }}
-                                style={{width:100}}
-                                disabled={beamProperties["Support Type"] !== "Simply Supported"}
-                            />
-                        </div>)
-                    })}
-                </div>
-                {/* Enter loads */}
-                <div>
-                    {/* Load list with radio button selection */}
-                    <h3 style={{marginBottom: 0}}>List of Loads</h3>
-                    <RadioGroup
-                        value={selectedLoadID}
-                        onChange={handleSelectedChange}
-                        sx={{display:'inline-flex'}}
-                    >
-                        {loadRadioButtonsCreator(loads)}
-                    </RadioGroup>
-                    <div>
-                        {/* Add, Edit, Delete Load buttons */}
-                        <Button variant="outlined" sx={{width:135}} onClick={handleClickAdd}>Add Load</Button>
-                        <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={loads.length === 0}>Edit Load</Button>
-                        <Button variant="outlined" sx={{width:135}} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
-                        {/* Add/Edit Load form */}
-                        <AddEditForm
-                            loads={loads}
-                            beamProperties={beamProperties}
-                            selectedLoadID={selectedLoadID}
-                            setSelectedLoadID={setSelectedLoadID}
+            <PropertiesForm
+                loads={loads}
+                beamProperties={beamProperties}
+                selectedLoadID={selectedLoadID}
+                handleSelectedChange={handleSelectedChange}
 
-                            action={addEditFormAction}
-                            setAction={setAddEditFormAction}
-                            open={openAddEditForm}
-                            setOpen={setOpenAddEditForm}
-                        />
-                    </div>
-                </div>
-                {/* Text display for invalid inputs. */}
-                <p style={{fontWeight: 'bold'}}>{propertiesFormWarning}</p>
-                {/* Submit button. */}
-                <input type="submit" value="Analyze"/>
-            </form>
+                action={propertiesFormAction}
+                setAction={setPropertiesFormAction}
+                open={openPropertiesForm}
+                setOpen={setOpenPropertiesForm}
+
+                handleKeyDown={handleKeyDown}
+                handleClickAdd={handleClickAdd}
+                handleClickEdit={handleClickEdit}
+                handleClickDelete={handleClickDelete}
+
+                addEditForm={addEditForm}
+                openAddEditForm={openAddEditForm}
+            />
         )
     }
     else {
@@ -423,21 +276,12 @@ function CombinedLoadApp(){
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={loads.length === 0}>Edit Load</Button>
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
                         {/* Add/Edit Load form */}
-                        <AddEditForm
-                            loads={loads}
-                            beamProperties={beamProperties}
-                            selectedLoadID={selectedLoadID}
-                            setSelectedLoadID={setSelectedLoadID}
-
-                            action={addEditFormAction}
-                            setAction={setAddEditFormAction}
-                            open={openAddEditForm}
-                            setOpen={setOpenAddEditForm}
-                        />
+                        {addEditForm()}
                     </div>
                     <div>
                         {/* Control buttons */}
                         <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(-beamProperties["Length of Beam"]/100,1,10)}}>&#8592;</Button>
+                        {/* Jump is used in dynamic swaying, which is not implemented yet */}
                         <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(0,5,10)}}>JUMP</Button>
                         <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)}}>&#8594;</Button>
                     </div>
@@ -451,7 +295,7 @@ function CombinedLoadApp(){
                                 <TableBody>{[["Left/Right Arrows:", "Move Selected Load"],
                                              ["Up Arrow:", "Jump"],
                                              ["Insert:", "Add Load"],
-                                             ["Shift + Enter:", "Edit Selected Load"],
+                                             ["End:", "Edit Selected Load"],
                                              ["Delete:", "Delete Selected Load"],
                                              ["Esc:", "Edit Properties"]]
                                     .map(row=>
@@ -494,25 +338,6 @@ function CombinedLoadApp(){
             </div>
         )
     }
-}
-
-// Radio buttons displaying list of loads in the properties form
-function loadRadioButtonsCreator(loads){
-    let labels = []
-    loads.forEach((load,loadID)=>
-        labels.push(<FormControlLabel control={<Radio/>}
-            value={loadID}
-            key={loadID}
-            label={"Name = " + load.Name + 
-                ", Type = " + load.Type + 
-                ": Location = " + (load.Location + load.Length / 2) +  // Convert to display format, where location = the middle of the load
-                ", Mass = " + load.Mass + 
-                (load.Type!=="Point" ? ", Length = " + load.Length : "") + 
-                (load.Type==="Triangular" ? ", Taller End = " + load["Taller End"] : "")}
-        />)
-    )
-        
-    return labels
 }
 
 /**
