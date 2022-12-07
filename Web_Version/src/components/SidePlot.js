@@ -88,7 +88,7 @@ function SidePlot (props) {
     return (
         <div className={"rowC"}>
             {/* Plot */}
-            <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth * 0.4} xDomain={[0,props.beamProperties["Length of Beam"]]} yDomain ={[scale, scale]} margin = {{left:60, right:60}}>
+            <XYPlot height={window.innerHeight * window.devicePixelRatio * 0.5} width={window.innerWidth * window.devicePixelRatio * 0.4} xDomain={[0,props.beamProperties["Length of Beam"]]} yDomain ={[scale, scale]} margin = {{left:60, right:60}}>
                 <VerticalGridLines/>
                 <HorizontalGridLines/>
                 <XAxis tickFormat = {formatVal(props.beamProperties["Length of Beam"])} title = {props.title}/>
@@ -162,7 +162,7 @@ function reactions(loads, beamProperties) {
         else {
             // pinnedLeft is true if the pinned support is on the left and the roller support is on the right
             let pinnedLeft = pinnedSupportPos < rollerSupportPos
-            let tooCloseTogether = abs(pinnedSupportPos - rollerSupportPos) < 8/100 * beamProperties["Length of Beam"] * (1920 / (window.innerWidth - 300))
+            let tooCloseTogether = abs(pinnedSupportPos - rollerSupportPos) < 8/100 * beamProperties["Length of Beam"] * (1920 / (window.innerWidt * window.devicePixelRatio - 300))
 
             // Pinned reaction label
             reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})

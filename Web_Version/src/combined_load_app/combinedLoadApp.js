@@ -291,6 +291,7 @@ function CombinedLoadApp(){
                                     beamProperties[field] = e.target.value
                                     validateInputsPropertiesForm(field)
                                 }}
+                                style={{width:100}}
                             />
                         </div>)
                     })}
@@ -321,6 +322,7 @@ function CombinedLoadApp(){
                                     beamProperties[field] = e.target.value
                                     validateInputsPropertiesForm(field)
                                 }}
+                                style={{width:100}}
                                 disabled={beamProperties["Support Type"] !== "Simply Supported"}
                             />
                         </div>)
