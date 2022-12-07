@@ -368,11 +368,11 @@ function CombinedLoadApp(){
     else {
         // Display the main plots screen
         return(
-            <div className={"rowC"} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
-                <div style={{height:window.innerHeight * window.devicePixelRatio - 100, width:"40%", overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
+            <div className={(innerWidth > 500) ? "rowC" : ""} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
+                <div style={{height:(innerWidth > 500) ? (window.innerHeight - 100): "", width:(innerWidth > 500) ? "40%" : "", overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
                     <h1>CARL</h1>
                     {/* Main Plot */}
-                    <XYPlot height={window.innerHeight * window.devicePixelRatio * 0.5} width={window.innerWidth * window.devicePixelRatio * 0.4} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
+                    <XYPlot height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
                         <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title = {"Load Locations"}/>
@@ -397,11 +397,11 @@ function CombinedLoadApp(){
                             if(load.Type === "Point")
                                 return
 
-                            let data = [{x: load.Location, y: 8 * (819 / (window.innerHeight * window.devicePixelRatio - 150))}, 
-                                        {x: (load.Location+load.Length), y: 8 * (819 / (window.innerHeight * window.devicePixelRatio - 150))}]
+                            let data = [{x: load.Location, y: 8 * (819 / (window.innerHeight - 150))}, 
+                                        {x: (load.Location+load.Length), y: 8 * (819 / (window.innerHeight - 150))}]
                             if(load.Type === "Triangular") {
-                                data.push({x: load.Location + ((load["Taller End"]==="Right")?load.Length:0), y: 20 * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
-                                          {x: load.Location, y: 8 * (819 / (window.innerHeight * window.devicePixelRatio - 150))})
+                                data.push({x: load.Location + ((load["Taller End"]==="Right")?load.Length:0), y: 20 * (819 / (window.innerHeight - 150))},
+                                          {x: load.Location, y: 8 * (819 / (window.innerHeight - 150))})
                             }
 
                             return (
@@ -466,7 +466,7 @@ function CombinedLoadApp(){
                     </Dialog>
                 </div>
                 {/* Right Columns */}
-                <div style={{height:window.innerHeight * window.devicePixelRatio - 100, width:"60%", overflowX:"clip", overflowY:"auto"}}>
+                <div style={{height:(innerWidth > 500) ? window.innerHeight - 100: "", width:(innerWidth > 500) ? "60%" : "", overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
                     {/* Deflection Diagram */}
                     <SidePlot title="Deflection Diagram"
@@ -574,17 +574,17 @@ function getLoadArrows(data, load, loadID, beamLength){
 // Function for adding the cantilever support visual display.
 function getCantileverSupportDisplay(beamLength) {
     let support = []
-    let leftSide = -2/100 * beamLength * (1920 / (window.innerWidth * window.devicePixelRatio - 300))
+    let leftSide = -2/100 * beamLength * (1920 / (window.innerWidth + ((innerWidth > 500) ? -300 : 440)))
     // Outer rectangle parts
-    support.push(<LineSeries data = {[{x : leftSide, y : 10 * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
-                                      {x : 0, y : 10 * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
-                                      {x : 0, y : -10 * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
-                                      {x : leftSide, y : -10 * (819 / (window.innerHeight * window.devicePixelRatio - 150))}]}
+    support.push(<LineSeries data = {[{x : leftSide, y : 10 * (819 / (window.innerHeight - 150))},
+                                      {x : 0, y : 10 * (819 / (window.innerHeight - 150))},
+                                      {x : 0, y : -10 * (819 / (window.innerHeight - 150))},
+                                      {x : leftSide, y : -10 * (819 / (window.innerHeight - 150))}]}
                              color = "#12939A"/>)
     // Diagonal parts
     support = support.concat([-10,-6,-2,2,6].map(val=>
-        <LineSeries data = {[{x: leftSide, y: val * (819 / (window.innerHeight * window.devicePixelRatio - 150))},
-                             {x: 0, y: (val+4) * (819 / (window.innerHeight * window.devicePixelRatio - 150))}]}
+        <LineSeries data = {[{x: leftSide, y: val * (819 / (window.innerHeight - 150))},
+                             {x: 0, y: (val+4) * (819 / (window.innerHeight - 150))}]}
                     color = "#12939A"
                     key = {val}/>
     ))
