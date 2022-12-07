@@ -397,11 +397,11 @@ function CombinedLoadApp(){
                             if(load.Type === "Point")
                                 return
 
-                            let data = [{x: load.Location, y: 8 * (819 / (window.innerHeight - 150))}, 
-                                        {x: (load.Location+load.Length), y: 8 * (819 / (window.innerHeight - 150))}]
+                            let data = [{x: load.Location, y: 8 * (930 / (window.innerHeight - 100))}, 
+                                        {x: (load.Location+load.Length), y: 8 * (930 / (window.innerHeight - 100))}]
                             if(load.Type === "Triangular") {
-                                data.push({x: load.Location + ((load["Taller End"]==="Right")?load.Length:0), y: 20 * (819 / (window.innerHeight - 150))},
-                                          {x: load.Location, y: 8 * (819 / (window.innerHeight - 150))})
+                                data.push({x: load.Location + ((load["Taller End"]==="Right")?load.Length:0), y: 20 * (930 / (window.innerHeight - 100))},
+                                          {x: load.Location, y: 8 * (930 / (window.innerHeight - 100))})
                             }
 
                             return (
@@ -576,15 +576,15 @@ function getCantileverSupportDisplay(beamLength) {
     let support = []
     let leftSide = -2/100 * beamLength * (1920 / (window.innerWidth + ((innerWidth > 500) ? -300 : 440)))
     // Outer rectangle parts
-    support.push(<LineSeries data = {[{x : leftSide, y : 10 * (819 / (window.innerHeight - 150))},
-                                      {x : 0, y : 10 * (819 / (window.innerHeight - 150))},
-                                      {x : 0, y : -10 * (819 / (window.innerHeight - 150))},
-                                      {x : leftSide, y : -10 * (819 / (window.innerHeight - 150))}]}
+    support.push(<LineSeries data = {[{x : leftSide, y : 10 * (930 / (window.innerHeight - 100))},
+                                      {x : 0, y : 10 * (930 / (window.innerHeight - 100))},
+                                      {x : 0, y : -10 * (930 / (window.innerHeight - 100))},
+                                      {x : leftSide, y : -10 * (930 / (window.innerHeight - 100))}]}
                              color = "#12939A"/>)
     // Diagonal parts
     support = support.concat([-10,-6,-2,2,6].map(val=>
-        <LineSeries data = {[{x: leftSide, y: val * (819 / (window.innerHeight - 150))},
-                             {x: 0, y: (val+4) * (819 / (window.innerHeight - 150))}]}
+        <LineSeries data = {[{x: leftSide, y: val * (930 / (window.innerHeight - 100))},
+                             {x: 0, y: (val+4) * (930 / (window.innerHeight - 100))}]}
                     color = "#12939A"
                     key = {val}/>
     ))
