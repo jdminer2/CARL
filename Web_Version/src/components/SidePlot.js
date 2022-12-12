@@ -5,11 +5,10 @@ import {complex,add,subtract,multiply,divide,sqrt,cbrt,abs} from 'mathjs'
 
 /**
  * Props:
- * title
- * loads
- * beamProperties
- * color
- * showReactions
+ * title - title of the plot, also controls whether reactions/maximum deflection are shown
+ * loads - loads for calculating graphs
+ * beamProperties - beam properties for calculating graphs
+ * color - color of the graph curve
  */
 function SidePlot (props) {
     // The scale of the plot
@@ -26,7 +25,7 @@ function SidePlot (props) {
             xValues.push((i/100)*props.beamProperties["Length of Beam"])
         // The endpoints of each load
         props.loads.forEach(load => 
-            xValues.push(load.Location, load.Location+load.Length)
+            xValues.push(load.L1, load.L2)
         )
         // Sort the x values so the line plot goes through each point in ascending order, not back and forth
         xValues.sort((a,b)=>(a > b)? 1 : -1)
@@ -100,7 +99,7 @@ function SidePlot (props) {
                 {/* Current X indicator (if valid X) */}
                 {validX() ? <LineSeries data = {[{x:coord.x, y:scale}, {x:coord.x, y:-1*scale}]} color="grey" strokeWidth="1px"/>:[]}
                 {/* Reaction labels (optional) */}
-                {props.showReactions ? <LabelSeries data={reactions(props.loads, props.beamProperties)} />:[]}
+                {<LabelSeries data={reactions(props.title, props.loads, props.beamProperties)}/>}
             </XYPlot>
             {/* Side Info */}
             <div style={{display:"flex", alignItems:"center", justifyContent:"center", width:"100%"}}>
@@ -115,10 +114,10 @@ function SidePlot (props) {
                         }}
                     />, y={coord.y}<br/>
                     {props.title === "Deflection Diagram"?
-                    /* Global minimum (Deflection Plot only) */
+                    /* Maximum Deflection (Deflection Plot only) */
                     <div>
-                        Global Minimum:<br/>
-                        {getExtremaInRange(props.title, props.loads, props.beamProperties, 0, props.beamProperties["Length of Beam"])}
+                        Maximum Deflection:<br/>
+                        {props.title === "Deflection Diagram" ? maximumDeflection(props.loads, props.beamProperties) : []}
                     </div>
                     :""}
                 </div>
@@ -130,90 +129,86 @@ function SidePlot (props) {
 /**
  * Get reaction labels
  */
-function reactions(loads, beamProperties) {
+function reactions(title, loads, beamProperties) {
     let reactionLabels = []
+
+    // Only Shear Force Diagram and Bending Moment Diagram display any type of reaction
+    if(!["Shear Force Diagram", "Bending Moment Diagram"].includes(title))
+        return reactionLabels
+
     let pinnedSupportPos = beamProperties["Pinned Support Position"]
     let rollerSupportPos = beamProperties["Roller Support Position"]
-
-    // If the supports are on top of each other, don't display reactions because they will be infinite or invalid
 
     // Compute the reactions, R1 (left support) and R2 (right support)
     let [R1,R2] = sumFunction(reactionsSingleLoad, loads, beamProperties, 0)
 
     // Cantilever reaction arrow
     if(beamProperties["Support Type"] === "Cantilever") {
-        // Left side reaction label only
-        reactionLabels.push({x: 0, y: 0, yOffset: 32, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        reactionLabels.push({x: 0, y: 0, yOffset: 43, label: formatVal(R1)(R1), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        if(title === "Shear Force Diagram") {
+            reactionLabels.push({x: 0, y: 0, yOffset: 32, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            reactionLabels.push({x: 0, y: 0, yOffset: 43, label: formatVal(R1)(R1), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        }
+        else {
+            reactionLabels.push({x: 0, y: 0, yOffset: 20, label: "\u21ba", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+            reactionLabels.push({x: 0, y: 0, yOffset: 43, label: formatVal(R2)(R2), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        }
     }
     // Simply supported reaction arrows
     else {
-        // Pinned and Roller Shapes
-        reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 24,  label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: 24,  label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        // For simply supported beam, there is no bending moment reaction
+        if(title !== "Shear Force Diagram")
+            return reactionLabels
         
-        // If supports at the same spot, just one reaction arrow representing their sum.
-        if(abs(pinnedSupportPos - rollerSupportPos) <= 10**-10) {
-            reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 65, label: formatVal(R1)(R1), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        }
+        let pinnedReaction, rollerReaction
+        if(pinnedSupportPos < rollerSupportPos)
+            [pinnedReaction, rollerReaction] = [R1,R2]
+        else
+            [rollerReaction, pinnedReaction] = [R2,R1]
 
-        // Else one reaction arrow for each support.
-        else {
-            // pinnedLeft is true if the pinned support is on the left and the roller support is on the right
-            let pinnedLeft = pinnedSupportPos < rollerSupportPos
-            let tooCloseTogether = abs(pinnedSupportPos - rollerSupportPos) < 8/100 * beamProperties["Length of Beam"] * (1920 / (window.innerWidth + ((innerWidth > 500) ? -300 : 30)))
+        // If the supports are too close together, lower one of the support labels
+        let tooCloseTogether = abs(pinnedSupportPos - rollerSupportPos) < 8/100 * beamProperties["Length of Beam"] * (1920 / (window.innerWidth + ((innerWidth > 500) ? -300 : 30)))
 
-            // Pinned reaction label
-            reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 70, label: (pinnedLeft?formatVal(R1)(R1):formatVal(R2)(R2)), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            
-            // Roller reaction label
-            reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: tooCloseTogether?60:54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-            reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: tooCloseTogether?90:70, label: (pinnedLeft?formatVal(R2)(R2):formatVal(R1)(R1)),  style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
-        }
+        // Pinned reaction label
+        reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 24,  label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        reactionLabels.push({x: pinnedSupportPos, y: 0, yOffset: 70, label: formatVal(pinnedReaction)(pinnedReaction), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        
+        // Roller reaction label
+        reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: 24,  label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: tooCloseTogether?60:54, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        reactionLabels.push({x: rollerSupportPos, y: 0, yOffset: tooCloseTogether?90:70, label: formatVal(rollerReaction)(rollerReaction),  style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
     }
     return reactionLabels
 }
 
 /**
- * Finds the minimum in the given range from left to right.
- * Requires left <= right
- * 
- * This only works for the deflection function.
- * Finding the maximum in the range is implemented, but commented out.
+ * Finds the maximum absolute value of deflection for the beam.
  */ 
- function getExtremaInRange(title, loads, beamProperties, left, right) {
-    // Get all candidate points for min/max
-    let criticalPoints = getCriticalPoints(title, loads, beamProperties, left, right)
+ function maximumDeflection(loads, beamProperties) {
+    // Get all candidate points for local extrema
+    let criticalPoints = getCriticalPoints(loads, beamProperties)
     
     // Deflection function
-    let yAtX = x => sumFunction(chooseSingleLoadFunction(title), loads, beamProperties, x)
+    let yAtX = x => sumFunction(deflectionSingleLoad, loads, beamProperties, x)
 
-    // Find the lowest/highest of the candidate points
-    let minX = "None"
-    let minY = "None"
-    //let maxX = "None"
-    //let maxY = "None"
+    // Find the max absolute value from the candidate points
+    let maxX = "None"
+    let maxY = "None"
     criticalPoints.forEach(x => {
         let y = yAtX(x)
         y.forEach(yVal => {
-            yVal = Number(formatVal(yVal)(yVal))
-            if(minY === "None" || yVal < minY) {
-                minX = x
-                minY = yVal
+            yVal = abs(Number(formatVal(yVal)(yVal)))
+            if(maxY === "None" || yVal > maxY) {
+                maxX = x
+                maxY = yVal
             }
-            //if(maxY === "None" || yVal > maxY) {
-            //    maxX = x
-            //    maxY = yVal
-            //}
         })
     })
     // It's impossible for the values to still be "None" at this point
 
-    let x = formatVal(minX)(minX)
-    let y = yAtX(minX)
-    y = Math.min(Number(formatVal(y[0])(y[0])),Number(formatVal(y[1])(y[1])))
+    let x = formatVal(maxX)(maxX)
+    let y = yAtX(maxX)
+    y = abs(y[0]) > abs(y[1]) ? y[0] : y[1]
     y = formatVal(y)(y)
 
     return "x=" + x + ", y=" + y
@@ -223,9 +218,9 @@ function reactions(loads, beamProperties) {
  * According to the first derivative test, max/min can only occur when slope is 0 or undefined, or at endpoints.
  * This function finds all of the points where slope is 0 or undefined, or endpoints.
  */
-function getCriticalPoints(title, loads, beamProperties, left, right) {
+function getCriticalPoints(loads, beamProperties) {
     // Get the segments of the beam.
-    let segmentEndpoints = getSegmentEndpoints(loads, beamProperties, left, right)
+    let segmentEndpoints = getSegmentEndpoints(loads, beamProperties)
 
     let criticalPoints = []
     // For each segment of the beam
@@ -234,7 +229,7 @@ function getCriticalPoints(title, loads, beamProperties, left, right) {
         // Find slope polynomial for this segment, summing all single-load polynomials
         let polynomial = [0,0,0,0,0]
         getSubloads(loads,beamProperties).forEach(load=>{
-            chooseDerivativeSingleLoadFunction(title)(load, beamProperties, midpoint).forEach((a,i)=>{
+            deflectionSlopePolynomialSingleLoad(load, beamProperties, midpoint).forEach((a,i)=>{
                 polynomial[i] += a
             })
         })
@@ -254,23 +249,23 @@ function getCriticalPoints(title, loads, beamProperties, left, right) {
  * The beam has segments, where each segment has its own polynomial.
  * This function finds the endpoints of each segment, sorted in ascending order.
  */
-function getSegmentEndpoints(loads, beamProperties, left, right) {
+function getSegmentEndpoints(loads, beamProperties) {
     let segmentEndpoints = []
     // Edges of the range to find extrema in
-    segmentEndpoints.push(left, right)
+    segmentEndpoints.push(0, beamProperties["Length of Beam"])
     // Supports in the beam
     segmentEndpoints.push(beamProperties["Roller Support Position"], beamProperties["Length of Beam"])
     // Locations/Endpoints of all loads
     loads.forEach(load => 
-        segmentEndpoints.push(load.Location, load.Location+load.Length)
+        segmentEndpoints.push(load.L1, load.L2)
     )
     
-    // Sort ascending and remove duplicates or out-of-range values
+    // Sort ascending and remove duplicates
     segmentEndpoints.sort((a,b)=>(a > b)? 1 : -1)
     let prev = -1
     for(let i = 0; i < segmentEndpoints.length; i++) {
         let val = segmentEndpoints[i]
-        if(val == prev || val > right || val < left) {
+        if(val == prev) {
             // Delete val
             segmentEndpoints.splice(i,1)
             i--
@@ -401,8 +396,8 @@ function getSubloads(loads, beamProperties) {
     // Convert triangles with taller left-end to taller right-end
     loads.forEach(load => {
         if(load.Type === "Triangular" && load["Taller End"] === "Left") {
-            newLoads.push({Mass:-1*load.Mass, Location:load.Location, Length:load.Length, Type:"Triangular", ["Taller End"]:"Right"})
-            newLoads.push({Mass:load.Mass, Location:load.Location, Length:load.Length, Type:"Distributed"})
+            newLoads.push({["Load Force"]:-1*load["Load Force"], L1:load.L1, L2:load.L2, Type:"Triangular", ["Taller End"]:"Right"})
+            newLoads.push({["Load Force"]:load["Load Force"], L1:load.L1, L2:load.L2, Type:"Distributed"})
         }
         else
             newLoads.push(load)
@@ -412,14 +407,11 @@ function getSubloads(loads, beamProperties) {
 }
 
 /**
- * Second integral of bending moment divided by EI.
- * 
- * To eliminate arbitrary constants:
- * For cantilever, deflection and slope at x=0 are 0.
- * For simply supported beam where supports are at the same location, deflection and slope at support location are 0.
- * For simply supported beam where supports are at different locations, deflection at each support location is 0.
+ * Return the reactions.
+ * For cantilever: [0] is shear reaction, [1] is moment reaction.
+ * For simply supported: [0] is left support reaction, [1] is right support reaction.
  */
-function deflectionSingleLoad(load, beamProperties, x) {
+ function reactionsSingleLoad(load, beamProperties, x){
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -427,345 +419,32 @@ function deflectionSingleLoad(load, beamProperties, x) {
     // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
 
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
+    let W = load["Load Force"]
+    let X = load.L1
+    let L = load.L2 - load.L1
 
-    // Multiplier using mass, gravity, and EI
+    // Multiplier using load force
     let coeff
     // A number frequently multiplied by L, which depends on load type
     let lCoeff
-    // Deflection
-    let y
-    // Extra term for simply supported beam where b==0, depends on load type and whether load is in the a-segment, b-segment, or c-segment
-    let cSlope
 
     if(load.Type === "Point") {
-        coeff = F / beamProperties.EI
+        coeff = W
         lCoeff = 0
-
-        // Get base deflection
-        if(x < X)
-            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
-        else
-            y = (X**3 - 3*X**2*x) / 6
-
-        // Get cSlope
-        if(a < X)
-            cSlope = a**2/2 - a*(X+L*lCoeff)
-        else 
-            cSlope = -1*X**2/2
     }
     else if(load.Type === "Distributed") {
-        coeff = F * L / beamProperties.EI
+        coeff = W * L
         lCoeff = 1/2
-
-        // Get base deflection
-        if(x < X)
-            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
-        else if(x < X + L)
-            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6 - (x-X)**4/24/L
-        else
-            y = ((X+L)**3 - 3*(X+L)**2*(X+L*lCoeff)) / 6 - L**3/24 + ((X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6)*(x - (X + L))
-
-        // Get cSlope
-        if(a < X)
-            cSlope = a**2/2 - a*(X+L*lCoeff)
-        else if(a < X + L)
-            cSlope = a**2/2 - a*(X+L*lCoeff) - (a-X)**3/6/L
-        else
-            cSlope = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
     }
     else if(load.Type === "Triangular") {
-        coeff = F * L / 2 / beamProperties.EI
+        coeff = W * L / 2
         lCoeff = 2/3
-
-        // Get base deflection
-        if(x < X)
-            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
-        else if(x < X + L)
-            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6 - (x-X)**5/60/L**2
-        else
-            y = ((X+L)**3 - 3*(X+L)**2*(X+L*lCoeff)) / 6 - L**3/60 + (3*L**2 + 8*L*X + 6*X**2)*(X+L-x)/12
-
-        // Get cSlope
-        if(a < X)
-            cSlope = a**2/2 - a*(X+L*lCoeff)
-        else if(a < X + L)
-            cSlope = a**2/2 - a*(X+L*lCoeff) - (a-X)**4/12/L**2
-        else
-            cSlope = -1*(X+L)*(X/2 + L/6) - L**2/12
     }
 
-
-    if(beamProperties["Support Type"] === "Simply Supported") {
-        if(x < a)
-            y -= (x**3 - 3*x**2*(X+L*lCoeff)) / 6
-        else if(x < a+b)
-            y += a**2/2*(x - a/3) + (a - X - L*lCoeff)*(a**2*x + x**3/3 - a**3/3 - a*x**2 - b*x**2)/2/b
-        else
-            y += a**2/2*(x - a/3) + (a - X - L*lCoeff)*(a**2 + b**2/3 + a*b - x*b - 2*a*x)/2
-        
-        // From solving arbitrary constants
-        y += ((3*a**2*x - 2*a**3) + (3*a**2 - 6*a*x)*(X+L*lCoeff))/6
-        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10)
-            y += (a-x) * cSlope
-        else
-            y += ((2*a*b*x - 2*a**2*b) + (-2*b*x + 2*a*b)*(X+L*lCoeff))/6
-    }
-
-    // Round off floating point errors.
-    if(abs(y) < 10**-10)
-        y = 0
-    
-    y *= coeff
-
-    // From solving arbitrary constants
-    if(beamProperties["Support Type"] === "Simply Supported") {
-        let cantileverBeamProperties = {...beamProperties}
-        cantileverBeamProperties["Support Type"] = "Cantilever"
-
-        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10)
-            y -= deflectionSingleLoad(load, cantileverBeamProperties, a)
-        else {
-            y += (x - a - b) / b * deflectionSingleLoad(load, cantileverBeamProperties, a)
-            y += (a - x) / b * deflectionSingleLoad(load, cantileverBeamProperties, a + b)
-        }
-    }
-
-    return y
-}
-
-/**
- * Integral of bending moment; slope of deflection times EI. 
- * Cannot use true slope or else some coefficients will be too small and root-finder will consider it equal to 0.
- * This function returns an array instead of a value. [a0,a1,a2,a3,a4] represents a0*x^0 + a1*x^1 + a2*x^2 + a3*x^3 + a4*x^4.
- * This function also won't be used when x is at an instant change of slope. It may not work in those cases.
- * 
- * To eliminate arbitrary constants:
- * For cantilever, deflection and slope at x=0 are 0.
- * For simply supported beam where supports are at the same location, deflection and slope at support location are 0.
- * For simply supported beam where supports are at different locations, deflection at each support location is 0.
- */
-function deflectionSlopePolynomialSingleLoad(load, beamProperties, x) {
-    // a-segment is to the left of both supports
-    let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
-    // b-segment is between both supports
-    let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
-    // c-segment is to the right of both supports
-    let c = beamProperties["Length of Beam"] - b
-
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
-
-    // Multiplier using mass and gravity
-    let coeff
-    // A number frequently multiplied by L, which depends on load type
-    let lCoeff
-    // Polynomial array
-    let a0,a1,a2,a3,a4
-    [a0,a1,a2,a3,a4] = [0,0,0,0,0]
-
-    if(load.Type === "Point") {
-        coeff = F
-        lCoeff = 0
-
-        if(x < X) {
-            // y = x**2/2 - x*(X+L*lCoeff)
-            a2 = 1/2
-            a1 = -1*(X+L*lCoeff)
-        }
-        else {
-            // y = -1*X**2/2
-            a0 = -1*X**2/2
-        }
-    }
-    else if(load.Type === "Distributed") {
-        coeff = F * L
-        lCoeff = 1/2
-
-        if(x < X) {
-            // y = x**2/2 - x*(X+L*lCoeff)
-            a2 = 1/2
-            a1 = -1*(X+L*lCoeff)
-        }
-        else if(x < X + L) {
-            // y = x**2/2 - x*(X+L*lCoeff) - (x-X)**3/6/L
-            a3 = -1 /6/L
-            a2 = 3*X /6/L + 1/2
-            a1 = -3*X**2 /6/L + -1*(X+L*lCoeff)
-            a0 = X**3 /6/L
-        }
-        else {
-            // y = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
-            a0 = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
-        }
-    }
-    else if(load.Type === "Triangular") {
-        coeff = F * L / 2
-        lCoeff = 2/3
-
-        if(x < X) {
-            // y = x**2/2 - x*(X+L*lCoeff)
-            a2 = 1/2
-            a1 = -1*(X+L*lCoeff)
-        }
-        else if(x < X + L) {
-            // y = x**2/2 - x*(X+L*lCoeff) - (x-X)**4/12/L**2
-            a4 = -1 /12/L**2
-            a3 = 4*X /12/L**2
-            a2 = -6*X**2 /12/L**2 + 1/2
-            a1 = 4*X**3 /12/L**2 + -1*(X+L*lCoeff)
-            a0 = -1*X**4 /12/L**2
-        }
-        else {
-            // y = -1*(X+L)*(X/2 + L/6) - L**2/12
-            a0 = -1*(X+L)*(X/2 + L/6) - L**2/12
-        }
-    }
-
-    if(beamProperties["Support Type"] === "Simply Supported") {
-        if(x < a) {
-            // y += -x**2/2 + x*(X+L*lCoeff)
-            a2 += -1/2
-            a1 += X+L*lCoeff
-        }
-        else if(x < a+b) {
-            // y += a**2/2 + (a - X - L * lCoeff) * (a**2 + x**2 - 2*a*x - 2*b*x) / 2 / b
-            a2 += (a - X - L*lCoeff)/2/b
-            a1 += (a - X - L*lCoeff)*-1*(a+b)/b
-            a0 += (a - X - L*lCoeff)*a**2/2/b + a**2/2
-        }
-        else {
-            // y += a**2/2 - (a - X - L * lCoeff) * (a + b/2)
-            a0 += a**2/2 - (a - X - L * lCoeff) * (a + b/2)
-        }
-
-        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
-            // y += a**2/2 - a*(X+L*lCoeff)
-            a0 += a**2/2 - a*(X+L*lCoeff)
-        }
-        else {
-            // y += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * lCoeff)) / 6
-            a0 += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * lCoeff)) / 6
-        }
-    }
-
-    // y *= coeff
-    [a0,a1,a2,a3,a4] = [a0*coeff,a1*coeff,a2*coeff,a3*coeff,a4*coeff]
-
-    // From solving arbitrary constants
-    if(beamProperties["Support Type"] === "Simply Supported") {
-        let cantileverBeamProperties = {...beamProperties}
-        cantileverBeamProperties["Support Type"] = "Cantilever"
-
-        if(abs(b/beamProperties["Length of Beam"]) <= 10**-10) {
-            // y -= deflectionSingleLoad(load, cantileverBeamProperties, a)
-            let vals = deflectionSlopePolynomialSingleLoad(load, cantileverBeamProperties, a)
-            a0 -= vals[0]
-            a1 -= vals[1]
-            a2 -= vals[2]
-            a3 -= vals[3]
-            a4 -= vals[4]
-        }
-        else {
-            // y += deflectionSingleLoad(a, load, cantileverBeamProperties)/b
-            a0 += deflectionSingleLoad(load, cantileverBeamProperties, a)*cantileverBeamProperties.EI/b
-            // y -= deflectionSingleLoad(a+b, load, cantileverBeamProperties)/b
-            a0 -= deflectionSingleLoad(load, cantileverBeamProperties, a + b)*cantileverBeamProperties.EI/b
-        }
-    }
-
-    return [a0,a1,a2,a3,a4]
-}
-
-/**
- * Integral of shear force.
- * If a 2-length array is returned, that represents instantaneous change, which only occurs if both supports are at the same location in simply supported beam.
- * 
- * To eliminate arbitrary constant:
- * For simply supported beam, bending moment is 0 at all support positions.
- * For cantilever beam, bending moment is 0 at the free end (right end) of the beam.
- */
-function bendingMomentSingleLoad(load, beamProperties, x) {
-    // a-segment is to the left of both supports
-    let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
-    // b-segment is between both supports
-    let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
-    // c-segment is to the right of both supports
-    let c = beamProperties["Length of Beam"] - b
-
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
-
-    // Multiplier using mass and gravity
-    let coeff
-    // A number frequently multiplied by L, which depends on load type
-    let lCoeff
-    let y
-
-    if(load.Type === "Point") {
-        coeff = F
-        lCoeff = 0
-
-        if(x < X)
-            y = x - X - L*lCoeff
-        else
-            y = 0
-    }
-    else if(load.Type === "Distributed") {
-        coeff = F * L
-        lCoeff = 1/2
-
-        if(x < X)
-            y = x - X - L*lCoeff
-        else if(x < X + L)
-            y = x - X - L*lCoeff - (x-X)**2/2 / L
-        else
-            y = 0
-    }
-    else if(load.Type === "Triangular") {
-        coeff = F * L / 2
-        lCoeff = 2/3
-
-        if(x < X)
-            y = x - X - L*lCoeff
-        else if(x < X + L)
-            y = x - X - L*lCoeff - (x-X)**3/3 / L**2
-        else
-            y = 0
-    }
-
-    if(beamProperties["Support Type"] === "Simply Supported") {
-        if(x < a)
-            y -= x - X - L * lCoeff
-        else if(x == a && abs(b/beamProperties["Length of Beam"]) <= 10**-10)
-            y = [y - (x - X - L * lCoeff), y]
-        else if(x < a+b)
-            y -= (a - X - L * lCoeff) * (a + b - x) / b
-        
-    }
-
-    // Round off floating point errors and multiply by coeff. If array, do it to both elements of array.
-    if(Array.isArray(y)) {
-        if(abs(y[0]) < 10**-10)
-            y[0] = 0
-        if(abs(y[1]) < 10**-10)
-            y[1] = 0
-
-        y[0] *= coeff
-        y[1] *= coeff
-    }
-    else {
-        if(abs(y) < 10**-10)
-            y = 0
-
-        y *= coeff
-    }
-
-    return y
+    if(beamProperties["Support Type"] === "Cantilever")
+        return [coeff, coeff * (X + L * lCoeff)]
+    else
+        return [coeff * (1 - (X + L * lCoeff - a)/b), coeff * (X + L * lCoeff - a)/b]
 }
 
 /**
@@ -779,18 +458,18 @@ function shearForceSingleLoad(load, beamProperties, x) {
     // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
 
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
+    let W = load["Load Force"]
+    let X = load.L1
+    let L = load.L2 - load.L1
 
-    // Multiplier using mass and gravity
+    // Multiplier using load force
     let coeff
     // A number frequently multiplied by L, which depends on load type
     let lCoeff
     let y
 
     if(load.Type === "Point") {
-        coeff = F
+        coeff = W
         lCoeff = 0
 
         if(x < X)
@@ -802,7 +481,7 @@ function shearForceSingleLoad(load, beamProperties, x) {
             y = 0
     }
     else if(load.Type === "Distributed") {
-        coeff = F * L
+        coeff = W * L
         lCoeff = 1/2
 
         if(x < X)
@@ -813,7 +492,7 @@ function shearForceSingleLoad(load, beamProperties, x) {
             y = 0
     }
     else if(load.Type === "Triangular") {
-        coeff = F * L / 2
+        coeff = W * L / 2
         lCoeff = 2/3
 
         if(x < X)
@@ -855,13 +534,26 @@ function shearForceSingleLoad(load, beamProperties, x) {
         y *= coeff
     }
 
+    // Send the graph back to 0 at the support for cantilever.
+    if(beamProperties["Support Type"] === "Cantilever" && x == 0) {
+        if(Array.isArray(y))
+            y = [0, y[1]]
+        else
+            y = [0,y]
+    }
+    
+
     return y
 }
 
 /**
+ * Integral of shear force.
  * 
+ * To eliminate arbitrary constant:
+ * For simply supported beam, bending moment is 0 at all support positions.
+ * For cantilever beam, bending moment is 0 at the free end (right end) of the beam.
  */
- function bendingMomentSlopePolynomialSingleLoad(load, beamProperties, x) {
+ function bendingMomentSingleLoad(load, beamProperties, x) {
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -869,82 +561,76 @@ function shearForceSingleLoad(load, beamProperties, x) {
     // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
 
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
+    let W = load["Load Force"]
+    let X = load.L1
+    let L = load.L2 - load.L1
 
-    // Multiplier using mass and gravity
+    // Multiplier using load force
     let coeff
     // A number frequently multiplied by L, which depends on load type
     let lCoeff
-    // Polynomial array
-    let a0,a1,a2
-    [a0,a1,a2] = [0,0,0]
+    let y
 
     if(load.Type === "Point") {
-        coeff = F
+        coeff = W
         lCoeff = 0
 
         if(x < X)
-            // y = 1
-            a0 = 1
+            y = x - X - L*lCoeff
         else
-            // y = 0
-            a0 = 0
+            y = 0
     }
     else if(load.Type === "Distributed") {
-        coeff = F * L
+        coeff = W * L
         lCoeff = 1/2
 
         if(x < X)
-            // y = 1
-            a0 = 1
-        else if(x < X + L) {
-            // y = 1 - (x-X)/L
-            a1 = -1/L
-            a0 = 1 + X/L
-        }
+            y = x - X - L*lCoeff
+        else if(x < X + L)
+            y = x - X - L*lCoeff - (x-X)**2/2 / L
         else
-            // y = 0
-            a0 = 0
+            y = 0
     }
     else if(load.Type === "Triangular") {
-        coeff = F * L / 2
+        coeff = W * L / 2
         lCoeff = 2/3
 
         if(x < X)
-            // y = 1
-            a0 = 1
-        else if(x < X + L) {
-            // y = 1 - (x-X)**2/L**2
-            a2 = -1/L**2
-            a1 = 2*X/L**2
-            a0 = 1 - X**2/L**2
-        }
+            y = x - X - L*lCoeff
+        else if(x < X + L)
+            y = x - X - L*lCoeff - (x-X)**3/3 / L**2
         else
-            // y = 0
-            a0 = 0
+            y = 0
     }
 
     if(beamProperties["Support Type"] === "Simply Supported") {
         if(x < a)
-            // y -= 1
-            a0 -= 1
+            y -= x - X - L * lCoeff
         else if(x < a+b)
-            // y -= (X + L * lCoeff - a) / b
-            a0 -= (X + L * lCoeff - a) / b
+            y -= (a - X - L * lCoeff) * (a + b - x) / b
     }
 
-    // Multiply by coeff.
-    [a0,a1,a2] = [a0*coeff,a1*coeff,a2*coeff]
+    // Round off floating point errors and multiply by coeff.
+    if(abs(y) < 10**-10)
+        y = 0
 
-    return [a0,a1,a2,0,0]
+    y *= coeff
+    
+    // Send the graph back to 0 at the support for cantilever.
+    if(beamProperties["Support Type"] === "Cantilever" && x == 0)
+        y = [0,y]
+
+    return y
 }
 
 /**
+ * Integral of bending moment divided by EI; slope of deflection. 
  * 
+ * To eliminate arbitrary constants:
+ * For cantilever, deflection and rotation at x=0 are 0.
+ * For simply supported, deflection at each support location is 0.
  */
- function shearForceSlopePolynomialSingleLoad(load, beamProperties, x) {
+ function rotationSingleLoad(load, beamProperties, x) {
     // a-segment is to the left of both supports
     let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // b-segment is between both supports
@@ -952,107 +638,292 @@ function shearForceSingleLoad(load, beamProperties, x) {
     // c-segment is to the right of both supports
     let c = beamProperties["Length of Beam"] - b
 
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
+    let W = load["Load Force"]
+    let X = load.L1
+    let L = load.L2 - load.L1
 
-    // Multiplier using mass and gravity
+    // Multiplier using load force
+    let coeff
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+    let y
+
+    if(load.Type === "Point") {
+        coeff = W
+        lCoeff = 0
+
+        if(x < X)
+            y = x**2/2 - x*(X+L*lCoeff)
+        else
+            y = -1*X**2/2
+    }
+    else if(load.Type === "Distributed") {
+        coeff = W * L
+        lCoeff = 1/2
+
+        if(x < X)
+            y = x**2/2 - x*(X+L*lCoeff)
+        else if(x < X + L)
+            y = x**2/2 - x*(X+L*lCoeff) - (x-X)**3/6/L
+        else
+            y = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
+    }
+    else if(load.Type === "Triangular") {
+        coeff = W * L / 2
+        lCoeff = 2/3
+
+        if(x < X)
+            y = x**2/2 - x*(X+L*lCoeff)
+        else if(x < X + L)
+            y = x**2/2 - x*(X+L*lCoeff) - (x-X)**4/12/L**2
+        else
+            y = -1*(X+L)*(X/2 + L/6) - L**2/12
+    }
+
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        if(x < a)
+            y += -1*x**2/2 + x*(X+L*lCoeff)
+        else if(x < a+b)
+            y += a**2/2 + (a - X - L * lCoeff) * (a**2 + x**2 - 2*a*x - 2*b*x) / 2 / b
+        else
+            y += a**2/2 - (a - X - L * lCoeff) * (a + b/2)
+
+        // From solving arbitrary constants
+        y += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * lCoeff)) / 6
+    }
+
+    y *= coeff / beamProperties.Elasticity / beamProperties.Inertia
+
+    // From solving arbitrary constants
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        let cantileverBeamProperties = {...beamProperties}
+        cantileverBeamProperties["Support Type"] = "Cantilever"
+
+        y += deflectionSingleLoad(load, cantileverBeamProperties, a)/b
+        y -= deflectionSingleLoad(load, cantileverBeamProperties, a + b)/b
+    }
+
+    return y
+}
+
+/**
+ * Second integral of bending moment divided by EI; integral of rotation.
+ * 
+ * To eliminate arbitrary constants:
+ * For cantilever, deflection and slope at x=0 are 0.
+ * For simply supported beam, deflection at each support location is 0.
+ */
+function deflectionSingleLoad(load, beamProperties, x) {
+    // a-segment is to the left of both supports
+    let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
+    let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
+    let c = beamProperties["Length of Beam"] - b
+
+    let W = load["Load Force"]
+    let X = load.L1
+    let L = load.L2 - load.L1
+
+    // Multiplier using load force
+    let coeff
+    // A number frequently multiplied by L, which depends on load type
+    let lCoeff
+    let y
+
+    if(load.Type === "Point") {
+        coeff = W
+        lCoeff = 0
+
+        // Get base deflection
+        if(x < X)
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
+        else
+            y = (X**3 - 3*X**2*x) / 6
+    }
+    else if(load.Type === "Distributed") {
+        coeff = W * L
+        lCoeff = 1/2
+
+        // Get base deflection
+        if(x < X)
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
+        else if(x < X + L)
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6 - (x-X)**4/24/L
+        else
+            y = ((X+L)**3 - 3*(X+L)**2*(X+L*lCoeff)) / 6 - L**3/24 + ((X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6)*(x - (X + L))
+    }
+    else if(load.Type === "Triangular") {
+        coeff = W * L / 2
+        lCoeff = 2/3
+
+        // Get base deflection
+        if(x < X)
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6
+        else if(x < X + L)
+            y = (x**3 - 3*x**2*(X+L*lCoeff)) / 6 - (x-X)**5/60/L**2
+        else
+            y = ((X+L)**3 - 3*(X+L)**2*(X+L*lCoeff)) / 6 - L**3/60 + (3*L**2 + 8*L*X + 6*X**2)*(X+L-x)/12
+    }
+
+
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        if(x < a)
+            y -= (x**3 - 3*x**2*(X+L*lCoeff)) / 6
+        else if(x < a+b)
+            y += a**2/2*(x - a/3) + (a - X - L*lCoeff)*(a**2*x + x**3/3 - a**3/3 - a*x**2 - b*x**2)/2/b
+        else
+            y += a**2/2*(x - a/3) + (a - X - L*lCoeff)*(a**2 + b**2/3 + a*b - x*b - 2*a*x)/2
+        
+        // From solving arbitrary constants
+        y += ((3*a**2*x - 2*a**3) + (3*a**2 - 6*a*x)*(X+L*lCoeff))/6
+        y += ((2*a*b*x - 2*a**2*b) + (-2*b*x + 2*a*b)*(X+L*lCoeff))/6
+    }
+
+    // Round off floating point errors.
+    if(abs(y) < 10**-10)
+        y = 0
+    
+    y *= coeff / beamProperties.Elasticity / beamProperties.Inertia
+
+    // From solving arbitrary constants
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        let cantileverBeamProperties = {...beamProperties}
+        cantileverBeamProperties["Support Type"] = "Cantilever"
+
+        y += (x - a - b) / b * deflectionSingleLoad(load, cantileverBeamProperties, a)
+        y += (a - x) / b * deflectionSingleLoad(load, cantileverBeamProperties, a + b)
+    }
+
+    return y
+}
+
+/**
+ * Function used for finding zeroes of rotation/critical points of deflection.
+ * 
+ * Integral of bending moment; slope of deflection times EI. 
+ * Cannot use true rotation or else some coefficients will be too small and root-finder will consider it equal to 0.
+ * This function returns an array instead of a value. [a0,a1,a2,a3,a4] represents a0*x^0 + a1*x^1 + a2*x^2 + a3*x^3 + a4*x^4.
+ * 
+ * To eliminate arbitrary constants:
+ * For cantilever, deflection and slope at x=0 are 0.
+ * For simply supported beam, deflection at each support location is 0.
+ */
+function deflectionSlopePolynomialSingleLoad(load, beamProperties, x) {
+    // a-segment is to the left of both supports
+    let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
+    // b-segment is between both supports
+    let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
+    // c-segment is to the right of both supports
+    let c = beamProperties["Length of Beam"] - b
+
+    let W = load["Load Force"]
+    let X = load.L1
+    let L = load.L2 - load.L1
+
+    // Multiplier using load force
     let coeff
     // A number frequently multiplied by L, which depends on load type
     let lCoeff
     // Polynomial array
-    let a0,a1
-    [a0,a1] = [0,0]
+    let a0,a1,a2,a3,a4
+    [a0,a1,a2,a3,a4] = [0,0,0,0,0]
 
     if(load.Type === "Point") {
-        coeff = F
+        coeff = W
         lCoeff = 0
 
-        if(x < X);
-            // y = 1
-        else;
-            // y = 0
+        if(x < X) {
+            // y = x**2/2 - x*(X+L*lCoeff)
+            a2 = 1/2
+            a1 = -1*(X+L*lCoeff)
+        }
+        else {
+            // y = -1*X**2/2
+            a0 = -1*X**2/2
+        }
     }
     else if(load.Type === "Distributed") {
-        coeff = F * L
+        coeff = W * L
         lCoeff = 1/2
 
-        if(x < X);
-            // y = 1
-        else if(x < X + L) {
-            // y = 1 - (x-X)/L
-            a1 = -1/L
+        if(x < X) {
+            // y = x**2/2 - x*(X+L*lCoeff)
+            a2 = 1/2
+            a1 = -1*(X+L*lCoeff)
         }
-        else;
-            // y = 0
+        else if(x < X + L) {
+            // y = x**2/2 - x*(X+L*lCoeff) - (x-X)**3/6/L
+            a3 = -1 /6/L
+            a2 = 3*X /6/L + 1/2
+            a1 = -3*X**2 /6/L + -1*(X+L*lCoeff)
+            a0 = X**3 /6/L
+        }
+        else {
+            // y = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
+            a0 = (X+L)**2/2 - (X+L)*(X+L*lCoeff) - L**2/6
+        }
     }
     else if(load.Type === "Triangular") {
-        coeff = F * L / 2
+        coeff = W * L / 2
         lCoeff = 2/3
 
-        if(x < X);
-            // y = 1
-        else if(x < X + L) {
-            // y = 1 - (x-X)**2/L**2
-            a1 = -2/L**2
-            a0 = 2*X/L**2
+        if(x < X) {
+            // y = x**2/2 - x*(X+L*lCoeff)
+            a2 = 1/2
+            a1 = -1*(X+L*lCoeff)
         }
-        else;
-            // y = 0
+        else if(x < X + L) {
+            // y = x**2/2 - x*(X+L*lCoeff) - (x-X)**4/12/L**2
+            a4 = -1 /12/L**2
+            a3 = 4*X /12/L**2
+            a2 = -6*X**2 /12/L**2 + 1/2
+            a1 = 4*X**3 /12/L**2 + -1*(X+L*lCoeff)
+            a0 = -1*X**4 /12/L**2
+        }
+        else {
+            // y = -1*(X+L)*(X/2 + L/6) - L**2/12
+            a0 = -1*(X+L)*(X/2 + L/6) - L**2/12
+        }
     }
 
     if(beamProperties["Support Type"] === "Simply Supported") {
-        if(x < a);
-            // y -= 1
-        else if(x < a+b);
-            // y -= (X + L * lCoeff - a) / b
+        if(x < a) {
+            // y += -x**2/2 + x*(X+L*lCoeff)
+            a2 += -1/2
+            a1 += X+L*lCoeff
+        }
+        else if(x < a+b) {
+            // y += a**2/2 + (a - X - L * lCoeff) * (a**2 + x**2 - 2*a*x - 2*b*x) / 2 / b
+            a2 += (a - X - L*lCoeff)/2/b
+            a1 += (a - X - L*lCoeff)*-1*(a+b)/b
+            a0 += (a - X - L*lCoeff)*a**2/2/b + a**2/2
+        }
+        else {
+            // y += a**2/2 - (a - X - L * lCoeff) * (a + b/2)
+            a0 += a**2/2 - (a - X - L * lCoeff) * (a + b/2)
+        }
+
+        // y += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * lCoeff)) / 6
+        a0 += ((3*a**2 + 2*a*b) + (-6*a - 2*b) * (X + L * lCoeff)) / 6
     }
 
-    // Multiply by coeff.
-    [a0,a1] = [a0*coeff,a1*coeff]
+    // y *= coeff / beamProperties.Elasticity / beamProperties.Inertia
+    // This result will be EI times the true rotation
+    [a0,a1,a2,a3,a4] = [a0*coeff,a1*coeff,a2*coeff,a3*coeff,a4*coeff]
 
-    return [a0,a1,0,0,0]
-}
+    // From solving arbitrary constants
+    if(beamProperties["Support Type"] === "Simply Supported") {
+        let cantileverBeamProperties = {...beamProperties}
+        cantileverBeamProperties["Support Type"] = "Cantilever"
 
-/**
- * Return the reactions.
- * For cantilever: [0] is reaction, [1] is 0.
- * For simply supported: [0] is left support, [1] is right support.
- */
-function reactionsSingleLoad(load, beamProperties, x){
-    // a-segment is to the left of both supports
-    let a = Math.min(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
-    // b-segment is between both supports
-    let b = Math.max(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"]) - a
-    // c-segment is to the right of both supports
-    let c = beamProperties["Length of Beam"] - b
-
-    let F = load.Mass * beamProperties.Gravity
-    let X = load.Location
-    let L = load.Length
-
-    // Multiplier using mass and gravity
-    let coeff
-    // A number frequently multiplied by L, which depends on load type
-    let lCoeff
-
-    if(load.Type === "Point") {
-        coeff = F
-        lCoeff = 0
-    }
-    else if(load.Type === "Distributed") {
-        coeff = F * L
-        lCoeff = 1/2
-    }
-    else if(load.Type === "Triangular") {
-        coeff = F * L / 2
-        lCoeff = 2/3
+        // y += deflectionSingleLoad(a, load, cantileverBeamProperties)/b
+        a0 += deflectionSingleLoad(load, cantileverBeamProperties, a)*beamProperties.Elasticity*beamProperties.Inertia/b
+        // y -= deflectionSingleLoad(a+b, load, cantileverBeamProperties)/b
+        a0 -= deflectionSingleLoad(load, cantileverBeamProperties, a + b)*beamProperties.Elasticity*beamProperties.Inertia/b
     }
 
-    if(beamProperties["Support Type"] === "Cantilever" || b <= 10**-10)
-        return [coeff, 0]
-    else
-        return [coeff * (1 - (X + L * lCoeff - a)/b), coeff * (X + L * lCoeff - a)/b]
+    return [a0,a1,a2,a3,a4]
 }
 
 /**
@@ -1109,23 +980,14 @@ function formatVal(scale) {
  * Uses the plot's title to determine which function to graph.
  */
 function chooseSingleLoadFunction(title) {
-    if(title === "Deflection Diagram")
-        return deflectionSingleLoad
-    if(title === "Bending Moment Diagram")
-        return bendingMomentSingleLoad
     if(title === "Shear Force Diagram")
         return shearForceSingleLoad
-}
-/**
- * Uses the plot's title to determine which function is the derivative of the graphed function.
- */
- function chooseDerivativeSingleLoadFunction(title) {
-    if(title === "Deflection Diagram")
-        return deflectionSlopePolynomialSingleLoad
     if(title === "Bending Moment Diagram")
-        return bendingMomentSlopePolynomialSingleLoad
-    if(title === "Shear Force Diagram")
-        return shearForceSlopePolynomialSingleLoad
+        return bendingMomentSingleLoad
+    if(title === "Rotation Diagram")
+        return rotationSingleLoad
+    if(title === "Deflection Diagram")
+        return deflectionSingleLoad
 }
 
 export default SidePlot

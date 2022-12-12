@@ -51,7 +51,7 @@ const PropertiesForm = (props) => {
 
     // Function to submit the properties form
     function handleClose(e) {
-        validateInputs(["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity","Pinned Support Position", "Roller Support Position"])
+        validateInputs(["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","Pinned Support Position", "Roller Support Position"])
         if(warning === "") {
             props.setOpen(false)
         } 
@@ -59,10 +59,10 @@ const PropertiesForm = (props) => {
 
     /**
      * This function checks the properties form inputs to ensure that they are valid. 
-     * All inputs must be nonnegative numbers, except Gravity can be negative. Beam length and EI must be nonzero. 
+     * All inputs must be nonnegative numbers. Beam length, elasticity, and inertia must be nonzero. 
      * Support positions must be in-bounds (between 0 and beam length inclusive), and beam length must not be decreased to make any load out-of-bounds.
      * This function also converts the string inputs into number inputs.
-     * Fields include "Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity","Support Type","Pinned Support Position","Roller Support Position"
+     * Fields include "Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","Support Type","Pinned Support Position","Roller Support Position"
      */
      function validateInputs(fields){
         // Clear the errors
@@ -92,15 +92,15 @@ const PropertiesForm = (props) => {
             }
             props.beamProperties[field] = Number(props.beamProperties[field])
 
-            // Check that field >= 0. Gravity can be negative.
-            if(props.beamProperties[field] < 0 && field !== "Gravity") {
+            // Check that field >= 0
+            if(props.beamProperties[field] < 0) {
                 setWarning(field + " must be at least 0.")
                 newInvalidFields.push(field)
                 return
             }
 
-            // Length of Beam and EI cannot be 0
-            if(["Length of Beam", "EI"].includes(field))
+            // Length of Beam, Elasticity, and Inertia cannot be 0
+            if(["Length of Beam", "Elasticity", "Inertia"].includes(field))
                 if(props.beamProperties[field] < 10**-7) {
                     setWarning(field + " cannot be 0.")
                     newInvalidFields.push(field)
@@ -119,19 +119,24 @@ const PropertiesForm = (props) => {
                     newInvalidFields.push(field)
                     return
                 }
+                if(Math.abs(props.beamProperties["Pinned Support Position"] - props.beamProperties["Roller Support Position"]) < 10**-10) {
+                    setWarning("Pinned Support Position and Roller Support Position must not be equal.")
+                    newInvalidFields.push(field)
+                    return
+                }
             }
 
             // If Length of Beam is decreased, preexisting loads might become out of bounds.
             if(field === "Length of Beam")
                 // Check that existing loads are not invalidated by length of beam change.
                 props.loads.forEach(load =>{
-                    if(load.Type === "Point" && load.Location > props.beamProperties["Length of Beam"]) {
-                        setWarning(load.Name + " location must be less than or equal to Length of Beam.")
+                    if(load.Type === "Point" && load.L1 > props.beamProperties["Length of Beam"]) {
+                        setWarning(load.Name + " is out of bounds (Located at " + load.L1 + ", must be less than or equal to Length of Beam).")
                         if(!newInvalidFields.includes(field))
                             newInvalidFields.push(field)
                     }
-                    else if(load.Type !== "Point" && load.Location + load.Length > props.beamProperties["Length of Beam"]) {
-                        setWarning("Right end of " + load.Name + " is out of bounds (Location is " + (load.Location + load.Length) + ", must be less than or equal to Length of Beam).")
+                    else if(load.Type !== "Point" && load.L2 > props.beamProperties["Length of Beam"]) {
+                        setWarning("Right endpoint of " + load.Name + " is out of bounds (Located at " + load.L2 + ", must be less than or equal to Length of Beam).")
                         if(!newInvalidFields.includes(field))
                             newInvalidFields.push(field)
                     }
@@ -146,7 +151,7 @@ const PropertiesForm = (props) => {
             {/* Enter beam properties */}
             <div>
                 <h3 style={{marginBottom: 0}}>Beam Properties</h3>
-                {["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","EI","Gravity"].map(field=>{
+                {["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA"].map(field=>{
                     return(
                     <div key={field}>{field}:
                         <input type="text"
@@ -226,12 +231,21 @@ function loadRadioButtonsCreator(loads){
         labels.push(<FormControlLabel control={<Radio/>}
             value={loadID}
             key={loadID}
-            label={"Name = " + load.Name + 
-                ", Type = " + load.Type + 
-                ": Location = " + (load.Location + load.Length / 2) +  // Convert to display format, where location = the middle of the load
-                ", Mass = " + load.Mass + 
-                (load.Type!=="Point" ? ", Length = " + load.Length : "") + 
-                (load.Type==="Triangular" ? ", Taller End = " + load["Taller End"] : "")}
+            label={"Name: " + load.Name + ", " +
+                "Type: " + load.Type + ", " + 
+                (load.Type==="Point" ? 
+                    "Location: " + load.L1 + ", " + 
+                    "Load Force: " + load["Load Force"] + ", "
+                :(load.Type==="Distributed" ? 
+                    "Left Location: " + load.L1 + ", " +
+                    "Right Location: " + load.L2 + ", " + 
+                    "Load per Length: " + load["Load Force"] + ", "
+                :
+                    "Left Location: " + load.L1 + ", " +
+                    "Right Location: " + load.L2 + ", " + 
+                    "Max Load per Length: " + load["Load Force"] + ", " +
+                    "Taller End: " + load["Taller End"]
+            ))}
         />)
     )
         

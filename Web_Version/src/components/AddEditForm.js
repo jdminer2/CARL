@@ -3,7 +3,7 @@ import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogT
 
 /**
  * This component displays a menu where users can add or edit a load.
- * They may set the load's name, type, location, mass, length, and for triangular loads, they may set which side is taller.
+ * They may set the load's name, type, location of endpoints, load force, and for triangular loads, they may set which side is taller.
  * 
  * Props:
  * loads
@@ -24,10 +24,10 @@ const AddEditForm = (props) => {
     // The data being entered in the add/edit form
     const [newLoad, setNewLoad] = useState({Name:getFreeName(props.loads),
                                             Type:"Point", 
-                                            Location:getSafePosition(props.beamProperties),
-                                            Mass:10.0,
-                                            Length:0,
-                                            ["Taller End"]: "Left", 
+                                            L1:getSafePosition(props.beamProperties),
+                                            L2:getSafePosition(props.beamProperties),
+                                            ["Load Force"]:10.0,
+                                            ["Taller End"]:"Left", 
                                             Color:getRandomColor()})
 
     // The warning text in the form
@@ -44,9 +44,9 @@ const AddEditForm = (props) => {
         else if(props.action === "Add") {
             setNewLoad({Name:getFreeName(props.loads),
                 Type:"Point",
-                Location:getSafePosition(props.beamProperties),
-                Mass:10.0,
-                Length:props.beamProperties["Length of Beam"] / 2,
+                L1:getSafePosition(props.beamProperties),
+                L2:getSafePosition(props.beamProperties),
+                ["Load Force"]:10.0,
                 ["Taller End"]:"Left",
                 Color:getRandomColor()})
             // Display add/edit form in add mode.
@@ -61,9 +61,9 @@ const AddEditForm = (props) => {
             let load = props.loads[props.selectedLoadID]
             setNewLoad({Name:load.Name, 
                         Type:load.Type,
-                        Location:load.Location + load.Length / 2, // Convert to display format, where location = the middle of the load
-                        Mass:load.Mass,
-                        Length:load.Length > 0?load.Length:props.beamProperties["Length of Beam"] / 2,
+                        L1:load.L1,
+                        L2:load.L2!=load.L1?load.L2:Math.min(props.beamProperties["Length of Beam"], load.L1 + props.beamProperties["Length of Beam"]/4),
+                        ["Load Force"]:load["Load Force"],
                         ["Taller End"]:load["Taller End"],
                         Color:load.Color})
             // Display add/edit form in edit mode.
@@ -82,20 +82,17 @@ const AddEditForm = (props) => {
             return
         }
         // If errors are present and user attempted to submit, do nothing and leave the form open.
-        validateInputs(["Name","Location","Mass","Length"])
+        validateInputs(["Name","L1","L2","Load Force"])
         if(warning !== "")
             return
 
         props.setOpen(false)
 
-        // Simplifies calculations if we can read point loads' Length as 0
+        // Simplifies calculations if we can read point loads' length as 0
         if(newLoad.Type === "Point")
-            newLoad.Length = 0
+            newLoad.L2 = newLoad.L1
         if(newLoad.Type !== "Triangular")
             newLoad["Taller End"] = "Left"
-
-        // Convert Location from display format (Location = middle of beam) to internal format (Location = left end of beam)
-        newLoad.Location -= newLoad.Length / 2
 
         if(addOrEditMode === "Add") {
             props.loads.push(newLoad)
@@ -142,7 +139,7 @@ const AddEditForm = (props) => {
                 }
             }
 
-            if(["Location", "Mass", "Length"].includes(field)) {
+            if(["L1", "L2", "Load Force"].includes(field)) {
                 // Check that field is a number.
                 if(parseFloat(newLoad[field]) != newLoad[field]){
                     setWarning(field + " must be a number.")
@@ -152,40 +149,34 @@ const AddEditForm = (props) => {
                 newLoad[field] = Number(newLoad[field])
             }
 
-            if(field === "Length" && newLoad.Type !== "Point") {
-                if(newLoad[field] <= 0) {
-                    setWarning("Length must be greater than 0.")
-                    newInvalidAddEditFields.push(field)
-                    return
-                }
-            }
-
-            if((["Location", "Length"].includes(field))) {
+            if((["L1", "L2"].includes(field))) {
                 // Check that load location is in-bounds, for point load.
                 if(newLoad.Type === "Point") {
-                    if(newLoad.Location < 0) {
-                        setWarning("Location must be at least 0.")
+                    if(newLoad.L1 < 0) {
+                        setWarning("L1 must be at least 0.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
-                    if(newLoad.Location > props.beamProperties["Length of Beam"]) {
-                        setWarning("Location must be less than or equal to Length of Beam.")
+                    if(newLoad.L1 > props.beamProperties["Length of Beam"]) {
+                        setWarning("L1 must be less than or equal to Length of Beam.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
                 }
-                // Check that left and right ends of the load are in-bounds, for long loads.
+                // Check that left and right ends of the load are in-bounds, and left end is to the left of right end, for long loads.
                 else {
-                    // While the form is open, newLoad.location refers to the middle of the load instead of the left end.
-                    let leftEnd = newLoad.Location - newLoad.Length / 2
-                    if(leftEnd < 0) {
-                        setWarning("Left end of load is out of bounds (Location is " + leftEnd + ", must be at least 0).")
+                    if(newLoad.L1 < 0) {
+                        setWarning("L1 must be at least 0.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
-                    let rightEnd = newLoad.Location + newLoad.Length / 2
-                    if(rightEnd > props.beamProperties["Length of Beam"]){
-                        setWarning("Right end of load is out of bounds (Location is " + rightEnd + ", must be less than or equal to Length of Beam).")
+                    if(newLoad.L2 <= newLoad.L1) {
+                        setWarning("L2 must be greater than L1.")
+                        newInvalidAddEditFields.push(field)
+                        return
+                    }
+                    if(newLoad.L2 > props.beamProperties["Length of Beam"]) {
+                        setWarning("L2 must be less than or equal to Length of Beam.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
@@ -225,7 +216,7 @@ const AddEditForm = (props) => {
                         value={newLoad.Type}
                         onChange={val=>{
                             newLoad.Type = val.target.value
-                            validateInputs("Length")
+                            validateInputs("L2")
                         }}
                     >
                         <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
@@ -233,63 +224,67 @@ const AddEditForm = (props) => {
                         <FormControlLabel value="Triangular" control={<Radio />} label="Triangular Load" />
                     </RadioGroup>
                 </FormControl>
-                {/* location textbox */}
+                {/* L1 textbox */}
                 <TextField
                     margin="dense"
-                    label="Location"
+                    label={newLoad.Type==="Point"?"Location of Load":"Left Endpoint Location"}
                     type="text"
-                    defaultValue={newLoad.Location}
+                    defaultValue={newLoad.L1}
                     onChange={val=>{
-                        newLoad.Location = val.target.value
-                        validateInputs("Location")
+                        newLoad.L1 = val.target.value
+                        validateInputs("L1")
                     }}
                     fullWidth
                     variant="standard"
                 />
-                {/* mass textbox
-                    Point Load -> mass, Distributed Load -> mass per meter, Triangular Load -> mass per meter at the taller end */}
+                {/* L2 textbox, hidden for point loads */}
+                {newLoad.Type==="Point"?[]:
+                    <TextField
+                        margin="dense"
+                        label="Right Endpoint Location"
+                        type="text"
+                        defaultValue={newLoad.L2}
+                        onChange={val=>{
+                            newLoad.L2 = val.target.value
+                            validateInputs("L2")
+                        }}
+                        fullWidth
+                        variant="standard"
+                    />
+                }
+                {/* load force textbox
+                    Point Load -> Load Force, Distributed Load -> Load Force Per Unit Length, Triangular Load -> Max Load Force Per Unit Length */}
                 <TextField
                     margin="dense"
-                    label={newLoad.Type==="Point"?"Mass":newLoad.Type==="Distributed"?"Mass Per Meter":"Mass Per Meter at Taller End"}
-                    defaultValue={newLoad.Mass}
+                    label={newLoad.Type==="Point"?"Load Force":newLoad.Type==="Distributed"?"Load Force Per Unit Length":"Max Load Force Per Unit Length"}
+                    defaultValue={newLoad["Load Force"]}
                     type="text"
                     onChange={val=>{
-                        newLoad.Mass = val.target.value
-                        validateInputs("Mass")
+                        newLoad["Load Force"] = val.target.value
+                        validateInputs("Load Force")
                     }}
                     fullWidth
                     variant="standard"
-                />
-                {/* length textbox, disabled for point loads */}
-                <TextField
-                    margin="dense"
-                    label="Length (Non-Point Loads Only)"
-                    type="text"
-                    defaultValue={newLoad.Length}
-                    onChange={val=>{
-                        newLoad.Length = val.target.value
-                        validateInputs("Length")
-                    }}
-                    fullWidth
-                    variant="standard"
-                    disabled={newLoad.Type==="Point"}
                 />
                 {/* radio buttons for triangular loads to decide which end is taller */}
-                <FormControl>
-                    <FormLabel id="tallerEndRadios" sx={{mt:1}}>Taller End of the Load (Triangular Loads Only)</FormLabel>
-                    <RadioGroup
-                        row
-                        aria-labelledby="tallerEndRadios"
-                        value={newLoad["Taller End"]}
-                        onChange={val=>{
-                            newLoad["Taller End"] = val.target.value
-                            validateInputs("Length")
-                        }}
-                    >
-                        <FormControlLabel value="Left" control={<Radio />} label="Left" disabled={newLoad.Type!=="Triangular"}/>
-                        <FormControlLabel value="Right" control={<Radio />} label="Right" disabled={newLoad.Type!=="Triangular"}/>
-                    </RadioGroup>
-                </FormControl>
+                {newLoad.Type!=="Triangular"?[]:
+                    <FormControl>
+                        <FormLabel id="tallerEndRadios" sx={{mt:1}}>Taller End of the Load (Triangular Loads Only)</FormLabel>
+                        <RadioGroup
+                            row
+                            aria-labelledby="tallerEndRadios"
+                            value={newLoad["Taller End"]}
+                            onChange={val=>{
+                                newLoad["Taller End"] = val.target.value
+                                // Necessary to make the radiobuttons re-render when clicked and show a change
+                                validateInputs("L2")
+                            }}
+                        >
+                            <FormControlLabel value="Left" control={<Radio />} label="Left"/>
+                            <FormControlLabel value="Right" control={<Radio />} label="Right"/>
+                        </RadioGroup>
+                    </FormControl>
+                }
             </DialogContent>
             {/* warning label for invalid inputs */}
             <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{warning}</DialogContentText>

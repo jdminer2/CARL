@@ -13,14 +13,12 @@ function CombinedLoadApp(){
     const [loads,setLoads] = useState([])
     // Elasticity, Inertia, Density, Area, Damping Ratio, and rA are used in dynamic beam swaying, which is not implemented currently
     const [beamProperties,setBeamProperties] = useState({["Length of Beam"]: 100, 
-                                                         Elasticity: 1.0, 
-                                                         Inertia: 1.0, 
+                                                         Elasticity: 29000.0, 
+                                                         Inertia: 2000.0, 
                                                          Density: 1.0, 
                                                          Area: 1.0, 
                                                          ["Damping Ratio"]:0.02, 
-                                                         rA: 85000.0, 
-                                                         EI: 210000000000.0, 
-                                                         Gravity:1,
+                                                         rA: 85000.0,
                                                          ["Support Type"]: "Simply Supported",
                                                          ["Pinned Support Position"]: 0,
                                                          ["Roller Support Position"]: 100})
@@ -94,7 +92,7 @@ function CombinedLoadApp(){
     /**
      * Function that manages keyboard controls.
      * User may submit forms by pressing Enter, 
-     * use the arrow keys to jump or move the load left or right,
+     * use the arrow keys to move the load left or right,
      * or press the delete key to delete a load.
      */
      function handleKeyDown(event){
@@ -143,16 +141,10 @@ function CombinedLoadApp(){
                 handleClickDelete()
             // Left arrow outside of textboxes
             else if(event.keyCode == 37 && document.activeElement.type !== "text")
-                moveSelectedLoad(-beamProperties["Length of Beam"]/100,1,10)
-            // Up arrow (Jump) outside of textboxes
-            else if(event.keyCode == 38 && document.activeElement.type !== "text")
-                moveSelectedLoad(0,5,10)
+                moveSelectedLoad(-1*beamProperties["Length of Beam"]/100,1,10)
             // Right arrow outside of textboxes
             else if(event.keyCode == 39 && document.activeElement.type !== "text")
                 moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)
-            // Down arrow outside of textboxes
-            else if(event.keyCode == 40 && document.activeElement.type !== "text")
-                ; // Do nothing. Just prevent scroll-down
             else
                 return
         }
@@ -167,13 +159,18 @@ function CombinedLoadApp(){
             return
         let load = loads[selectedLoadID]
 
-        let newLoc = load.Location + disp
+        // Constrain movement to be in-bounds
+        disp = Math.min(disp, beamProperties["Length of Beam"] - load.L2)
+        disp = Math.max(disp, -1*load.L1)
+
+        let newL1 = load.L1 + disp
+        let newL2 = load.L2 + disp
         // Round off floating point
-        newLoc = formatVal(newLoc)(newLoc)
-        // Constrain newLoc to be in-bounds
-        newLoc = Math.max(newLoc, 0)
-        newLoc = Math.min(newLoc, beamProperties["Length of Beam"] - load.Length)
-        load.Location = newLoc
+        newL1 = Number(formatVal(newL1)(newL1))
+        newL2 = Number(formatVal(newL2)(newL2))
+        // Set values
+        load.L1 = newL1
+        load.L2 = newL2
 
         reRender()
     }
@@ -249,12 +246,11 @@ function CombinedLoadApp(){
                         {loads.map((load, loadID) => {
                             if(load.Type === "Point")
                                 return
-
-                            let data = [{x: load.Location, y: 8 * (930 / (window.innerHeight - 100))}, 
-                                        {x: (load.Location+load.Length), y: 8 * (930 / (window.innerHeight - 100))}]
+                            let data = [{x: load.L1, y: 8 * (930 / (window.innerHeight - 100))}, 
+                                        {x: load.L2, y: 8 * (930 / (window.innerHeight - 100))}]
                             if(load.Type === "Triangular") {
-                                data.push({x: load.Location + ((load["Taller End"]==="Right")?load.Length:0), y: 20 * (930 / (window.innerHeight - 100))},
-                                          {x: load.Location, y: 8 * (930 / (window.innerHeight - 100))})
+                                data.push({x: (load["Taller End"]==="Left")?load.L1:load.L2, y: 20 * (930 / (window.innerHeight - 100))},
+                                          {x: load.L1, y: 8 * (930 / (window.innerHeight - 100))})
                             }
 
                             return (
@@ -280,9 +276,7 @@ function CombinedLoadApp(){
                     </div>
                     <div>
                         {/* Control buttons */}
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(-beamProperties["Length of Beam"]/100,1,10)}}>&#8592;</Button>
-                        {/* Jump is used in dynamic swaying, which is not implemented yet */}
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(0,5,10)}}>JUMP</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(-1*beamProperties["Length of Beam"]/100,1,10)}}>&#8592;</Button>
                         <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)}}>&#8594;</Button>
                     </div>
                     <Button variant="contained" sx={{margin:0.5}} onClick={handleClickProperties}>Edit Properties</Button>
@@ -293,7 +287,6 @@ function CombinedLoadApp(){
                             <Table sx={{minWidth: 500}}>
                                 <TableHead>Keyboard Shortcuts</TableHead>
                                 <TableBody>{[["Left/Right Arrows:", "Move Selected Load"],
-                                             ["Up Arrow:", "Jump"],
                                              ["Insert:", "Add Load"],
                                              ["End:", "Edit Selected Load"],
                                              ["Delete:", "Delete Selected Load"],
@@ -312,12 +305,11 @@ function CombinedLoadApp(){
                 {/* Right Columns */}
                 <div style={{height:(innerWidth > 500) ? window.innerHeight - 100: "", width:(innerWidth > 500) ? "60%" : "", overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
-                    {/* Deflection Diagram */}
-                    <SidePlot title="Deflection Diagram"
+                    {/* Shear Force Diagram */}
+                    <SidePlot title="Shear Force Diagram"
                               loads={loads}
                               beamProperties={beamProperties}
-                              showReactions
-                              showGlobalExtreme
+                              color="red"
                     />
                     
                     {/* Bending Moment Diagram */}
@@ -325,14 +317,19 @@ function CombinedLoadApp(){
                               loads={loads}
                               beamProperties={beamProperties}
                               color="black"
-                              showGlobalExtreme
                     />
                     
-                    {/* Shear Force Diagram */}
-                    <SidePlot title="Shear Force Diagram"
+                    {/* Rotation Diagram */}
+                    <SidePlot title="Rotation Diagram"
                               loads={loads}
                               beamProperties={beamProperties}
-                              color="red"
+                              color="grey"
+                    />
+
+                    {/* Deflection Diagram */}
+                    <SidePlot title="Deflection Diagram"
+                              loads={loads}
+                              beamProperties={beamProperties}
                     />
                 </div>
             </div>
@@ -342,7 +339,7 @@ function CombinedLoadApp(){
 
 /**
  * Function to create load labels and arrows for the Load Location plot.
- * For point loads it puts load name, position, and mass, with an arrow.
+ * For point loads it puts load name, position, and load force, with an arrow.
  * For long loads it also includes length, and puts many mini-arrows.
  * This function is not responsible for the line/triangle parts of long loads.
  * Point load labels are higher than the rest to reduce the amount of overlapping text.
@@ -355,12 +352,18 @@ function labelMakerForLoads(loads, beamProperties, selectedLoadID){
         let isSelected = loadID == selectedLoadID
 
         // xLoc is the center of the load. It serves as the location for labels, and the x coordinate users see for loads.
-        let xLoc = load.Location + load.Length/2 // Convert to display format, where position = the middle of the load
+        let xLoc = (load.L1 + load.L2)/2 // Convert to display format, where position = the middle of the load
 
-        // For selected load, the stats will be labelled with letters. For non-point loads, length will be included.
-        let statsLabel = (isSelected?"x=":"") + xLoc + ", " + (isSelected?"m=":"") + load.Mass
-        if(load.Type !== "Point")
-            statsLabel += ", " + (isSelected?"L=":"") + load.Length
+        // For selected load, the stats will be labelled with letters.
+        let statsLabel = ""
+        if(load.Type === "Point") {
+            statsLabel += (isSelected?"X=":"") + load.L1 + ", "
+        }
+        else {
+            statsLabel += (isSelected?"L1=":"") + load.L1 + ", "
+            statsLabel += (isSelected?"L2=":"") + load.L2 + ", "
+        }
+        statsLabel += (isSelected?"W=":"") + load["Load Force"]
 
         // Load name and stats labels. For point loads it will be 10 units higher.
         data.push({x: xLoc, y: 0, yOffset: (isPoint?-75:-55), label: load.Name, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
@@ -385,12 +388,12 @@ function labelMakerForLoads(loads, beamProperties, selectedLoadID){
  */
 function getLoadArrows(data, load, loadID, beamLength){
     if(load.Type === "Point")
-        data.push({x: load.Location, y: 0, yOffset: 10, label: "\u2193", loadID: loadID, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
+        data.push({x: load.L1, y: 0, yOffset: 10, label: "\u2193", loadID: loadID, style: {fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
     else {
-        let numArrows = Math.floor(load.Length / beamLength * 20) + 1
+        let numArrows = Math.floor((load.L2 - load.L1) / beamLength * 20) + 1
         // Evenly spaced
         for(let i = 0; i <= numArrows; i++) {
-            let x = load.Location + (i/numArrows) * load.Length
+            let x = load.L1 + (i/numArrows) * (load.L2 - load.L1)
             data.push({x: x, y: 0, yOffset: 6, label: "\u2193", loadID: loadID, style: {fontSize: 25, font: "verdana", fill: load.Color, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }
     }
