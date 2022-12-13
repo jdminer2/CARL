@@ -14,15 +14,15 @@ function SidePlot (props) {
     // The scale of the plot
     const [scale, setScale] = useState(1)
     // The selected coordinate on the plot
-    const [coord,setCoord] = useState({title:props.title, x:0, y:0})
+    const [coord,setCoord] = useState({title:props.title, x:0, y:[0,0]})
     
     // Gives (x,y) plot points for diagram, and updates the scale for the plot.
     function diagram() {
         // The list of x-values to plot in a line plot.
         const xValues = []
         // Every 100th of the beam
-        for(let i = 0; i <= 100; i++)
-            xValues.push((i/100)*props.beamProperties["Length of Beam"])
+        for(let i = 0; i <= 1000; i++)
+            xValues.push((i/1000)*props.beamProperties["Length of Beam"])
         // The endpoints of each load
         props.loads.forEach(load => 
             xValues.push(load.L1, load.L2)
@@ -34,7 +34,9 @@ function SidePlot (props) {
         let plotData = []
         xValues.forEach(xValue => {
             let yValue = sumFunction(chooseSingleLoadFunction(props.title), props.loads, props.beamProperties, xValue)
-            plotData.push({x:xValue, y:yValue[0]}, {x:xValue, y:yValue[1]})
+            plotData.push({x:xValue, y:yValue[0]})
+            if(abs(yValue[0]-yValue[1]) >= 10**-10)
+                plotData.push({x:xValue, y:yValue[1]})
         })
 
         // Update plot scale if needed
@@ -58,11 +60,6 @@ function SidePlot (props) {
             x = Number(formatVal(x)(x))
             if(x >= 0 && x <= props.beamProperties["Length of Beam"]) {
                 y = sumFunction(chooseSingleLoadFunction(props.title), props.loads, props.beamProperties, x)
-                if(abs(y[0]-y[1]) >= 10**-10) {
-                    y = ""
-                }
-                else
-                    y = formatVal(y[0])(y[0])
             }
         }
         // Do not update x if isTyping, or else textbox's contents will be changed as the user is typing
@@ -104,15 +101,7 @@ function SidePlot (props) {
             {/* Side Info */}
             <div style={{display:"flex", alignItems:"center", justifyContent:"center", width:"100%"}}>
                 <div>
-                    {/* Current coordinates */}
-                    {coord.title}<br/>
-                    x=<input type="text"
-                        value={coord.x}
-                        style={{width:50}}
-                        onChange={(e) => {
-                            updateCoord(e.target.value, true)
-                        }}
-                    />, y={coord.y}<br/>
+                    {displayCoord(coord,updateCoord)}
                     {props.title === "Deflection Diagram"?
                     /* Maximum Deflection (Deflection Plot only) */
                     <div>
@@ -122,6 +111,32 @@ function SidePlot (props) {
                     :""}
                 </div>
             </div>
+        </div>
+    )
+}
+
+/**
+ * Create text displaying the currently viewed coordinate for a plot.
+ * If the y value undergoes instant change at the selected x value, display yLeft and yRight.
+ */
+function displayCoord(coord, updateCoord) {
+    let y = coord.y
+    let yString
+    if(abs(y[0]-y[1]) >= 10**-10)
+        yString = "yLeft=" + formatVal(y[0])(y[0]) + ", yRight=" + formatVal(y[1])(y[1])
+    else
+        yString = "y=" + formatVal(y[0])(y[0])
+
+    return(
+        <div>
+            {coord.title}<br/>
+            x=<input type="text"
+                value={coord.x}
+                style={{width:50}}
+                onChange={(e) => {
+                    updateCoord(e.target.value, true)
+                }}
+            />, {yString}
         </div>
     )
 }
@@ -251,10 +266,11 @@ function getCriticalPoints(loads, beamProperties) {
  */
 function getSegmentEndpoints(loads, beamProperties) {
     let segmentEndpoints = []
-    // Edges of the range to find extrema in
+    // Edges of the beam
     segmentEndpoints.push(0, beamProperties["Length of Beam"])
     // Supports in the beam
-    segmentEndpoints.push(beamProperties["Roller Support Position"], beamProperties["Length of Beam"])
+    if(beamProperties["Support Type"] === "Simply Supported")
+        segmentEndpoints.push(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // Locations/Endpoints of all loads
     loads.forEach(load => 
         segmentEndpoints.push(load.L1, load.L2)
