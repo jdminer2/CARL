@@ -5,36 +5,59 @@ import {complex,add,subtract,multiply,divide,sqrt,cbrt,abs} from 'mathjs'
 
 /**
  * Props:
- * title - title of the plot, also controls whether reactions/maximum deflection are shown
- * loads - loads for calculating graphs
- * beamProperties - beam properties for calculating graphs
- * color - color of the graph curve
+ * title - title of the plot, also determines whether reactions/maximum deflection are shown
+ * loads - loads for calculations
+ * beamProperties - beam properties for calculations
+ * steps - number of x-values that will be drawn on the plot, and that can be selected using mouse hover. 
+ *         Does not affect accuracy of calculations, only smoothness of the graph.
+ *         More steps = more fine detail plotted, but more lag.
+ * color - color of the plot curve
  */
 function SidePlot (props) {
     // The scale of the plot
     const [scale, setScale] = useState(1)
     // The selected coordinate on the plot
     const [coord,setCoord] = useState({title:props.title, x:0, y:[0,0]})
-    
+
     // Gives (x,y) plot points for diagram, and updates the scale for the plot.
     function diagram() {
         // The list of x-values to plot in a line plot.
         const xValues = []
-        // Every 100th of the beam
-        for(let i = 0; i <= 1000; i++)
-            xValues.push((i/1000)*props.beamProperties["Length of Beam"])
+
+        // A certain number of evenly spaced steps on the beam, including the endpoints
+        for(let i = 0; i <= props.steps; i++)
+            xValues.push((i/props.steps)*props.beamProperties["Length of Beam"])
+
+        // The support locations if applicable
+        if(props.beamProperties["Support Type"] === "Simply Supported")
+            xValues.push(props.beamProperties["Pinned Support Position"], props.beamProperties["Roller Support Position"])
+
         // The endpoints of each load
-        props.loads.forEach(load => 
+        props.loads.forEach(load =>
             xValues.push(load.L1, load.L2)
         )
-        // Sort the x values so the line plot goes through each point in ascending order, not back and forth
-        xValues.sort((a,b)=>(a > b)? 1 : -1)
 
-        // Calculate the y values.
+        // Sort the x values so the line plot connects each point from left to right, not skipping and going back and forth
+        xValues.sort((a,b)=>(a > b)? 1 : -1)
+        // Remove duplicates to reduce lag
+        let prev = -1
+        for(let i = 0; i < xValues.length; i++) {
+            let val = xValues[i]
+            if(val == prev) {
+                // Delete val
+                xValues.splice(i,1)
+                i--
+            }
+            else
+                prev = xValues[i]
+        }
+
+        // Calculate and plot the y values.
         let plotData = []
         xValues.forEach(xValue => {
             let yValue = sumFunction(chooseSingleLoadFunction(props.title), props.loads, props.beamProperties, xValue)
             plotData.push({x:xValue, y:yValue[0]})
+            // If instant change, plot the second value
             if(abs(yValue[0]-yValue[1]) >= 10**-10)
                 plotData.push({x:xValue, y:yValue[1]})
         })
@@ -51,7 +74,7 @@ function SidePlot (props) {
      * Update the selected coordinate of the plot
      * enteredX is the x-value to update to
      * isTyping is true if the coordinate was changed via the textbox, false if it was changed via mouse movement
-     */ 
+     */
     function updateCoord(enteredX, isTyping){
         let x = enteredX
         let y = coord.y
@@ -62,7 +85,7 @@ function SidePlot (props) {
                 y = sumFunction(chooseSingleLoadFunction(props.title), props.loads, props.beamProperties, x)
             }
         }
-        // Do not update x if isTyping, or else textbox's contents will be changed as the user is typing
+        // Do not update x if isTyping, or else textbox's contents will be changed as the user is typing, may prevent user from typing trailing 0 after decimal point
         setCoord({title:coord.title, x:(isTyping?enteredX:x), y:y})
     }
 
@@ -84,7 +107,8 @@ function SidePlot (props) {
     return (
         <div className={"rowC"}>
             {/* Plot */}
-            <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth * ((innerWidth > 500) ? 0.4 : 2/3)} xDomain={[0,props.beamProperties["Length of Beam"]]} yDomain ={[scale, scale]} margin = {{left:60, right:60}}>
+            <XYPlot height={window.innerHeight * 0.5} width={window.innerWidth * ((innerWidth > 500) ? 0.4 : 2/3)} 
+                    xDomain={[0,props.beamProperties["Length of Beam"]]} yDomain ={[scale, scale]} margin = {{left:60, right:60}}>
                 <VerticalGridLines/>
                 <HorizontalGridLines/>
                 <XAxis tickFormat = {formatVal(props.beamProperties["Length of Beam"])} title = {props.title}/>
@@ -95,7 +119,7 @@ function SidePlot (props) {
                 <LineSeries data={diagram()} onNearestX = {(datapoint,e) => updateCoord(datapoint.x, false)} color={props.color}/>
                 {/* Current X indicator (if valid X) */}
                 {validX() ? <LineSeries data = {[{x:coord.x, y:scale}, {x:coord.x, y:-1*scale}]} color="grey" strokeWidth="1px"/>:[]}
-                {/* Reaction labels (optional) */}
+                {/* Reaction labels (if applicable) */}
                 {<LabelSeries data={reactions(props.title, props.loads, props.beamProperties)}/>}
             </XYPlot>
             {/* Side Info */}
@@ -154,15 +178,19 @@ function reactions(title, loads, beamProperties) {
     let pinnedSupportPos = beamProperties["Pinned Support Position"]
     let rollerSupportPos = beamProperties["Roller Support Position"]
 
-    // Compute the reactions, R1 (left support) and R2 (right support)
+    // Sum reactions from single load
+    // For simply supported, R1 is left support and R2 is right
+    // For cantilever, R1 contains shear reaction and R2 contains moment reaction
     let [R1,R2] = sumFunction(reactionsSingleLoad, loads, beamProperties, 0)
 
-    // Cantilever reaction arrow
+    // Cantilever reactions
     if(beamProperties["Support Type"] === "Cantilever") {
+        // Shear force reaction
         if(title === "Shear Force Diagram") {
             reactionLabels.push({x: 0, y: 0, yOffset: 32, label: "\u2191", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             reactionLabels.push({x: 0, y: 0, yOffset: 43, label: formatVal(R1)(R1), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         }
+        // Bending moment reaction
         else {
             reactionLabels.push({x: 0, y: 0, yOffset: 20, label: "\u21ba", style: {fontSize: 35, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle"}})
             reactionLabels.push({x: 0, y: 0, yOffset: 43, label: formatVal(R2)(R2), style: {fontSize: 15, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
@@ -174,6 +202,7 @@ function reactions(title, loads, beamProperties) {
         if(title !== "Shear Force Diagram")
             return reactionLabels
         
+        // Match R1 and R2 to pinned or roller supports
         let pinnedReaction, rollerReaction
         if(pinnedSupportPos < rollerSupportPos)
             [pinnedReaction, rollerReaction] = [R1,R2]
@@ -200,10 +229,10 @@ function reactions(title, loads, beamProperties) {
  * Finds the maximum absolute value of deflection for the beam.
  */ 
  function maximumDeflection(loads, beamProperties) {
-    // Get all candidate points for local extrema
+    // Get all candidate points for extrema. The max must be among these candidates.
     let criticalPoints = getCriticalPoints(loads, beamProperties)
     
-    // Deflection function
+    // Simplified deflection function
     let yAtX = x => sumFunction(deflectionSingleLoad, loads, beamProperties, x)
 
     // Find the max absolute value from the candidate points
@@ -230,7 +259,7 @@ function reactions(title, loads, beamProperties) {
 }
 
 /**
- * According to the first derivative test, max/min can only occur when slope is 0 or undefined, or at endpoints.
+ * According to the first derivative test, extrema can only occur when slope is 0 or undefined, or at endpoints.
  * This function finds all of the points where slope is 0 or undefined, or endpoints.
  */
 function getCriticalPoints(loads, beamProperties) {
@@ -240,8 +269,8 @@ function getCriticalPoints(loads, beamProperties) {
     let criticalPoints = []
     // For each segment of the beam
     for(let i = 0; i < segmentEndpoints.length - 1; i++) {
+        // Find slope polynomial at the midpoint of the segment
         let midpoint = (segmentEndpoints[i] + segmentEndpoints[i+1])/2
-        // Find slope polynomial for this segment, summing all single-load polynomials
         let polynomial = [0,0,0,0,0]
         getSubloads(loads,beamProperties).forEach(load=>{
             deflectionSlopePolynomialSingleLoad(load, beamProperties, midpoint).forEach((a,i)=>{
@@ -254,14 +283,14 @@ function getCriticalPoints(loads, beamProperties) {
                 criticalPoints.push(value)
         })
     }
-    // Get segment endpoints
+    // Add segment endpoints
     criticalPoints = criticalPoints.concat(segmentEndpoints)
 
     return criticalPoints
 }
 
 /**
- * The beam has segments, where each segment has its own polynomial.
+ * If the beam is split into segments by the support locations and load endpoints, each segment will have its own polynomial for slope.
  * This function finds the endpoints of each segment, sorted in ascending order.
  */
 function getSegmentEndpoints(loads, beamProperties) {
@@ -375,17 +404,20 @@ function findRoots(polynomial) {
         return [-1*b/a]
     // Constant
     } else
-        // If constant non-zero, never 0. If constant zero, always 0 but no points need to be returned.
+        // If constant non-zero, never 0, so no points need to be returned. 
+        // If constant zero, always 0, but still no points need to be returned
+        // because in that case the deflection will have constant height, 
+        // and extrema evaluation already considers the endpoints of this segment which will find that same constant height.
         return []
 }
 
 /** 
  * Takes a function that applies to a single load, applies it to every load and returns the sum. 
  * Can also sum arrays of length 2.
- * For plots, if [0] and [1] are different, it means instant increase/decrease. [0] connects to the plot to the left, and [1] connects to the plot on the right.
- * For reactions, [0] is the left reaction, [1] is the right reaction.
+ * For plots, if [0] and [1] are different, it means instant change in y. [0] connects to the plot to the left, and [1] connects to the plot to the right.
+ * For reactions, [0] is the left reaction, [1] is the right reaction, or [0] is the shear reaction and [1] is the moment reaction.
  * 
- * Even if the function being summed does not return an array, the result of the sum will always be a 2-length array.
+ * Even if the function being summed does not return an array, the result of the sum will always be converted to a 2-length array.
  */
 function sumFunction(singleLoadFunction, loads, beamProperties, x) {
     let y = [0,0]
@@ -406,10 +438,9 @@ function sumFunction(singleLoadFunction, loads, beamProperties, x) {
 /**
  * Convert each taller-end-left triangle into a taller-end-right triangle subtracted from a rectangle
  */
-function getSubloads(loads, beamProperties) {
+function getSubloads(loads) {
     let newLoads = []
 
-    // Convert triangles with taller left-end to taller right-end
     loads.forEach(load => {
         if(load.Type === "Triangular" && load["Taller End"] === "Left") {
             newLoads.push({["Load Force"]:-1*load["Load Force"], L1:load.L1, L2:load.L2, Type:"Triangular", ["Taller End"]:"Right"})
@@ -815,10 +846,10 @@ function deflectionSingleLoad(load, beamProperties, x) {
 }
 
 /**
- * Function used for finding zeroes of rotation/critical points of deflection.
+ * Function used for finding zeroes of rotation/candidate extrema of deflection.
  * 
- * Integral of bending moment; slope of deflection times EI. 
- * Cannot use true rotation or else some coefficients will be too small and root-finder will consider it equal to 0.
+ * Integral of bending moment; rotation times EI. 
+ * Cannot use true rotation or else some coefficients may be too small and root-finder will consider it equal to 0.
  * This function returns an array instead of a value. [a0,a1,a2,a3,a4] represents a0*x^0 + a1*x^1 + a2*x^2 + a3*x^3 + a4*x^4.
  * 
  * To eliminate arbitrary constants:
@@ -959,7 +990,7 @@ function getScale(dataList) {
     // Peak of the graph stays at a constant height on the graph as scale continuously changes.
     return maxAbsVal * 1.5
 
-    // Plot scale stays constant, until extreme forces a change by becoming too small (<50%) or too large (>100%).
+    // Plot scale tries to stay still, until maxAbsVal forces a change by becoming too small (<50%) or too large (>100%).
     //return 2 ** Math.ceil(Math.log2(maxAbsVal))
 }
 

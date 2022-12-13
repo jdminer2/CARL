@@ -11,17 +11,12 @@ import {HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, 
 function CombinedLoadApp(){
     // Data
     const [loads,setLoads] = useState([])
-    // Elasticity, Inertia, Density, Area, Damping Ratio, and rA are used in dynamic beam swaying, which is not implemented currently
-    const [beamProperties,setBeamProperties] = useState({["Length of Beam"]: 100, 
-                                                         Elasticity: 29000.0, 
-                                                         Inertia: 2000.0, 
-                                                         Density: 1.0, 
-                                                         Area: 1.0, 
-                                                         ["Damping Ratio"]:0.02, 
-                                                         rA: 85000.0,
-                                                         ["Support Type"]: "Simply Supported",
+    const [beamProperties,setBeamProperties] = useState({["Support Type"]: "Simply Supported",
+                                                         ["Length of Beam"]: 100,
                                                          ["Pinned Support Position"]: 0,
-                                                         ["Roller Support Position"]: 100})
+                                                         ["Roller Support Position"]: 100,
+                                                         Elasticity: 29000.0,
+                                                         Inertia: 2000.0})
     // The index of the load to move/modify/delete
     const [selectedLoadID, setSelectedLoadID] = useState(-1)
     // Whether forms should be shown
@@ -84,13 +79,9 @@ function CombinedLoadApp(){
     function handleSelectedChange(event){
         setSelectedLoadID(event.target.value)
     }
-    // When clicking an arrow, line, or label corresponding to a load to change selected load
-    function handleClickLoad(element){
-        setSelectedLoadID(element.loadID)
-    }
     
     /**
-     * Function that manages keyboard controls.
+     * Manages keyboard controls.
      * User may submit forms by pressing Enter, 
      * use the arrow keys to move the load left or right,
      * or press the delete key to delete a load.
@@ -113,7 +104,7 @@ function CombinedLoadApp(){
             // Insert outside of textboxes
             if(event.keyCode == 45 && document.activeElement.type !== "text")
                 handleClickAdd()
-            // Shift + End outside of textboxes
+            // End outside of textboxes
             else if(event.keyCode == 35 && document.activeElement.type !== "text")
                 handleClickEdit()
             // Delete outside of textboxes
@@ -141,10 +132,10 @@ function CombinedLoadApp(){
                 handleClickDelete()
             // Left arrow outside of textboxes
             else if(event.keyCode == 37 && document.activeElement.type !== "text")
-                moveSelectedLoad(-1*beamProperties["Length of Beam"]/100,1,10)
+                moveSelectedLoad(-1*beamProperties["Length of Beam"]/100)
             // Right arrow outside of textboxes
             else if(event.keyCode == 39 && document.activeElement.type !== "text")
-                moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)
+                moveSelectedLoad(beamProperties["Length of Beam"]/100)
             else
                 return
         }
@@ -152,9 +143,11 @@ function CombinedLoadApp(){
         event.preventDefault()
     }
 
-    // Move the selected load
-    // mag and tl are used in dynamic beam swaying, not implemented currently
-    function moveSelectedLoad(disp,mag,tl){
+    /**
+     * Move the selected load by adding disp to its position.
+     * If move would place load out of bounds, only move the load until it reaches the edge.
+     */
+    function moveSelectedLoad(disp){
         if(selectedLoadID < 0)
             return
         let load = loads[selectedLoadID]
@@ -174,6 +167,11 @@ function CombinedLoadApp(){
 
         reRender()
     }
+
+    /**
+     * Autofills AddEditForm with props. 
+     * This function is also passed into the properties form, to decrease the number of props the properties form needs.
+     */
     function addEditForm(){
         return (
             <AddEditForm
@@ -219,10 +217,13 @@ function CombinedLoadApp(){
         // Display the main plots screen
         return(
             <div className={(innerWidth > 500) ? "rowC" : ""} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
-                <div style={{height:(innerWidth > 500) ? (window.innerHeight - 100): "", width:(innerWidth > 500) ? "40%" : "", overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
+                {/* Left Column */}
+                <div style={{height:(innerWidth > 500) ? (window.innerHeight - 100): "", width:(innerWidth > 500) ? "40%" : "",
+                             overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
                     <h1>CARL</h1>
                     {/* Main Plot */}
-                    <XYPlot height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth} xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
+                    <XYPlot height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
+                            xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
                         <VerticalGridLines/>
                         <HorizontalGridLines/>
                         <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title = {"Load Locations"}/>
@@ -230,18 +231,19 @@ function CombinedLoadApp(){
                         {/* Display the beam line. */}
                         <LineSeries data = {[{x: 0, y: 0}, {x: beamProperties["Length of Beam"], y: 0}]} />
                         {/* Display the supports. */}
-                        {
-                            (beamProperties["Support Type"] === "Simply Supported")
+                        {(beamProperties["Support Type"] === "Simply Supported")
                             ?
                                 // Simply Supported supports
-                                <LabelSeries data={[{x: beamProperties["Pinned Support Position"], y: 0, yOffset: 24, label: "\u25b2", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
-                                                    {x: beamProperties["Roller Support Position"], y: 0, yOffset: 24, label: "\u2b24", style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
+                                <LabelSeries data={[{x: beamProperties["Pinned Support Position"], y: 0, yOffset: 24, label: "\u25b2",
+                                                     style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}},
+                                                    {x: beamProperties["Roller Support Position"], y: 0, yOffset: 24, label: "\u2b24",
+                                                     style: {fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle"}}]} />
                             :
                                 // Cantilever support
                                 getCantileverSupportDisplay(beamProperties["Length of Beam"])
                         }
                         {/* Display the labels and arrows for loads. */}
-                        <LabelSeries data={labelMakerForLoads(loads,beamProperties,selectedLoadID)} onValueClick={handleClickLoad} />
+                        <LabelSeries data={labelMakerForLoads(loads,beamProperties,selectedLoadID)} onValueClick={element => setSelectedLoadID(element.loadID)} />
                         {/* Display the line parts of distributed and triangular loads. */}
                         {loads.map((load, loadID) => {
                             if(load.Type === "Point")
@@ -271,44 +273,58 @@ function CombinedLoadApp(){
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickAdd}>Add Load</Button>
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickEdit} disabled={loads.length === 0}>Edit Load</Button>
                         <Button variant="outlined" sx={{width:135}} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
+
                         {/* Add/Edit Load form */}
                         {addEditForm()}
                     </div>
                     <div>
-                        {/* Control buttons */}
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(-1*beamProperties["Length of Beam"]/100,1,10)}}>&#8592;</Button>
-                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(beamProperties["Length of Beam"]/100,1,10)}}>&#8594;</Button>
+                        {/* Movement and Help buttons */}
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(-1*beamProperties["Length of Beam"]/100)}}>&#8592;</Button>
+                        <Button variant="contained" sx={{margin:0.5}} onClick={handleClickHelp}>Help</Button>
+                        <Button variant="contained" sx={{margin: 0.5}} onClick={()=>{moveSelectedLoad(beamProperties["Length of Beam"]/100)}}>&#8594;</Button>
+
+                        {/* Help menu */}
+                        <Dialog open={openHelpMenu} onClose={()=>setOpenHelpMenu(false)}>
+                            <DialogContent>
+                                <span>Keyboard Shortcuts</span>
+                                <Table sx={{minWidth: 500, marginBottom: 2}}>
+                                    <TableBody>{[["Left/Right Arrows:", "Move Selected Load"],
+                                                ["Insert:", "Add Load"],
+                                                ["End:", "Edit Selected Load"],
+                                                ["Delete:", "Delete Selected Load"],
+                                                ["Esc:", "Edit Properties"]]
+                                        .map(row=>
+                                            <TableRow key={row}>
+                                                {row.map(col=>
+                                                    <TableCell key={col}>{col}</TableCell>
+                                                )}
+                                            </TableRow>
+                                    )}</TableBody>
+                                </Table>
+                                <span>Tips</span>
+                                <Table sx={{minWidth: 500}}><TableBody>
+                                    <TableRow><TableCell>
+                                        Trapezoidal loads can be simulated by stacking distributed and triangular loads with the same endpoints
+                                    </TableCell></TableRow>
+                                    <TableRow><TableCell>
+                                        Positive bending moment represents concave-up bending. Positive shear force represents a force twisting clockwise.
+                                    </TableCell></TableRow>
+                                </TableBody></Table>
+                            </DialogContent>
+                        </Dialog>
                     </div>
+                    {/* Properties button */}
                     <Button variant="contained" sx={{margin:0.5}} onClick={handleClickProperties}>Edit Properties</Button>
-                    <div></div>
-                    <Button variant="contained" sx={{margin:0.5}} onClick={handleClickHelp}>Help</Button>
-                    <Dialog open={openHelpMenu} onClose={()=>setOpenHelpMenu(false)}>
-                        <DialogContent>
-                            <Table sx={{minWidth: 500}}>
-                                <TableHead>Keyboard Shortcuts</TableHead>
-                                <TableBody>{[["Left/Right Arrows:", "Move Selected Load"],
-                                             ["Insert:", "Add Load"],
-                                             ["End:", "Edit Selected Load"],
-                                             ["Delete:", "Delete Selected Load"],
-                                             ["Esc:", "Edit Properties"]]
-                                    .map(row=>
-                                        <TableRow key={row}>
-                                            {row.map(col=>
-                                                <TableCell key={col}>{col}</TableCell>
-                                            )}
-                                        </TableRow>
-                                )}</TableBody>
-                            </Table>
-                        </DialogContent>
-                    </Dialog>
                 </div>
                 {/* Right Columns */}
-                <div style={{height:(innerWidth > 500) ? window.innerHeight - 100: "", width:(innerWidth > 500) ? "60%" : "", overflowX:"clip", overflowY:"auto"}}>
+                <div style={{height:(innerWidth > 500) ? window.innerHeight - 100: "", width:(innerWidth > 500) ? "60%" : "", 
+                             overflowX:"clip", overflowY:"auto"}}>
                     <h1>Plots</h1>
                     {/* Shear Force Diagram */}
                     <SidePlot title="Shear Force Diagram"
                               loads={loads}
                               beamProperties={beamProperties}
+                              steps={100}
                               color="red"
                     />
                     
@@ -316,6 +332,7 @@ function CombinedLoadApp(){
                     <SidePlot title="Bending Moment Diagram"
                               loads={loads}
                               beamProperties={beamProperties}
+                              steps={100}
                               color="black"
                     />
                     
@@ -323,6 +340,7 @@ function CombinedLoadApp(){
                     <SidePlot title="Rotation Diagram"
                               loads={loads}
                               beamProperties={beamProperties}
+                              steps={100}
                               color="grey"
                     />
 
@@ -330,6 +348,7 @@ function CombinedLoadApp(){
                     <SidePlot title="Deflection Diagram"
                               loads={loads}
                               beamProperties={beamProperties}
+                              steps={100}
                     />
                 </div>
             </div>
@@ -340,7 +359,7 @@ function CombinedLoadApp(){
 /**
  * Function to create load labels and arrows for the Load Location plot.
  * For point loads it puts load name, position, and load force, with an arrow.
- * For long loads it also includes length, and puts many mini-arrows.
+ * For non-point loads it also includes length, and puts many mini-arrows.
  * This function is not responsible for the line/triangle parts of long loads.
  * Point load labels are higher than the rest to reduce the amount of overlapping text.
  */
@@ -408,7 +427,8 @@ function getCantileverSupportDisplay(beamLength) {
                                       {x : 0, y : 10 * (930 / (window.innerHeight - 100))},
                                       {x : 0, y : -10 * (930 / (window.innerHeight - 100))},
                                       {x : leftSide, y : -10 * (930 / (window.innerHeight - 100))}]}
-                             color = "#12939A"/>)
+                             color = "#12939A"
+                             key = "box"/>)
     // Diagonal parts
     support = support.concat([-10,-6,-2,2,6].map(val=>
         <LineSeries data = {[{x: leftSide, y: val * (930 / (window.innerHeight - 100))},

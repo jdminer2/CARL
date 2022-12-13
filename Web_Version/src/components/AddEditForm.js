@@ -45,7 +45,8 @@ const AddEditForm = (props) => {
             setNewLoad({Name:getFreeName(props.loads),
                 Type:"Point",
                 L1:getSafePosition(props.beamProperties),
-                L2:getSafePosition(props.beamProperties),
+                L2:Math.min(props.beamProperties["Length of Beam"], 
+                            getSafePosition(props.beamProperties) + props.beamProperties["Length of Beam"]/4),
                 ["Load Force"]:10.0,
                 ["Taller End"]:"Left",
                 Color:getRandomColor()})
@@ -62,7 +63,8 @@ const AddEditForm = (props) => {
             setNewLoad({Name:load.Name, 
                         Type:load.Type,
                         L1:load.L1,
-                        L2:load.L2!=load.L1?load.L2:Math.min(props.beamProperties["Length of Beam"], load.L1 + props.beamProperties["Length of Beam"]/4),
+                        L2:load.L2!=load.L1?load.L2:Math.min(props.beamProperties["Length of Beam"],
+                                                             load.L1 + props.beamProperties["Length of Beam"]/4),
                         ["Load Force"]:load["Load Force"],
                         ["Taller End"]:load["Taller End"],
                         Color:load.Color})

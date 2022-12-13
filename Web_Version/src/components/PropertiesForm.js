@@ -51,10 +51,12 @@ const PropertiesForm = (props) => {
 
     // Function to submit the properties form
     function handleClose(e) {
-        validateInputs(["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","Pinned Support Position", "Roller Support Position"])
+        validateInputs(["Length of Beam","Elasticity","Inertia","Pinned Support Position", "Roller Support Position"])
         if(warning === "") {
             props.setOpen(false)
-        } 
+        }
+        // This is necessary, else when user attempts to submit invalid values, url will be modified, causing problems.
+        e.preventDefault()
     }
 
     /**
@@ -62,7 +64,7 @@ const PropertiesForm = (props) => {
      * All inputs must be nonnegative numbers. Beam length, elasticity, and inertia must be nonzero. 
      * Support positions must be in-bounds (between 0 and beam length inclusive), and beam length must not be decreased to make any load out-of-bounds.
      * This function also converts the string inputs into number inputs.
-     * Fields include "Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA","Support Type","Pinned Support Position","Roller Support Position"
+     * Fields include "Length of Beam","Elasticity","Inertia","Support Type","Pinned Support Position","Roller Support Position"
      */
      function validateInputs(fields){
         // Clear the errors
@@ -151,23 +153,6 @@ const PropertiesForm = (props) => {
             {/* Enter beam properties */}
             <div>
                 <h3 style={{marginBottom: 0}}>Beam Properties</h3>
-                {["Length of Beam","Elasticity","Inertia","Density","Area","Damping Ratio","rA"].map(field=>{
-                    return(
-                    <div key={field}>{field}:
-                        <input type="text"
-                            defaultValue={props.beamProperties[field]}
-                            onChange={(e) => {
-                                props.beamProperties[field] = e.target.value
-                                validateInputs(field)
-                            }}
-                            style={{width:100}}
-                        />
-                    </div>)
-                })}
-            </div>
-            {/* Enter support properties */}
-            <div>
-                <h3 style={{marginBottom: 0}}>Support Properties</h3>
                 {/* Support type radio button selection */}
                 <RadioGroup
                     value={props.beamProperties["Support Type"]}
@@ -181,7 +166,8 @@ const PropertiesForm = (props) => {
                     <FormControlLabel control={<Radio />} value="Simply Supported" label="Simply Supported" />
                     <FormControlLabel control={<Radio />} value="Cantilever" label="Cantilever" />
                 </RadioGroup>
-                {["Pinned Support Position","Roller Support Position"].map(field=>{
+                {/* Textfields. Support Positions disabled for cantilever */}
+                {["Length of Beam","Pinned Support Position","Roller Support Position","Elasticity","Inertia"].map(field=>{
                     return(
                     <div key={field}>{field}:
                         <input type="text"
@@ -191,7 +177,7 @@ const PropertiesForm = (props) => {
                                 validateInputs(field)
                             }}
                             style={{width:100}}
-                            disabled={props.beamProperties["Support Type"] !== "Simply Supported"}
+                            disabled={field.includes("Support") && props.beamProperties["Support Type"] === "Cantilever"}
                         />
                     </div>)
                 })}
