@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react'
-import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField} from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField } from '@mui/material'
 
 /**
  * This component displays a menu where users can add or edit a load.
@@ -22,13 +22,15 @@ const AddEditForm = (props) => {
     const [addOrEditMode, setAddOrEditMode] = useState("Add")
 
     // The data being entered in the add/edit form
-    const [newLoad, setNewLoad] = useState({Name:getFreeName(props.loads),
-                                            Type:"Point", 
-                                            L1:getSafePosition(props.beamProperties),
-                                            L2:getSafePosition(props.beamProperties),
-                                            ["Load Force"]:10.0,
-                                            ["Taller End"]:"Left", 
-                                            Color:getRandomColor()})
+    const [newLoad, setNewLoad] = useState({
+        Name: getFreeName(props.loads),
+        Type: "Point",
+        L1: getSafePosition(props.beamProperties),
+        L2: getSafePosition(props.beamProperties),
+        ["Load Force"]: 10.0,
+        ["Taller End"]: "Left",
+        Color: getRandomColor()
+    })
 
     // The warning text in the form
     const [warning, setWarning] = useState("")
@@ -37,73 +39,77 @@ const AddEditForm = (props) => {
 
     // Receive messages from the outside via the action prop to close the menu and confirm, open menu for adding, or open menu for editing
     useEffect(() => {
-        if(props.action === "Confirm") {
+        if (props.action === "Confirm") {
             handleClose("confirm")
             props.setAction("")
         }
-        else if(props.action === "Add") {
-            setNewLoad({Name:getFreeName(props.loads),
-                Type:"Point",
-                L1:getSafePosition(props.beamProperties),
-                L2:Math.min(props.beamProperties["Length of Beam"], 
-                            getSafePosition(props.beamProperties) + props.beamProperties["Length of Beam"]/4),
-                ["Load Force"]:10.0,
-                ["Taller End"]:"Left",
-                Color:getRandomColor()})
+        else if (props.action === "Add") {
+            setNewLoad({
+                Name: getFreeName(props.loads),
+                Type: "Point",
+                L1: getSafePosition(props.beamProperties),
+                L2: Math.min(props.beamProperties["Length of Beam"],
+                    getSafePosition(props.beamProperties) + props.beamProperties["Length of Beam"] / 4),
+                ["Load Force"]: 10.0,
+                ["Taller End"]: "Left",
+                Color: getRandomColor()
+            })
             // Display add/edit form in add mode.
             props.setOpen(true)
             setAddOrEditMode("Add")
             props.setAction("")
         }
-        else if(props.action === "Edit") {
-            if(props.selectedLoadID < 0)
+        else if (props.action === "Edit") {
+            if (props.selectedLoadID < 0)
                 return
             // Put preexisting load properties.
             let load = props.loads[props.selectedLoadID]
-            setNewLoad({Name:load.Name, 
-                        Type:load.Type,
-                        L1:load.L1,
-                        L2:load.L2!=load.L1?load.L2:Math.min(props.beamProperties["Length of Beam"],
-                                                             load.L1 + props.beamProperties["Length of Beam"]/4),
-                        ["Load Force"]:load["Load Force"],
-                        ["Taller End"]:load["Taller End"],
-                        Color:load.Color})
+            setNewLoad({
+                Name: load.Name,
+                Type: load.Type,
+                L1: load.L1,
+                L2: load.L2 != load.L1 ? load.L2 : Math.min(props.beamProperties["Length of Beam"],
+                    load.L1 + props.beamProperties["Length of Beam"] / 4),
+                ["Load Force"]: load["Load Force"],
+                ["Taller End"]: load["Taller End"],
+                Color: load.Color
+            })
             // Display add/edit form in edit mode.
             props.setOpen(true)
             setAddOrEditMode("Edit")
             props.setAction("")
         }
-    },[props.action])
+    }, [props.action])
 
     // When closing the Add/Edit Load form by clicking out, canceling, or confirming.
     function handleClose(event) {
         // If user clicked out or cancelled, do nothing and close the form.
-        if(event !== "confirm"){
+        if (event !== "confirm") {
             props.setOpen(false)
             setWarning("")
             return
         }
         // If errors are present and user attempted to submit, do nothing and leave the form open.
-        validateInputs(["Name","L1","L2","Load Force"])
-        if(warning !== "")
+        validateInputs(["Name", "L1", "L2", "Load Force"])
+        if (warning !== "")
             return
 
         props.setOpen(false)
 
         // Simplifies calculations if we can read point loads' length as 0
-        if(newLoad.Type === "Point")
+        if (newLoad.Type === "Point")
             newLoad.L2 = newLoad.L1
-        if(newLoad.Type !== "Triangular")
+        if (newLoad.Type !== "Triangular")
             newLoad["Taller End"] = "Left"
 
-        if(addOrEditMode === "Add") {
+        if (addOrEditMode === "Add") {
             props.loads.push(newLoad)
             props.setSelectedLoadID(props.loads.length - 1)
         }
         else
             props.loads[props.selectedLoadID] = newLoad
     }
-    
+
     /**
      * This function checks the add/edit form inputs to ensure that they are valid. 
      * All inputs must be nonnegative numbers. 
@@ -111,39 +117,39 @@ const AddEditForm = (props) => {
      * Loads must not extend out of bounds.
      * This function also converts the string inputs into number inputs.
      */
-     function validateInputs(fields){
+    function validateInputs(fields) {
         // Clear the errors
         setWarning("")
         let newInvalidAddEditFields = []
 
         // Add entered fields to the list of fields to check
-        if(Array.isArray(fields))
+        if (Array.isArray(fields))
             fields.forEach(field => {
-                if(!invalidFields.includes(field))
+                if (!invalidFields.includes(field))
                     invalidFields.push(field)
             })
         else
-            if(!invalidFields.includes(fields))
+            if (!invalidFields.includes(fields))
                 invalidFields.push(fields)
 
-        invalidFields.forEach(field=> {
-            if(field === "Name") {
+        invalidFields.forEach(field => {
+            if (field === "Name") {
                 // Check that Name is not in use (ignoring the load currently being edited).
                 let nameInUse = false
-                props.loads.forEach((load,loadID)=>{
-                    if(load.Name === newLoad.Name && !(addOrEditMode === "Edit" && loadID == props.selectedLoadID))
+                props.loads.forEach((load, loadID) => {
+                    if (load.Name === newLoad.Name && !(addOrEditMode === "Edit" && loadID == props.selectedLoadID))
                         nameInUse = true
                 })
-                if(nameInUse) {
+                if (nameInUse) {
                     setWarning("Name is already in use.")
                     newInvalidAddEditFields.push(field)
                     return
                 }
             }
 
-            if(["L1", "L2", "Load Force"].includes(field)) {
+            if (["L1", "L2", "Load Force"].includes(field)) {
                 // Check that field is a number.
-                if(parseFloat(newLoad[field]) != newLoad[field]){
+                if (parseFloat(newLoad[field]) != newLoad[field]) {
                     setWarning(field + " must be a number.")
                     newInvalidAddEditFields.push(field)
                     return
@@ -151,15 +157,15 @@ const AddEditForm = (props) => {
                 newLoad[field] = Number(newLoad[field])
             }
 
-            if((["L1", "L2"].includes(field))) {
+            if ((["L1", "L2"].includes(field))) {
                 // Check that load location is in-bounds, for point load.
-                if(newLoad.Type === "Point") {
-                    if(newLoad.L1 < 0) {
+                if (newLoad.Type === "Point") {
+                    if (newLoad.L1 < 0) {
                         setWarning("L1 must be at least 0.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
-                    if(newLoad.L1 > props.beamProperties["Length of Beam"]) {
+                    if (newLoad.L1 > props.beamProperties["Length of Beam"]) {
                         setWarning("L1 must be less than or equal to Length of Beam.")
                         newInvalidAddEditFields.push(field)
                         return
@@ -167,17 +173,17 @@ const AddEditForm = (props) => {
                 }
                 // Check that left and right ends of the load are in-bounds, and left end is to the left of right end, for long loads.
                 else {
-                    if(newLoad.L1 < 0) {
+                    if (newLoad.L1 < 0) {
                         setWarning("L1 must be at least 0.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
-                    if(newLoad.L2 <= newLoad.L1) {
+                    if (newLoad.L2 <= newLoad.L1) {
                         setWarning("L2 must be greater than L1.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
-                    if(newLoad.L2 > props.beamProperties["Length of Beam"]) {
+                    if (newLoad.L2 > props.beamProperties["Length of Beam"]) {
                         setWarning("L2 must be less than or equal to Length of Beam.")
                         newInvalidAddEditFields.push(field)
                         return
@@ -202,7 +208,7 @@ const AddEditForm = (props) => {
                     label="Name"
                     defaultValue={newLoad.Name}
                     type="text"
-                    onChange={val=>{
+                    onChange={val => {
                         newLoad.Name = val.target.value
                         validateInputs("Name")
                     }}
@@ -211,12 +217,12 @@ const AddEditForm = (props) => {
                 />
                 {/* type radio buttons */}
                 <FormControl>
-                    <FormLabel id="newLoadTypeRadios" sx={{mt:1}}>Type</FormLabel>
+                    <FormLabel id="newLoadTypeRadios" sx={{ mt: 1 }}>Type</FormLabel>
                     <RadioGroup
                         row
                         aria-labelledby="newLoadTypeRadios"
                         value={newLoad.Type}
-                        onChange={val=>{
+                        onChange={val => {
                             newLoad.Type = val.target.value
                             validateInputs("L2")
                         }}
@@ -226,28 +232,28 @@ const AddEditForm = (props) => {
                         <FormControlLabel value="Triangular" control={<Radio />} label="Triangular Load" />
                     </RadioGroup>
                 </FormControl>
-                <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
-                    {newLoad.Type==="Point"?
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {newLoad.Type === "Point" ?
                         <img src={require("../resources/images/Point_load_schematic_1200dpi.png")}
-                             alt="Schematic of Point Load on a Beam"
-                             height="75%" width="75%" align="middle"/>
-                    :newLoad.Type==="Uniform"?
-                        <img src={require("../resources/images/Uniform_load_schematic_1200dpi.png")}
-                             alt="Schematic of Uniform Load on a Beam"
-                             height="75%" width="75%" align="middle"/>
-                    :
-                        <img src={require("../resources/images/Triangular_load_schematic_1200dpi.png")}
-                             alt="Schematic of Triangular Load on a Beam"
-                             height="75%" width="75%" align="middle"/>
+                            alt="Schematic of Point Load on a Beam"
+                            height="75%" width="75%" align="middle" />
+                        : newLoad.Type === "Uniform" ?
+                            <img src={require("../resources/images/Uniform_load_schematic_1200dpi.png")}
+                                alt="Schematic of Uniform Load on a Beam"
+                                height="75%" width="75%" align="middle" />
+                            :
+                            <img src={require("../resources/images/Triangular_load_schematic_1200dpi.png")}
+                                alt="Schematic of Triangular Load on a Beam"
+                                height="75%" width="75%" align="middle" />
                     }
                 </div>
                 {/* L1 textbox */}
                 <TextField
                     margin="dense"
-                    label={newLoad.Type==="Point"?"Location of Load (X)":"Left Endpoint Location (X1)"}
+                    label={newLoad.Type === "Point" ? "Location of Load (X)" : "Left Endpoint Location (X1)"}
                     type="text"
                     defaultValue={newLoad.L1}
-                    onChange={val=>{
+                    onChange={val => {
                         newLoad.L1 = val.target.value
                         validateInputs("L1")
                     }}
@@ -255,13 +261,13 @@ const AddEditForm = (props) => {
                     variant="standard"
                 />
                 {/* L2 textbox, hidden for point loads */}
-                {newLoad.Type==="Point"?[]:
+                {newLoad.Type === "Point" ? [] :
                     <TextField
                         margin="dense"
                         label="Right Endpoint Location (X2)"
                         type="text"
                         defaultValue={newLoad.L2}
-                        onChange={val=>{
+                        onChange={val => {
                             newLoad.L2 = val.target.value
                             validateInputs("L2")
                         }}
@@ -273,10 +279,10 @@ const AddEditForm = (props) => {
                     Point Load -> Load Force, Uniform Load -> Load Force Per Unit Length, Triangular Load -> Max Load Force Per Unit Length */}
                 <TextField
                     margin="dense"
-                    label={newLoad.Type==="Point"?"Load Force (P)":newLoad.Type==="Uniform"?"Load Force Per Unit Length (W)":"Max Load Force Per Unit Length (W)"}
+                    label={newLoad.Type === "Point" ? "Load Force (P)" : newLoad.Type === "Uniform" ? "Load Force Per Unit Length (W)" : "Max Load Force Per Unit Length (W)"}
                     defaultValue={newLoad["Load Force"]}
                     type="text"
-                    onChange={val=>{
+                    onChange={val => {
                         newLoad["Load Force"] = val.target.value
                         validateInputs("Load Force")
                     }}
@@ -284,57 +290,56 @@ const AddEditForm = (props) => {
                     variant="standard"
                 />
                 {/* radio buttons for triangular loads to decide which end is taller */}
-                {newLoad.Type!=="Triangular"?[]:
+                {newLoad.Type !== "Triangular" ? [] :
                     <FormControl>
-                        <FormLabel id="tallerEndRadios" sx={{mt:1}}>Taller End of the Load (Triangular Loads Only)</FormLabel>
+                        <FormLabel id="tallerEndRadios" sx={{ mt: 1 }}>Taller End of the Load (Triangular Loads Only)</FormLabel>
                         <RadioGroup
                             row
                             aria-labelledby="tallerEndRadios"
                             value={newLoad["Taller End"]}
-                            onChange={val=>{
+                            onChange={val => {
                                 newLoad["Taller End"] = val.target.value
                                 // Necessary to make the radiobuttons re-render when clicked and show a change
                                 validateInputs("L2")
                             }}
                         >
-                            <FormControlLabel value="Left" control={<Radio />} label="Left"/>
-                            <FormControlLabel value="Right" control={<Radio />} label="Right"/>
+                            <FormControlLabel value="Left" control={<Radio />} label="Left" />
+                            <FormControlLabel value="Right" control={<Radio />} label="Right" />
                         </RadioGroup>
                     </FormControl>
                 }
             </DialogContent>
             {/* warning label for invalid inputs */}
-            <DialogContentText align="center" sx={{fontWeight: "bold", height:30}}>{warning}</DialogContentText>
+            <DialogContentText align="center" sx={{ fontWeight: "bold", height: 30 }}>{warning}</DialogContentText>
             {/* buttons to confirm or cancel */}
             <DialogActions>
-                <Button onClick={()=>{handleClose("cancel")}}>Cancel</Button>
-                <Button onClick={()=>{handleClose("confirm")}}>Confirm</Button>
+                <Button onClick={() => { handleClose("cancel") }}>Cancel</Button>
+                <Button onClick={() => { handleClose("confirm") }}>Confirm</Button>
             </DialogActions>
         </Dialog>
     )
 }
 
 // Function to pick name for a load, returning the first unoccupied load name like load1, load2, load3...
-function getFreeName(loads){
-    let loadNames = loads.map(load=>load.Name)
+function getFreeName(loads) {
+    let loadNames = loads.map(load => load.Name)
     let i = 1
     let name = "Load 1"
-    while(loadNames.includes(name))
+    while (loadNames.includes(name))
         name = "Load " + ++i
     return name
 }
 
 // Function to pick position for a load, returning the middle of the beam if beam length is valid, or 0 if it's invalid.
-function getSafePosition(beamProperties){
+function getSafePosition(beamProperties) {
     let length = beamProperties["Length of Beam"]
     // Check if length is not a number
-    if(parseFloat(length) != length)
+    if (parseFloat(length) != length)
         return 0
     // Check if length <= 0
     length = Number(length)
-    if(length <= 0) {
+    if (length <= 0)
         return 0
-    }
     return length / 2
 }
 
@@ -342,16 +347,16 @@ function getSafePosition(beamProperties){
 function getRandomColor() {
     // R
     let R = Math.floor(Math.random() * 160).toString(16)
-    if(R.length < 2)
-        R = "0"+R
+    if (R.length < 2)
+        R = "0" + R
     // G
     let G = Math.floor(Math.random() * 160).toString(16)
-    if(G.length < 2)
-        G = "0"+G
+    if (G.length < 2)
+        G = "0" + G
     // B
     let B = Math.floor(Math.random() * 160).toString(16)
-    if(B.length < 2)
-        B = "0"+B
+    if (B.length < 2)
+        B = "0" + B
     return "#" + R + G + B + "80"
 }
 

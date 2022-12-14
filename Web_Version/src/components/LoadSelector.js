@@ -1,5 +1,5 @@
 import React from 'react';
-import {FormControl, InputLabel, MenuItem, Select} from '@mui/material';
+import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 
 /**
  * This component receives a list of loads from a multi-load page through props.loadList,
@@ -11,13 +11,13 @@ import {FormControl, InputLabel, MenuItem, Select} from '@mui/material';
  * <LoadSelector loads={loads} value={selectedLoadID} onChange={handleDropdownChange} />
  */
 const LoadSelector = (props) => {
-    let menuItemList = props.loads.map((load,loadID)=>
+    let menuItemList = props.loads.map((load, loadID) =>
         <MenuItem key={loadID} value={loadID}>{load.Name}</MenuItem>
     )
 
     // Avoids console warning for out of bounds selection
     let currentValue = props.value
-    if(currentValue < 0)
+    if (currentValue < 0)
         currentValue = ""
 
     return (
@@ -26,7 +26,7 @@ const LoadSelector = (props) => {
             <Select
                 labelId={"load_selection_dropdown_label"}
                 id={"load_selection_dropdown"}
-                sx={{margin:0.5, minWidth:140}}
+                sx={{ margin: 0.5, minWidth: 140 }}
                 label={"Selected Load"}
                 onChange={props.onChange}
                 value={currentValue}
