@@ -149,7 +149,7 @@ const PropertiesForm = (props) => {
 
     return (
         <form onKeyDown={props.handleKeyDown} onSubmit={handleClose} ref={formRef} tabIndex="0">
-            <h1>CARL</h1>
+            <h1>Structural Statics Simulator</h1>
             {/* Enter beam properties */}
             <div>
                 <h3 style={{marginBottom: 0}}>Beam Properties</h3>
@@ -163,24 +163,31 @@ const PropertiesForm = (props) => {
                     sx={{display:'inline-flex'}}
                     row
                 >
-                    <FormControlLabel control={<Radio />} value="Simply Supported" label="Simply Supported" />
-                    <FormControlLabel control={<Radio />} value="Cantilever" label="Cantilever" />
+                    <FormControlLabel control={<Radio />} value="Simply Supported" label="Simply Supported" style={{marginLeft: 5}}/>
+                    <FormControlLabel control={<Radio />} value="Cantilever" label="Cantilever" style={{marginLeft: 5}}/>
                 </RadioGroup>
                 {/* Textfields. Support Positions disabled for cantilever */}
-                {["Length of Beam","Pinned Support Position","Roller Support Position","Elasticity","Inertia"].map(field=>{
+                {[{field:"Length of Beam",label:"Length of Beam (L)"},
+                  {field:"Pinned Support Position",label:"Pinned Support Position"},
+                  {field:"Roller Support Position",label:"Roller Support Position"},
+                  {field:"Elasticity",label:"Modulus of Elasticity (E)"},
+                  {field:"Inertia",label:"Moment of Inertia (I)"}].map(field=>{
                     return(
-                    <div key={field}>{field}:
+                    <div key={field.label} style={{justifyContent:'center',display:'flex'}}>
+                        <span style={{textAlign:'left', width:200}}>{field.label}:</span>
                         <input type="text"
-                            defaultValue={props.beamProperties[field]}
+                            defaultValue={props.beamProperties[field.field]}
                             onChange={(e) => {
-                                props.beamProperties[field] = e.target.value
-                                validateInputs(field)
+                                props.beamProperties[field.field] = e.target.value
+                                validateInputs(field.field)
                             }}
                             style={{width:100}}
-                            disabled={field.includes("Support") && props.beamProperties["Support Type"] === "Cantilever"}
+                            disabled={field.field.includes("Support") && props.beamProperties["Support Type"] === "Cantilever"}
                         />
                     </div>)
                 })}
+                <p>Note: Units must be consistent<br/>
+                      (e.g. L - in, E - ksi, I - in^4)</p>
             </div>
             {/* Enter loads */}
             <div>
@@ -221,16 +228,15 @@ function loadRadioButtonsCreator(loads){
                 "Type: " + load.Type + ", " + 
                 (load.Type==="Point" ? 
                     "Location: " + load.L1 + ", " + 
-                    "Load Force: " + load["Load Force"] + ", "
-                :(load.Type==="Distributed" ? 
-                    "Left Location: " + load.L1 + ", " +
-                    "Right Location: " + load.L2 + ", " + 
-                    "Load per Length: " + load["Load Force"] + ", "
+                    "Load Force: " + load["Load Force"]
                 :
                     "Left Location: " + load.L1 + ", " +
                     "Right Location: " + load.L2 + ", " + 
-                    "Max Load per Length: " + load["Load Force"] + ", " +
-                    "Taller End: " + load["Taller End"]
+                    (load.Type==="Uniform" ? 
+                        "Load per Length: " + load["Load Force"]
+                    :
+                        "Max Load per Length: " + load["Load Force"] + ", " +
+                        "Taller End: " + load["Taller End"]
             ))}
         />)
     )

@@ -1,6 +1,7 @@
 import '../App.css'
+import 'react-vis/dist/style.css';
 import React, { useEffect, useState} from 'react'
-import {Button, Dialog, DialogContent, Table, TableBody, TableCell, TableHead, TableRow} from '@mui/material'
+import {Button, Dialog, DialogContent, Table, TableBody, TableCell, TableRow} from '@mui/material'
 import AddEditForm from '../components/AddEditForm'
 import LoadSelector from '../components/LoadSelector'
 import PropertiesForm from '../components/PropertiesForm'
@@ -220,7 +221,7 @@ function CombinedLoadApp(){
                 {/* Left Column */}
                 <div style={{height:(innerWidth > 500) ? (window.innerHeight - 100): "", width:(innerWidth > 500) ? "40%" : "",
                              overflowX:"clip", overflowY:"auto", borderRight:"1px solid"}}>
-                    <h1>CARL</h1>
+                    <h1>Structural Statics Simulator</h1>
                     {/* Main Plot */}
                     <XYPlot height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
                             xDomain={[0,beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin = {{left : 60, right:60}}>
@@ -244,7 +245,7 @@ function CombinedLoadApp(){
                         }
                         {/* Display the labels and arrows for loads. */}
                         <LabelSeries data={labelMakerForLoads(loads,beamProperties,selectedLoadID)} onValueClick={element => setSelectedLoadID(element.loadID)} />
-                        {/* Display the line parts of distributed and triangular loads. */}
+                        {/* Display the line parts of uniform and triangular loads. */}
                         {loads.map((load, loadID) => {
                             if(load.Type === "Point")
                                 return
@@ -304,10 +305,10 @@ function CombinedLoadApp(){
                                 <span>Tips</span>
                                 <Table sx={{minWidth: 500}}><TableBody>
                                     <TableRow><TableCell>
-                                        Trapezoidal loads can be simulated by stacking distributed and triangular loads with the same endpoints
+                                        Trapezoidal loads can be simulated by stacking uniform and triangular loads that have the same endpoints
                                     </TableCell></TableRow>
                                     <TableRow><TableCell>
-                                        Positive bending moment represents concave-up bending. Positive shear force represents a force twisting clockwise.
+                                        Positive shear force represents clockwise twist. Positive bending moment represents concave-up bending.
                                     </TableCell></TableRow>
                                 </TableBody></Table>
                             </DialogContent>
@@ -375,20 +376,19 @@ function labelMakerForLoads(loads, beamProperties, selectedLoadID){
 
         // For selected load, the stats will be labelled with letters.
         let statsLabel = ""
-        if(load.Type === "Point") {
-            statsLabel += (isSelected?"X=":"") + load.L1 + ", "
-        }
-        else {
-            statsLabel += (isSelected?"L1=":"") + load.L1 + ", "
-            statsLabel += (isSelected?"L2=":"") + load.L2 + ", "
-        }
-        statsLabel += (isSelected?"W=":"") + load["Load Force"]
+        // X or X1 label
+        statsLabel += (isSelected?(load.Type==="Point"?"X=":"X1="):"") + load.L1 + ", "
+        // X2 label if applicable
+        if(load.Type !== "Point")
+            statsLabel += (isSelected?"X2=":"") + load.L2 + ", "
+        // P or W label
+        statsLabel += (isSelected?(load.Type==="Point"?"P=":"W="):"") + load["Load Force"]
 
         // Load name and stats labels. For point loads it will be 10 units higher.
         data.push({x: xLoc, y: 0, yOffset: (isPoint?-75:-55), label: load.Name, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
         data.push({x: xLoc, y: 0, yOffset: (isPoint?-65:-45), label: statsLabel, loadID: loadID, style: {fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle"}})
 
-        // Point Loads have a big arrow, distributed loads have mini arrows
+        // Point Loads have a big arrow, non-point loads have mini arrows
         getLoadArrows(data, load, loadID, beamProperties["Length of Beam"])
     })
     return data

@@ -123,16 +123,26 @@ function SidePlot (props) {
                 {<LabelSeries data={reactions(props.title, props.loads, props.beamProperties)}/>}
             </XYPlot>
             {/* Side Info */}
-            <div style={{display:"flex", alignItems:"center", justifyContent:"center", width:"100%"}}>
-                <div>
-                    {displayCoord(coord,updateCoord)}
-                    {props.title === "Deflection Diagram"?
-                    /* Maximum Deflection (Deflection Plot only) */
+            <div style={{width:"100%"}}>
+                <div style={{height:"25%"}}/>
+                <div style={{height:"50%", display:"flex", alignItems:"center", justifyContent:"center"}}>
                     <div>
-                        Maximum Deflection:<br/>
-                        {props.title === "Deflection Diagram" ? maximumDeflection(props.loads, props.beamProperties) : []}
+                        {displayCoord(coord,updateCoord)}
+                        {props.title === "Deflection Diagram"?
+                            /* Maximum Deflection (Deflection Plot only) */
+                            <div>
+                                Maximum Deflection:<br/>
+                                {maximumDeflection(props.loads, props.beamProperties)}
+                            </div>
+                        :""}
                     </div>
-                    :""}
+                </div>
+                <div style={{height:"50%"}}>
+                    {props.title==="Shear Force Diagram"?
+                        <img src={require("../resources/images/Diagram_sign_convention_1200dpi.png")} 
+                             alt="Sign Convention Diagram for Shear Force and Bending Moment" 
+                             style={{height:"100%", width:"100%", objectFit: "contain"}}/>
+                    :[]}
                 </div>
             </div>
         </div>
@@ -444,7 +454,7 @@ function getSubloads(loads) {
     loads.forEach(load => {
         if(load.Type === "Triangular" && load["Taller End"] === "Left") {
             newLoads.push({["Load Force"]:-1*load["Load Force"], L1:load.L1, L2:load.L2, Type:"Triangular", ["Taller End"]:"Right"})
-            newLoads.push({["Load Force"]:load["Load Force"], L1:load.L1, L2:load.L2, Type:"Distributed"})
+            newLoads.push({["Load Force"]:load["Load Force"], L1:load.L1, L2:load.L2, Type:"Uniform"})
         }
         else
             newLoads.push(load)
@@ -479,7 +489,7 @@ function getSubloads(loads) {
         coeff = W
         lCoeff = 0
     }
-    else if(load.Type === "Distributed") {
+    else if(load.Type === "Uniform") {
         coeff = W * L
         lCoeff = 1/2
     }
@@ -527,7 +537,7 @@ function shearForceSingleLoad(load, beamProperties, x) {
         else
             y = 0
     }
-    else if(load.Type === "Distributed") {
+    else if(load.Type === "Uniform") {
         coeff = W * L
         lCoeff = 1/2
 
@@ -627,7 +637,7 @@ function shearForceSingleLoad(load, beamProperties, x) {
         else
             y = 0
     }
-    else if(load.Type === "Distributed") {
+    else if(load.Type === "Uniform") {
         coeff = W * L
         lCoeff = 1/2
 
@@ -704,7 +714,7 @@ function shearForceSingleLoad(load, beamProperties, x) {
         else
             y = -1*X**2/2
     }
-    else if(load.Type === "Distributed") {
+    else if(load.Type === "Uniform") {
         coeff = W * L
         lCoeff = 1/2
 
@@ -788,7 +798,7 @@ function deflectionSingleLoad(load, beamProperties, x) {
         else
             y = (X**3 - 3*X**2*x) / 6
     }
-    else if(load.Type === "Distributed") {
+    else if(load.Type === "Uniform") {
         coeff = W * L
         lCoeff = 1/2
 
@@ -890,7 +900,7 @@ function deflectionSlopePolynomialSingleLoad(load, beamProperties, x) {
             a0 = -1*X**2/2
         }
     }
-    else if(load.Type === "Distributed") {
+    else if(load.Type === "Uniform") {
         coeff = W * L
         lCoeff = 1/2
 

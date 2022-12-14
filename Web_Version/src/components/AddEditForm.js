@@ -222,14 +222,29 @@ const AddEditForm = (props) => {
                         }}
                     >
                         <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
-                        <FormControlLabel value="Distributed" control={<Radio />} label="Distributed Load" />
+                        <FormControlLabel value="Uniform" control={<Radio />} label="Uniform Load" />
                         <FormControlLabel value="Triangular" control={<Radio />} label="Triangular Load" />
                     </RadioGroup>
                 </FormControl>
+                <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
+                    {newLoad.Type==="Point"?
+                        <img src={require("../resources/images/Point_load_schematic_1200dpi.png")}
+                             alt="Schematic of Point Load on a Beam"
+                             height="75%" width="75%" align="middle"/>
+                    :newLoad.Type==="Uniform"?
+                        <img src={require("../resources/images/Uniform_load_schematic_1200dpi.png")}
+                             alt="Schematic of Uniform Load on a Beam"
+                             height="75%" width="75%" align="middle"/>
+                    :
+                        <img src={require("../resources/images/Triangular_load_schematic_1200dpi.png")}
+                             alt="Schematic of Triangular Load on a Beam"
+                             height="75%" width="75%" align="middle"/>
+                    }
+                </div>
                 {/* L1 textbox */}
                 <TextField
                     margin="dense"
-                    label={newLoad.Type==="Point"?"Location of Load":"Left Endpoint Location"}
+                    label={newLoad.Type==="Point"?"Location of Load (X)":"Left Endpoint Location (X1)"}
                     type="text"
                     defaultValue={newLoad.L1}
                     onChange={val=>{
@@ -243,7 +258,7 @@ const AddEditForm = (props) => {
                 {newLoad.Type==="Point"?[]:
                     <TextField
                         margin="dense"
-                        label="Right Endpoint Location"
+                        label="Right Endpoint Location (X2)"
                         type="text"
                         defaultValue={newLoad.L2}
                         onChange={val=>{
@@ -255,10 +270,10 @@ const AddEditForm = (props) => {
                     />
                 }
                 {/* load force textbox
-                    Point Load -> Load Force, Distributed Load -> Load Force Per Unit Length, Triangular Load -> Max Load Force Per Unit Length */}
+                    Point Load -> Load Force, Uniform Load -> Load Force Per Unit Length, Triangular Load -> Max Load Force Per Unit Length */}
                 <TextField
                     margin="dense"
-                    label={newLoad.Type==="Point"?"Load Force":newLoad.Type==="Distributed"?"Load Force Per Unit Length":"Max Load Force Per Unit Length"}
+                    label={newLoad.Type==="Point"?"Load Force (P)":newLoad.Type==="Uniform"?"Load Force Per Unit Length (W)":"Max Load Force Per Unit Length (W)"}
                     defaultValue={newLoad["Load Force"]}
                     type="text"
                     onChange={val=>{
