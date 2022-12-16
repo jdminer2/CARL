@@ -149,7 +149,11 @@ const PropertiesForm = (props) => {
 
     return (
         <form onKeyDown={props.handleKeyDown} onSubmit={handleClose} ref={formRef} tabIndex="0">
-            <h1>Structural Statics Simulator</h1>
+            <div height="20%">
+                <img src={require("../resources/images/SAIL_logo_header_v2.png")}
+                        alt="Logo for SAIL: Structural Analysis Integrated Learning"
+                        style={{ height: "100%", width: "100%", objectFit: "contain" }} />
+            </div>
             {/* Enter beam properties */}
             <div>
                 <h3 style={{ marginBottom: 0 }}>Beam Properties</h3>

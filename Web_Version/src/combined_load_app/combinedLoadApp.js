@@ -219,7 +219,11 @@ function CombinedLoadApp() {
                     height: (innerWidth > 500) ? (window.innerHeight - 100) : "", width: (innerWidth > 500) ? "40%" : "",
                     overflowX: "clip", overflowY: "auto", borderRight: "1px solid"
                 }}>
-                    <h1>Structural Statics Simulator</h1>
+                    <div height="20%">
+                        <img src={require("../resources/images/SAIL_logo_header_v2.png")}
+                                alt="Logo for SAIL: Structural Analysis Integrated Learning"
+                                style={{ height: "100%", width: "100%", objectFit: "contain" }} />
+                    </div>
                     {/* Main Plot */}
                     <XYPlot
                         height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
@@ -308,7 +312,7 @@ function CombinedLoadApp() {
                                 <span>Tips</span>
                                 <Table sx={{ minWidth: 500 }}><TableBody>
                                     <TableRow><TableCell>
-                                        Trapezoidal loads can be simulated by stacking uniform and triangular loads that have the same endpoints
+                                        Trapezoidal loads can be simulated by stacking uniform and triangular loads that have the same endpoints.
                                     </TableCell></TableRow>
                                     <TableRow><TableCell>
                                         Positive shear force represents clockwise twist. Positive bending moment represents concave-up bending.

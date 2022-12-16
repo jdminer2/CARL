@@ -170,7 +170,7 @@ function displayCoord(coord, updateCoord) {
                 onChange={(e) => {
                     updateCoord(e.target.value, true)
                 }}
-            />, {yString}
+            /> {yString}
         </div>
     )
 }
