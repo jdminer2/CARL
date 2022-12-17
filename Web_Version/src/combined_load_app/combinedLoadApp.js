@@ -219,8 +219,8 @@ function CombinedLoadApp() {
                     height: (innerWidth > 500) ? (window.innerHeight - 100) : "", width: (innerWidth > 500) ? "40%" : "",
                     overflowX: "clip", overflowY: "auto", borderRight: "1px solid"
                 }}>
-                    <div height="20%">
-                        <img src={require("../resources/images/SAIL_logo_header_v2.png")}
+                    <div style={{height: "20%"}}>
+                        <img src={require("../resources/images/SAIL_logo_header_v3.png")}
                                 alt="Logo for SAIL: Structural Analysis Integrated Learning"
                                 style={{ height: "100%", width: "100%", objectFit: "contain" }} />
                     </div>
