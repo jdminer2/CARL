@@ -7,6 +7,7 @@ import LoadSelector from '../components/LoadSelector'
 import PropertiesForm from '../components/PropertiesForm'
 import SidePlot from '../components/SidePlot'
 import { HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis } from "react-vis"
+import {Nav} from '../components/Navbar/NavbarElements';
 
 
 function CombinedLoadApp() {
@@ -213,153 +214,156 @@ function CombinedLoadApp() {
     else {
         // Display the main plots screen
         return (
-            <div className={(innerWidth > 500) ? "rowC" : ""} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
-                {/* Left Column */}
-                <div style={{
-                    height: (innerWidth > 500) ? (window.innerHeight - 100) : "", width: (innerWidth > 500) ? "40%" : "",
-                    overflowX: "clip", overflowY: "auto", borderRight: "1px solid"
-                }}>
-                    <div style={{height: "20%"}}>
-                        <img src={require("../resources/images/SAIL_logo_header_v3.png")}
-                                alt="Logo for SAIL: Structural Analysis Integrated Learning"
-                                style={{ height: "100%", width: "100%", objectFit: "contain" }} />
+            <div>
+                <Nav>
+                    <img src={require("../resources/images/SAIL_logo_header_v3.png")}
+                            alt="Logo for SAIL: Structural Analysis Integrated Learning"
+                            style={{ height: "100%", width: "100%", objectFit: "contain" }} />
+                </Nav>
+                <div className={(innerWidth > 500) ? "rowC" : ""} onKeyDown={handleKeyDown} ref={plotScreenRef} tabIndex="0">
+                    {/* Left Column */}
+                    <div style={{
+                        height: (innerWidth > 500) ? (window.innerHeight - 100) : "", width: (innerWidth > 500) ? "40%" : "",
+                        overflowX: "clip", overflowY: "auto", borderRight: "1px solid"
+                    }}>
+                        {/* Main Plot */}
+                        <h1>Load Locations</h1>
+                        <XYPlot
+                            height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
+                            xDomain={[0, beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin={{ left: 60, right: 60 }}
+                        >
+                            <VerticalGridLines />
+                            <HorizontalGridLines />
+                            <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title={"Load Locations"} />
+                            <YAxis hideTicks />
+                            {/* Display the beam line. */}
+                            <LineSeries data={[{ x: 0, y: 0 }, { x: beamProperties["Length of Beam"], y: 0 }]} />
+                            {/* Display the supports. */}
+                            {(beamProperties["Support Type"] === "Simply Supported")
+                                ?
+                                // Simply Supported supports
+                                <LabelSeries data={[{
+                                    x: beamProperties["Pinned Support Position"], y: 0, yOffset: 24, label: "\u25b2",
+                                    style: { fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle" }
+                                },
+                                {
+                                    x: beamProperties["Roller Support Position"], y: 0, yOffset: 24, label: "\u2b24",
+                                    style: { fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle" }
+                                }]} />
+                                :
+                                // Cantilever support
+                                getCantileverSupportDisplay(beamProperties["Length of Beam"])
+                            }
+                            {/* Display the labels and arrows for loads. */}
+                            <LabelSeries data={labelMakerForLoads(loads, beamProperties, selectedLoadID)} onValueClick={element => setSelectedLoadID(element.loadID)} />
+                            {/* Display the line parts of uniform and triangular loads. */}
+                            {loads.map((load, loadID) => {
+                                if (load.Type === "Point")
+                                    return
+                                let data = [{ x: load.L1, y: 8 * (930 / (window.innerHeight - 100)) },
+                                { x: load.L2, y: 8 * (930 / (window.innerHeight - 100)) }]
+                                if (load.Type === "Triangular")
+                                    data.push({ x: (load["Taller End"] === "Left") ? load.L1 : load.L2, y: 20 * (930 / (window.innerHeight - 100)) },
+                                        { x: load.L1, y: 8 * (930 / (window.innerHeight - 100)) })
+
+                                return (
+                                    <LineSeries
+                                        data={data}
+                                        onSeriesClick={() => { setSelectedLoadID(loadID) }}
+                                        key={loadID}
+                                        color={load.Color}
+                                        strokeWidth={3}
+                                    />
+                                )
+                            })}
+                        </XYPlot>
+                        {/* Load Selection dropdown */}
+                        <LoadSelector loads={loads} value={selectedLoadID} onChange={handleSelectedChange} />
+                        <div>
+                            {/* Add, Edit, Delete Load buttons */}
+                            <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickAdd}>Add Load</Button>
+                            <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickEdit} disabled={loads.length === 0}>Edit Load</Button>
+                            <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
+
+                            {/* Add/Edit Load form */}
+                            {addEditForm()}
+                        </div>
+                        <div>
+                            {/* Movement and Help buttons */}
+                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(-1 * beamProperties["Length of Beam"] / 100) }}>&#8592;</Button>
+                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={handleClickHelp}>Help</Button>
+                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(beamProperties["Length of Beam"] / 100) }}>&#8594;</Button>
+
+                            {/* Help menu */}
+                            <Dialog open={openHelpMenu} onClose={() => setOpenHelpMenu(false)}>
+                                <DialogContent>
+                                    <span>Keyboard Shortcuts</span>
+                                    <Table sx={{ minWidth: 500, marginBottom: 2 }}>
+                                        <TableBody>{[["Left/Right Arrows:", "Move Selected Load"],
+                                        ["Insert:", "Add Load"],
+                                        ["End:", "Edit Selected Load"],
+                                        ["Delete:", "Delete Selected Load"],
+                                        ["Esc:", "Edit Properties"]]
+                                            .map(row =>
+                                                <TableRow key={row}>
+                                                    {row.map(col =>
+                                                        <TableCell key={col}>{col}</TableCell>
+                                                    )}
+                                                </TableRow>
+                                            )}</TableBody>
+                                    </Table>
+                                    <span>Tips</span>
+                                    <Table sx={{ minWidth: 500 }}><TableBody>
+                                        <TableRow><TableCell>
+                                            Trapezoidal loads can be simulated by stacking uniform and triangular loads that have the same endpoints.
+                                        </TableCell></TableRow>
+                                        <TableRow><TableCell>
+                                            Positive shear force represents clockwise twist. Positive bending moment represents concave-up bending.
+                                        </TableCell></TableRow>
+                                    </TableBody></Table>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                        {/* Properties button */}
+                        <Button variant="contained" sx={{ margin: 0.5 }} onClick={handleClickProperties}>Edit Properties</Button>
                     </div>
-                    {/* Main Plot */}
-                    <XYPlot
-                        height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
-                        xDomain={[0, beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin={{ left: 60, right: 60 }}
-                    >
-                        <VerticalGridLines />
-                        <HorizontalGridLines />
-                        <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title={"Load Locations"} />
-                        <YAxis hideTicks />
-                        {/* Display the beam line. */}
-                        <LineSeries data={[{ x: 0, y: 0 }, { x: beamProperties["Length of Beam"], y: 0 }]} />
-                        {/* Display the supports. */}
-                        {(beamProperties["Support Type"] === "Simply Supported")
-                            ?
-                            // Simply Supported supports
-                            <LabelSeries data={[{
-                                x: beamProperties["Pinned Support Position"], y: 0, yOffset: 24, label: "\u25b2",
-                                style: { fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle" }
-                            },
-                            {
-                                x: beamProperties["Roller Support Position"], y: 0, yOffset: 24, label: "\u2b24",
-                                style: { fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle" }
-                            }]} />
-                            :
-                            // Cantilever support
-                            getCantileverSupportDisplay(beamProperties["Length of Beam"])
-                        }
-                        {/* Display the labels and arrows for loads. */}
-                        <LabelSeries data={labelMakerForLoads(loads, beamProperties, selectedLoadID)} onValueClick={element => setSelectedLoadID(element.loadID)} />
-                        {/* Display the line parts of uniform and triangular loads. */}
-                        {loads.map((load, loadID) => {
-                            if (load.Type === "Point")
-                                return
-                            let data = [{ x: load.L1, y: 8 * (930 / (window.innerHeight - 100)) },
-                            { x: load.L2, y: 8 * (930 / (window.innerHeight - 100)) }]
-                            if (load.Type === "Triangular")
-                                data.push({ x: (load["Taller End"] === "Left") ? load.L1 : load.L2, y: 20 * (930 / (window.innerHeight - 100)) },
-                                    { x: load.L1, y: 8 * (930 / (window.innerHeight - 100)) })
+                    {/* Right Columns */}
+                    <div style={{
+                        height: (innerWidth > 500) ? window.innerHeight - 100 : "", width: (innerWidth > 500) ? "60%" : "",
+                        overflowX: "clip", overflowY: "auto"
+                    }}>
+                        <h1>Diagrams</h1>
+                        {/* Shear Force Diagram */}
+                        <SidePlot title="Shear Force Diagram"
+                            loads={loads}
+                            beamProperties={beamProperties}
+                            steps={100}
+                            color="red"
+                        />
 
-                            return (
-                                <LineSeries
-                                    data={data}
-                                    onSeriesClick={() => { setSelectedLoadID(loadID) }}
-                                    key={loadID}
-                                    color={load.Color}
-                                    strokeWidth={3}
-                                />
-                            )
-                        })}
-                    </XYPlot>
-                    {/* Load Selection dropdown */}
-                    <LoadSelector loads={loads} value={selectedLoadID} onChange={handleSelectedChange} />
-                    <div>
-                        {/* Add, Edit, Delete Load buttons */}
-                        <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickAdd}>Add Load</Button>
-                        <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickEdit} disabled={loads.length === 0}>Edit Load</Button>
-                        <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
+                        {/* Bending Moment Diagram */}
+                        <SidePlot title="Bending Moment Diagram"
+                            loads={loads}
+                            beamProperties={beamProperties}
+                            steps={100}
+                            color="black"
+                        />
 
-                        {/* Add/Edit Load form */}
-                        {addEditForm()}
+                        {/* Rotation Diagram */}
+                        <SidePlot title="Rotation Diagram"
+                            loads={loads}
+                            beamProperties={beamProperties}
+                            steps={100}
+                            color="grey"
+                        />
+
+                        {/* Deflection Diagram */}
+                        <SidePlot title="Deflection Diagram"
+                            loads={loads}
+                            beamProperties={beamProperties}
+                            steps={100}
+                        />
                     </div>
-                    <div>
-                        {/* Movement and Help buttons */}
-                        <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(-1 * beamProperties["Length of Beam"] / 100) }}>&#8592;</Button>
-                        <Button variant="contained" sx={{ margin: 0.5 }} onClick={handleClickHelp}>Help</Button>
-                        <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(beamProperties["Length of Beam"] / 100) }}>&#8594;</Button>
-
-                        {/* Help menu */}
-                        <Dialog open={openHelpMenu} onClose={() => setOpenHelpMenu(false)}>
-                            <DialogContent>
-                                <span>Keyboard Shortcuts</span>
-                                <Table sx={{ minWidth: 500, marginBottom: 2 }}>
-                                    <TableBody>{[["Left/Right Arrows:", "Move Selected Load"],
-                                    ["Insert:", "Add Load"],
-                                    ["End:", "Edit Selected Load"],
-                                    ["Delete:", "Delete Selected Load"],
-                                    ["Esc:", "Edit Properties"]]
-                                        .map(row =>
-                                            <TableRow key={row}>
-                                                {row.map(col =>
-                                                    <TableCell key={col}>{col}</TableCell>
-                                                )}
-                                            </TableRow>
-                                        )}</TableBody>
-                                </Table>
-                                <span>Tips</span>
-                                <Table sx={{ minWidth: 500 }}><TableBody>
-                                    <TableRow><TableCell>
-                                        Trapezoidal loads can be simulated by stacking uniform and triangular loads that have the same endpoints.
-                                    </TableCell></TableRow>
-                                    <TableRow><TableCell>
-                                        Positive shear force represents clockwise twist. Positive bending moment represents concave-up bending.
-                                    </TableCell></TableRow>
-                                </TableBody></Table>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                    {/* Properties button */}
-                    <Button variant="contained" sx={{ margin: 0.5 }} onClick={handleClickProperties}>Edit Properties</Button>
-                </div>
-                {/* Right Columns */}
-                <div style={{
-                    height: (innerWidth > 500) ? window.innerHeight - 100 : "", width: (innerWidth > 500) ? "60%" : "",
-                    overflowX: "clip", overflowY: "auto"
-                }}>
-                    <h1>Plots</h1>
-                    {/* Shear Force Diagram */}
-                    <SidePlot title="Shear Force Diagram"
-                        loads={loads}
-                        beamProperties={beamProperties}
-                        steps={100}
-                        color="red"
-                    />
-
-                    {/* Bending Moment Diagram */}
-                    <SidePlot title="Bending Moment Diagram"
-                        loads={loads}
-                        beamProperties={beamProperties}
-                        steps={100}
-                        color="black"
-                    />
-
-                    {/* Rotation Diagram */}
-                    <SidePlot title="Rotation Diagram"
-                        loads={loads}
-                        beamProperties={beamProperties}
-                        steps={100}
-                        color="grey"
-                    />
-
-                    {/* Deflection Diagram */}
-                    <SidePlot title="Deflection Diagram"
-                        loads={loads}
-                        beamProperties={beamProperties}
-                        steps={100}
-                    />
                 </div>
             </div>
         )
