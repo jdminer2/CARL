@@ -25,8 +25,8 @@ const AddEditForm = (props) => {
     const [newLoad, setNewLoad] = useState({
         Name: getFreeName(props.loads),
         Type: "Point",
-        L1: getSafePosition(props.beamProperties),
-        L2: getSafePosition(props.beamProperties),
+        X1: getSafePosition(props.beamProperties),
+        X2: getSafePosition(props.beamProperties),
         ["Load Force"]: 10.0,
         ["Taller End"]: "Left",
         Color: getRandomColor()
@@ -47,8 +47,8 @@ const AddEditForm = (props) => {
             setNewLoad({
                 Name: getFreeName(props.loads),
                 Type: "Point",
-                L1: getSafePosition(props.beamProperties),
-                L2: Math.min(props.beamProperties["Length of Beam"],
+                X1: getSafePosition(props.beamProperties),
+                X2: Math.min(props.beamProperties["Length of Beam"],
                     getSafePosition(props.beamProperties) + props.beamProperties["Length of Beam"] / 4),
                 ["Load Force"]: 10.0,
                 ["Taller End"]: "Left",
@@ -67,9 +67,9 @@ const AddEditForm = (props) => {
             setNewLoad({
                 Name: load.Name,
                 Type: load.Type,
-                L1: load.L1,
-                L2: load.L2 != load.L1 ? load.L2 : Math.min(props.beamProperties["Length of Beam"],
-                    load.L1 + props.beamProperties["Length of Beam"] / 4),
+                X1: load.X1,
+                X2: load.X2 != load.X1 ? load.X2 : Math.min(props.beamProperties["Length of Beam"],
+                    load.X1 + props.beamProperties["Length of Beam"] / 4),
                 ["Load Force"]: load["Load Force"],
                 ["Taller End"]: load["Taller End"],
                 Color: load.Color
@@ -90,7 +90,7 @@ const AddEditForm = (props) => {
             return
         }
         // If errors are present and user attempted to submit, do nothing and leave the form open.
-        validateInputs(["Name", "L1", "L2", "Load Force"])
+        validateInputs(["Name", "X1", "X2", "Load Force"])
         if (warning !== "")
             return
 
@@ -98,7 +98,7 @@ const AddEditForm = (props) => {
 
         // Simplifies calculations if we can read point loads' length as 0
         if (newLoad.Type === "Point")
-            newLoad.L2 = newLoad.L1
+            newLoad.X2 = newLoad.X1
         if (newLoad.Type !== "Triangular")
             newLoad["Taller End"] = "Left"
 
@@ -147,44 +147,46 @@ const AddEditForm = (props) => {
                 }
             }
 
-            if (["L1", "L2", "Load Force"].includes(field)) {
+            if (["X1", "X2", "Load Force"].includes(field)) {
                 // Check that field is a number.
                 if (parseFloat(newLoad[field]) != newLoad[field]) {
                     setWarning(field + " must be a number.")
+                    if(field === "X1" && newLoad.Type === "Point")
+                        setWarning("X must be a number.")
                     newInvalidAddEditFields.push(field)
                     return
                 }
                 newLoad[field] = Number(newLoad[field])
             }
 
-            if ((["L1", "L2"].includes(field))) {
+            if ((["X1", "X2"].includes(field))) {
                 // Check that load location is in-bounds, for point load.
                 if (newLoad.Type === "Point") {
-                    if (newLoad.L1 < 0) {
-                        setWarning("L1 must be at least 0.")
+                    if (newLoad.X1 < 0) {
+                        setWarning("X must be at least 0.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
-                    if (newLoad.L1 > props.beamProperties["Length of Beam"]) {
-                        setWarning("L1 must be less than or equal to Length of Beam.")
+                    if (newLoad.X1 > props.beamProperties["Length of Beam"]) {
+                        setWarning("X must be less than or equal to Length of Beam.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
                 }
                 // Check that left and right ends of the load are in-bounds, and left end is to the left of right end, for long loads.
                 else {
-                    if (newLoad.L1 < 0) {
-                        setWarning("L1 must be at least 0.")
+                    if (newLoad.X1 < 0) {
+                        setWarning("X1 must be at least 0.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
-                    if (newLoad.L2 <= newLoad.L1) {
-                        setWarning("L2 must be greater than L1.")
+                    if (newLoad.X2 <= newLoad.X1) {
+                        setWarning("X2 must be greater than X1.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
-                    if (newLoad.L2 > props.beamProperties["Length of Beam"]) {
-                        setWarning("L2 must be less than or equal to Length of Beam.")
+                    if (newLoad.X2 > props.beamProperties["Length of Beam"]) {
+                        setWarning("X2 must be less than or equal to Length of Beam.")
                         newInvalidAddEditFields.push(field)
                         return
                     }
@@ -224,7 +226,7 @@ const AddEditForm = (props) => {
                         value={newLoad.Type}
                         onChange={val => {
                             newLoad.Type = val.target.value
-                            validateInputs("L2")
+                            validateInputs("X2")
                         }}
                     >
                         <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
@@ -247,29 +249,29 @@ const AddEditForm = (props) => {
                                 height="75%" width="75%" align="middle" />
                     }
                 </div>
-                {/* L1 textbox */}
+                {/* X1 textbox */}
                 <TextField
                     margin="dense"
                     label={newLoad.Type === "Point" ? "Location of Load (X)" : "Left Endpoint Location (X1)"}
                     type="text"
-                    defaultValue={newLoad.L1}
+                    defaultValue={newLoad.X1}
                     onChange={val => {
-                        newLoad.L1 = val.target.value
-                        validateInputs("L1")
+                        newLoad.X1 = val.target.value
+                        validateInputs("X1")
                     }}
                     fullWidth
                     variant="standard"
                 />
-                {/* L2 textbox, hidden for point loads */}
+                {/* X2 textbox, hidden for point loads */}
                 {newLoad.Type === "Point" ? [] :
                     <TextField
                         margin="dense"
                         label="Right Endpoint Location (X2)"
                         type="text"
-                        defaultValue={newLoad.L2}
+                        defaultValue={newLoad.X2}
                         onChange={val => {
-                            newLoad.L2 = val.target.value
-                            validateInputs("L2")
+                            newLoad.X2 = val.target.value
+                            validateInputs("X2")
                         }}
                         fullWidth
                         variant="standard"
@@ -300,7 +302,7 @@ const AddEditForm = (props) => {
                             onChange={val => {
                                 newLoad["Taller End"] = val.target.value
                                 // Necessary to make the radiobuttons re-render when clicked and show a change
-                                validateInputs("L2")
+                                validateInputs("X2")
                             }}
                         >
                             <FormControlLabel value="Left" control={<Radio />} label="Left" />

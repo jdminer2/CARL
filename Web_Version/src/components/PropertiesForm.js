@@ -132,13 +132,13 @@ const PropertiesForm = (props) => {
             if (field === "Length of Beam")
                 // Check that existing loads are not invalidated by length of beam change.
                 props.loads.forEach(load => {
-                    if (load.Type === "Point" && load.L1 > props.beamProperties["Length of Beam"]) {
-                        setWarning(load.Name + " is out of bounds (Located at " + load.L1 + ", must be less than or equal to Length of Beam).")
+                    if (load.Type === "Point" && load.X1 > props.beamProperties["Length of Beam"]) {
+                        setWarning(load.Name + " is out of bounds (Located at " + load.X1 + ", must be less than or equal to Length of Beam).")
                         if (!newInvalidFields.includes(field))
                             newInvalidFields.push(field)
                     }
-                    else if (load.Type !== "Point" && load.L2 > props.beamProperties["Length of Beam"]) {
-                        setWarning("Right endpoint of " + load.Name + " is out of bounds (Located at " + load.L2 + ", must be less than or equal to Length of Beam).")
+                    else if (load.Type !== "Point" && load.X2 > props.beamProperties["Length of Beam"]) {
+                        setWarning("Right endpoint of " + load.Name + " is out of bounds (Located at " + load.X2 + ", must be less than or equal to Length of Beam).")
                         if (!newInvalidFields.includes(field))
                             newInvalidFields.push(field)
                     }
@@ -231,11 +231,11 @@ function loadRadioButtonsCreator(loads) {
             label={"Name: " + load.Name + ", " +
                 "Type: " + load.Type + ", " +
                 (load.Type === "Point" ?
-                    "Location: " + load.L1 + ", " +
+                    "Location: " + load.X1 + ", " +
                     "Load Force: " + load["Load Force"]
                     :
-                    "Left Location: " + load.L1 + ", " +
-                    "Right Location: " + load.L2 + ", " +
+                    "Left Location: " + load.X1 + ", " +
+                    "Right Location: " + load.X2 + ", " +
                     (load.Type === "Uniform" ?
                         "Load per Length: " + load["Load Force"]
                         :

@@ -34,7 +34,7 @@ function SidePlot(props) {
 
         // The endpoints of each load
         props.loads.forEach(load =>
-            xValues.push(load.L1, load.L2)
+            xValues.push(load.X1, load.X2)
         )
 
         // Sort the x values so the line plot connects each point from left to right, not skipping and going back and forth
@@ -309,7 +309,7 @@ function getSegmentEndpoints(loads, beamProperties) {
         segmentEndpoints.push(beamProperties["Pinned Support Position"], beamProperties["Roller Support Position"])
     // Locations/Endpoints of all loads
     loads.forEach(load =>
-        segmentEndpoints.push(load.L1, load.L2)
+        segmentEndpoints.push(load.X1, load.X2)
     )
 
     // Sort ascending and remove duplicates
@@ -448,8 +448,8 @@ function getSubloads(loads) {
 
     loads.forEach(load => {
         if (load.Type === "Triangular" && load["Taller End"] === "Left") {
-            newLoads.push({ ["Load Force"]: -1 * load["Load Force"], L1: load.L1, L2: load.L2, Type: "Triangular", ["Taller End"]: "Right" })
-            newLoads.push({ ["Load Force"]: load["Load Force"], L1: load.L1, L2: load.L2, Type: "Uniform" })
+            newLoads.push({ ["Load Force"]: -1 * load["Load Force"], X1: load.X1, X2: load.X2, Type: "Triangular", ["Taller End"]: "Right" })
+            newLoads.push({ ["Load Force"]: load["Load Force"], X1: load.X1, X2: load.X2, Type: "Uniform" })
         }
         else
             newLoads.push(load)
@@ -472,8 +472,8 @@ function reactionsSingleLoad(load, beamProperties, x) {
     let c = beamProperties["Length of Beam"] - b
 
     let W = load["Load Force"]
-    let X = load.L1
-    let L = load.L2 - load.L1
+    let X = load.X1
+    let L = load.X2 - load.X1
 
     // Multiplier using load force
     let coeff
@@ -509,8 +509,8 @@ function shearForceSingleLoad(load, beamProperties, x) {
     let c = beamProperties["Length of Beam"] - b
 
     let W = load["Load Force"]
-    let X = load.L1
-    let L = load.L2 - load.L1
+    let X = load.X1
+    let L = load.X2 - load.X1
 
     // Multiplier using load force
     let coeff
@@ -612,8 +612,8 @@ function bendingMomentSingleLoad(load, beamProperties, x) {
     let c = beamProperties["Length of Beam"] - b
 
     let W = load["Load Force"]
-    let X = load.L1
-    let L = load.L2 - load.L1
+    let X = load.X1
+    let L = load.X2 - load.X1
 
     // Multiplier using load force
     let coeff
@@ -689,8 +689,8 @@ function rotationSingleLoad(load, beamProperties, x) {
     let c = beamProperties["Length of Beam"] - b
 
     let W = load["Load Force"]
-    let X = load.L1
-    let L = load.L2 - load.L1
+    let X = load.X1
+    let L = load.X2 - load.X1
 
     // Multiplier using load force
     let coeff
@@ -772,8 +772,8 @@ function deflectionSingleLoad(load, beamProperties, x) {
     let c = beamProperties["Length of Beam"] - b
 
     let W = load["Load Force"]
-    let X = load.L1
-    let L = load.L2 - load.L1
+    let X = load.X1
+    let L = load.X2 - load.X1
 
     // Multiplier using load force
     let coeff
@@ -868,8 +868,8 @@ function deflectionSlopePolynomialSingleLoad(load, beamProperties, x) {
     let c = beamProperties["Length of Beam"] - b
 
     let W = load["Load Force"]
-    let X = load.L1
-    let L = load.L2 - load.L1
+    let X = load.X1
+    let L = load.X2 - load.X1
 
     // Multiplier using load force
     let coeff

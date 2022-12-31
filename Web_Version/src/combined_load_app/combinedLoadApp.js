@@ -152,17 +152,17 @@ function CombinedLoadApp() {
         let load = loads[selectedLoadID]
 
         // Constrain movement to be in-bounds
-        disp = Math.min(disp, beamProperties["Length of Beam"] - load.L2)
-        disp = Math.max(disp, -1 * load.L1)
+        disp = Math.min(disp, beamProperties["Length of Beam"] - load.X2)
+        disp = Math.max(disp, -1 * load.X1)
 
-        let newL1 = load.L1 + disp
-        let newL2 = load.L2 + disp
+        let newX1 = load.X1 + disp
+        let newX2 = load.X2 + disp
         // Round off floating point
-        newL1 = Number(formatVal(newL1)(newL1))
-        newL2 = Number(formatVal(newL2)(newL2))
+        newX1 = Number(formatVal(newX1)(newX1))
+        newX2 = Number(formatVal(newX2)(newX2))
         // Set values
-        load.L1 = newL1
-        load.L2 = newL2
+        load.X1 = newX1
+        load.X2 = newX2
 
         reRender()
     }
@@ -260,11 +260,11 @@ function CombinedLoadApp() {
                             {loads.map((load, loadID) => {
                                 if (load.Type === "Point")
                                     return
-                                let data = [{ x: load.L1, y: 8 * (930 / (window.innerHeight - 100)) },
-                                { x: load.L2, y: 8 * (930 / (window.innerHeight - 100)) }]
+                                let data = [{ x: load.X1, y: 8 * (930 / (window.innerHeight - 100)) },
+                                { x: load.X2, y: 8 * (930 / (window.innerHeight - 100)) }]
                                 if (load.Type === "Triangular")
-                                    data.push({ x: (load["Taller End"] === "Left") ? load.L1 : load.L2, y: 20 * (930 / (window.innerHeight - 100)) },
-                                        { x: load.L1, y: 8 * (930 / (window.innerHeight - 100)) })
+                                    data.push({ x: (load["Taller End"] === "Left") ? load.X1 : load.X2, y: 20 * (930 / (window.innerHeight - 100)) },
+                                        { x: load.X1, y: 8 * (930 / (window.innerHeight - 100)) })
 
                                 return (
                                     <LineSeries
@@ -385,15 +385,15 @@ function labelMakerForLoads(loads, beamProperties, selectedLoadID) {
         let isSelected = loadID == selectedLoadID
 
         // xLoc is the center of the load. It serves as the location for labels, and the x coordinate users see for loads.
-        let xLoc = (load.L1 + load.L2) / 2 // Convert to display format, where position = the middle of the load
+        let xLoc = (load.X1 + load.X2) / 2 // Convert to display format, where position = the middle of the load
 
         // For selected load, the stats will be labelled with letters.
         let statsLabel = ""
         // X or X1 label
-        statsLabel += (isSelected ? (load.Type === "Point" ? "X=" : "X1=") : "") + load.L1 + ", "
+        statsLabel += (isSelected ? (load.Type === "Point" ? "X=" : "X1=") : "") + load.X1 + ", "
         // X2 label if applicable
         if (load.Type !== "Point")
-            statsLabel += (isSelected ? "X2=" : "") + load.L2 + ", "
+            statsLabel += (isSelected ? "X2=" : "") + load.X2 + ", "
         // P or W label
         statsLabel += (isSelected ? (load.Type === "Point" ? "P=" : "W=") : "") + load["Load Force"]
 
@@ -420,12 +420,12 @@ function labelMakerForLoads(loads, beamProperties, selectedLoadID) {
  */
 function getLoadArrows(data, load, loadID, beamLength) {
     if (load.Type === "Point")
-        data.push({ x: load.L1, y: 0, yOffset: 10, label: "\u2193", loadID: loadID, style: { fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle" } })
+        data.push({ x: load.X1, y: 0, yOffset: 10, label: "\u2193", loadID: loadID, style: { fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle" } })
     else {
-        let numArrows = Math.floor((load.L2 - load.L1) / beamLength * 20) + 1
+        let numArrows = Math.floor((load.X2 - load.X1) / beamLength * 20) + 1
         // Evenly spaced
         for (let i = 0; i <= numArrows; i++) {
-            let x = load.L1 + (i / numArrows) * (load.L2 - load.L1)
+            let x = load.X1 + (i / numArrows) * (load.X2 - load.X1)
             data.push({ x: x, y: 0, yOffset: 6, label: "\u2193", loadID: loadID, style: { fontSize: 25, font: "verdana", fill: load.Color, dominantBaseline: "text-after-edge", textAnchor: "middle" } })
         }
     }
