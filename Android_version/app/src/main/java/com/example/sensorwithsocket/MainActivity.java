@@ -218,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         WebSettings webSettings = mainWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-        mainWebView.loadUrl("https://react-vis-app-test.herokuapp.com/");
+        mainWebView.loadUrl("https://sail-ncsu.herokuapp.com/");
         this.mainWebView.setVisibility(View.INVISIBLE);
         setButtonsVisiblity(View.VISIBLE);
     }
@@ -244,7 +244,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         }
         this.location = 20.0D;
         handler = new Handler();
-        MySocketIo mySocketIo = new MySocketIo("https://react-vis-app-test.herokuapp.com/");
+        MySocketIo mySocketIo = new MySocketIo("https://sail-ncsu.herokuapp.com/");
         this.socket = mySocketIo.getSocket();
         this.socket.connect();
         graph = findViewById(R.id.graph);
