@@ -235,19 +235,9 @@ const AddEditForm = (props) => {
                     </RadioGroup>
                 </FormControl>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {newLoad.Type === "Point" ?
-                        <img src={require("../resources/images/Point_load_schematic_1200dpi.png")}
-                            alt="Schematic of Point Load on a Beam"
-                            height="75%" width="75%" align="middle" />
-                        : newLoad.Type === "Uniform" ?
-                            <img src={require("../resources/images/Uniform_load_schematic_1200dpi.png")}
-                                alt="Schematic of Uniform Load on a Beam"
-                                height="75%" width="75%" align="middle" />
-                            :
-                            <img src={require("../resources/images/Triangular_load_schematic_1200dpi.png")}
-                                alt="Schematic of Triangular Load on a Beam"
-                                height="75%" width="75%" align="middle" />
-                    }
+                    <img src={require("../resources/images/" + newLoad.Type + "_load_schematic_1200dpi.png")}
+                        alt={"Schematic of " + newLoad.Type + " Load on a Beam"}
+                        height="75%" width="75%" align="middle" />
                 </div>
                 {/* X1 textbox */}
                 <TextField
