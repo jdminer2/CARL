@@ -108,6 +108,8 @@ const AddEditForm = (props) => {
         }
         else
             props.loads[props.selectedLoadID] = newLoad
+
+        props.onAddEditDelete()
     }
 
     /**
@@ -218,22 +220,24 @@ const AddEditForm = (props) => {
                     variant="standard"
                 />
                 {/* type radio buttons */}
-                <FormControl>
-                    <FormLabel id="newLoadTypeRadios" sx={{ mt: 1 }}>Type</FormLabel>
-                    <RadioGroup
-                        row
-                        aria-labelledby="newLoadTypeRadios"
-                        value={newLoad.Type}
-                        onChange={val => {
-                            newLoad.Type = val.target.value
-                            validateInputs("X2")
-                        }}
-                    >
-                        <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
-                        <FormControlLabel value="Uniform" control={<Radio />} label="Uniform Load" />
-                        <FormControlLabel value="Triangular" control={<Radio />} label="Triangular Load" />
-                    </RadioGroup>
-                </FormControl>
+                {props.dynamic?[]:
+                    <FormControl>
+                        <FormLabel id="newLoadTypeRadios" sx={{ mt: 1 }}>Type</FormLabel>
+                        <RadioGroup
+                            row
+                            aria-labelledby="newLoadTypeRadios"
+                            value={newLoad.Type}
+                            onChange={val => {
+                                newLoad.Type = val.target.value
+                                validateInputs("X2")
+                            }}
+                        >
+                            <FormControlLabel value="Point" control={<Radio />} label="Point Load" />
+                            <FormControlLabel value="Uniform" control={<Radio />} label="Uniform Load" />
+                            <FormControlLabel value="Triangular" control={<Radio />} label="Triangular Load" />
+                        </RadioGroup>
+                    </FormControl>
+                }
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <img src={require("../resources/images/" + newLoad.Type + "_load_schematic_1200dpi.png")}
                         alt={"Schematic of " + newLoad.Type + " Load on a Beam"}

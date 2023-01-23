@@ -1,5 +1,5 @@
 import '../App.css'
-import 'react-vis/dist/style.css';
+import 'react-vis/dist/style.css'
 import React, { useEffect, useState } from 'react'
 import { Button, Dialog, DialogContent, Table, TableBody, TableCell, TableRow } from '@mui/material'
 import AddEditForm from '../components/AddEditForm'
@@ -7,12 +7,43 @@ import LoadSelector from '../components/LoadSelector'
 import PropertiesForm from '../components/PropertiesForm'
 import SidePlot from '../components/SidePlot'
 import { HorizontalGridLines, LabelSeries, LineSeries, VerticalGridLines, XAxis, XYPlot, YAxis } from "react-vis"
-import {Nav} from '../components/Navbar/NavbarElements';
+import {Nav} from '../components/Navbar/NavbarElements'
+import io from "socket.io-client"
+import {useInterval} from "../useInterval"
 
+let endpoint = "wss://sail-ncsu.herokuapp.com/" // this is when run on server ***** change it
+// let endpoint = "http://127.0.0.1:5000/"
+let socket = io.connect(endpoint)
 
 function CombinedLoadApp() {
     // Data
-    const [loads, setLoads] = useState([])
+    const [loads, setLoads] = useState([
+        {Name: "Load 1",
+        Type: "Point",
+        X1: 50.0,
+        X2: 50.0,
+        ["Load Force"]: 10.0},
+        {Name: "Load 2",
+        Type: "Point",
+        X1: 60.0,
+        X2: 60.0,
+        ["Load Force"]: 15.0},
+        {Name: "Load 3",
+        Type: "Point",
+        X1: 20.0,
+        X2: 20.0,
+        ["Load Force"]: 10.0},
+        {Name: "Load 4",
+        Type: "Point",
+        X1: 70.0,
+        X2: 70.0,
+        ["Load Force"]: 20.0},
+        {Name: "Load 5",
+        Type: "Point",
+        X1: 10.0,
+        X2: 10.0,
+        ["Load Force"]: 30.0}
+    ])
     const [beamProperties, setBeamProperties] = useState({
         ["Support Type"]: "Simply Supported",
         ["Length of Beam"]: 100,
@@ -21,8 +52,15 @@ function CombinedLoadApp() {
         Elasticity: 29000.0,
         Inertia: 2000.0
     })
+    const [dynamicProperties, setDynamicProperties] = useState({
+        Density: 1.0,
+        Area: 1.0,
+        ["Damping Ratio"]: 0.02,
+        rA: 85000.0,
+        Gravity: 9.8
+    })
     // The index of the load to move/modify/delete
-    const [selectedLoadID, setSelectedLoadID] = useState(-1)
+    const [selectedLoadID, setSelectedLoadID] = useState(0)
     // Whether forms should be shown
     const [openHelpMenu, setOpenHelpMenu] = useState(false)
     const [openPropertiesForm, setOpenPropertiesForm] = useState(true)
@@ -30,36 +68,78 @@ function CombinedLoadApp() {
     // Communication with the forms
     const [addEditFormAction, setAddEditFormAction] = useState("")
     const [propertiesFormAction, setPropertiesFormAction] = useState("")
+    // Whether dynamic plot is enabled
+    const [dynamic, setDynamic] = useState(true)
+    const [isLoaded, setIsLoaded] = useState(false)
+    const [items, setItems] = useState([])
+    const [mi, setI] = useState(0)
+    const [mData, setData] = useState([
+        {x: 0, y: 0},
+        {x: 1, y: 0},
+        {x: 2, y: 0},
+        {x: 3, y: 0},
+        {x: 4, y: 0},
+        {x: 5, y: 0},
+        {x: 6, y: 0},
+        {x: 7, y: 0},
+        {x: 8, y: 0},
+        {x: 9, y: 0}
+    ])
+    
+    const [testUrl, setTestUrl] = useState("{'length': "+ beamProperties["Length of Beam"] 
+    +", 'elasticity': "+ 1.0
+    +", 'inertia': "+ 1.0
+    +", 'density': "+ 1.0
+    +", 'area': "+ 1.0
+    +", 'dampingRatio':"+ 0.02
+    +", 'rA': "+ 85000.0
+    +", 'EI': "+ 21000000000
+    +", 'mass': ["+ [10.0,15.0,10.0,20.0,10.0]
+    +"], 'gravity': "+ 9.8
+    +", 'force': ["+ [100.0,150.0,100.0,200.0,100.0]
+    +"], 'locationOfLoad': ["+ [50,60,20,70,30]
+    +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
 
-    // Automatically re-renders the screen when called
+    // Shortcut to re-render the screen
     const [render, setRender] = useState(false)
     function reRender() {
         // Wrapping setRender inside setTimeout causes the screen to rerender more smoothly when the user holds down a movement key.
         setTimeout(() => setRender(!render), 0)
     }
 
-    // Automatically resizes the plots when the user resizes the window
+    // Plots resize whenever the window is resized
     const [dims, setDims] = useState([])
     useEffect(() => {
         window.addEventListener("resize", () => setDims([window.innerHeight, window.innerWidth]))
         return () => window.removeEventListener("resize", () => setDims([window.innerHeight, window.innerWidth]))
     }, [])
 
-    // Automatically sets the focus on the page so the user can use keyboard controls
+    // Sets the focus on the page so the user can use keyboard controls
     const plotScreenRef = React.useRef(null)
     useEffect(() => {
         if (plotScreenRef.current)
             plotScreenRef.current.focus()
     }, [openPropertiesForm])
 
+    // Communication with backend
+    socket.on('message',message => {
+        if(dynamic) {
+            setItems(message)
+            setI(0)
+            setIsLoaded(true)
+        }
+    })
+    useEffect(() =>
+        socket.emit("message",testUrl)
+    ,[testUrl])
 
     // When Add Load button is clicked
-    const handleClickAdd = () => {
+    function handleClickAdd () {
         if (addEditFormAction === "")
             setAddEditFormAction("Add")
     }
     // When Edit Load button is clicked
-    const handleClickEdit = () => {
+    function handleClickEdit () {
         if (addEditFormAction === "")
             setAddEditFormAction("Edit")
     }
@@ -70,6 +150,35 @@ function CombinedLoadApp() {
         loads.splice(selectedLoadID, 1)
         setSelectedLoadID(loads.length - 1)
         reRender()
+    }
+    function refreshDynamic() {
+        setItems([])
+        setI(0)
+        setData([
+            {x: 0, y: 0},
+            {x: 1, y: 0},
+            {x: 2, y: 0},
+            {x: 3, y: 0},
+            {x: 4, y: 0},
+            {x: 5, y: 0},
+            {x: 6, y: 0},
+            {x: 7, y: 0},
+            {x: 8, y: 0},
+            {x: 9, y: 0}
+        ])
+        
+        setTestUrl(makeUrl(1,10))
+    }
+
+    // When Dynamic button is clicked
+    function handleClickDynamic() {
+        if(!dynamic)
+            socket.emit("message",testUrl)
+        setDynamic(!dynamic)
+        setLoads([])
+        setSelectedLoadID(-1)
+        beamProperties["Support Type"] = "Simply Supported"
+        setOpenPropertiesForm(true)
     }
     // When Edit Properties button is clicked
     function handleClickProperties() {
@@ -131,10 +240,10 @@ function CombinedLoadApp() {
                 handleClickDelete()
             // Left arrow outside of textboxes
             else if (event.keyCode == 37 && document.activeElement.type !== "text")
-                moveSelectedLoad(-1 * beamProperties["Length of Beam"] / 100)
+                moveSelectedLoad(-1 * beamProperties["Length of Beam"] / 100, 1, 10)
             // Right arrow outside of textboxes
             else if (event.keyCode == 39 && document.activeElement.type !== "text")
-                moveSelectedLoad(beamProperties["Length of Beam"] / 100)
+                moveSelectedLoad(beamProperties["Length of Beam"] / 100, 1, 10)
             else
                 return
         }
@@ -144,27 +253,111 @@ function CombinedLoadApp() {
 
     /**
      * Move the selected load by adding disp to its position.
-     * If move would place load out of bounds, only move the load until it reaches the edge.
+     * If move would place load out of bounds, only move the load to the edge.
      */
-    function moveSelectedLoad(disp) {
+    function moveSelectedLoad(disp,mag,tl) {
+        if(dynamic && !isLoaded)
+            return
+
+        // Ensure selected load exists
         if (selectedLoadID < 0)
             return
         let load = loads[selectedLoadID]
+
+        if(dynamic)
+            setIsLoaded(false)
 
         // Constrain movement to be in-bounds
         disp = Math.min(disp, beamProperties["Length of Beam"] - load.X2)
         disp = Math.max(disp, -1 * load.X1)
 
+        // Move the selected load
         let newX1 = load.X1 + disp
         let newX2 = load.X2 + disp
-        // Round off floating point
         newX1 = Number(formatVal(newX1)(newX1))
         newX2 = Number(formatVal(newX2)(newX2))
-        // Set values
         load.X1 = newX1
         load.X2 = newX2
+        
+        if(dynamic)
+            setTestUrl(makeUrl(mag,tl))
 
         reRender()
+    }
+
+    function updateGraph(){
+        if(dynamic) {
+            if(openPropertiesForm)
+                return
+            // console.log(items)
+            if(items.message === undefined)
+                return        
+
+            if(mi < items.message.length) {
+                setData([
+                    {x: 0, y: items.message[mi][0]},
+                    {x: 1, y: items.message[mi][1]},
+                    {x: 2, y: items.message[mi][2]},
+                    {x: 3, y: items.message[mi][3]},
+                    {x: 4, y: items.message[mi][4]},
+                    {x: 5, y: items.message[mi][5]},
+                    {x: 6, y: items.message[mi][6]},
+                    {x: 7, y: items.message[mi][7]},
+                    {x: 8, y: items.message[mi][8]},
+                    {x: 9, y: items.message[mi][9]}
+                ])
+                setI(mi + 1)
+                if(mi === items.message.length - 20)
+                    // locations
+                    moveSelectedLoad(0,2, 10)
+            }
+            else
+                setIsLoaded(false)
+        }
+    }
+    useInterval(updateGraph, -1)
+
+    function makeUrl(mag,tl){
+        // var ival = Math.min([ival+10,items.message.length-1])
+        var ival = mi;
+
+        var ival = Math.min(ival+15,items.message.length -1)
+        setIsLoaded(false)
+        var loc = makeLocMass(mag,"locations")
+        var masses = makeLocMass(mag, "masses")
+        var forces = []
+        for(let mass in masses){
+            forces.push(mass*dynamicProperties.Gravity)
+        }
+        
+        const turl = "{'length': "+ beamProperties["Length of Beam"] 
+        +", 'elasticity': "+ 1.0
+        +", 'inertia': "+ 1.0
+        +", 'density': "+ 1.0
+        +", 'area': "+ 1.0
+        +", 'dampingRatio':"+ 0.02
+        +", 'rA': "+ 85000.0 
+        +", 'EI': "+ 21000000000
+        +", 'mass': ["+ masses 
+        +"], 'gravity': "+ 9.8
+        +", 'force': ["+ forces 
+        +"], 'locationOfLoad': ["+ loc  
+        +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': " + mag + ", 'timelimit' : "+tl+", 'q' : '[" +items.q[ival]+"]', 'mt' : "+ival+"}"
+
+        return turl
+    }
+    function makeLocMass(mag,need){
+        if(need === "locations")
+            return loads.map(load => load.X1)
+        else
+            return loads.map((load, loadID) => {
+                let mass = load["Load Force"]
+                if(dynamicProperties.Gravity != 0)
+                    mass /= dynamicProperties.Gravity
+                if(loadID === selectedLoadID)
+                    mass *= mag
+                return mass
+            })
     }
 
     /**
@@ -183,6 +376,9 @@ function CombinedLoadApp() {
                 setAction={setAddEditFormAction}
                 open={openAddEditForm}
                 setOpen={setOpenAddEditForm}
+
+                dynamic={dynamic}
+                onAddEditDelete={refreshDynamic}
             />
         )
     }
@@ -194,24 +390,33 @@ function CombinedLoadApp() {
             <PropertiesForm
                 loads={loads}
                 beamProperties={beamProperties}
+                dynamicProperties={dynamicProperties}
                 selectedLoadID={selectedLoadID}
                 handleSelectedChange={handleSelectedChange}
+                handleKeyDown={handleKeyDown}
+                buttonHandlers={{add:handleClickAdd, edit:handleClickEdit, delete:handleClickDelete, dynamic:handleClickDynamic}}
 
                 action={propertiesFormAction}
                 setAction={setPropertiesFormAction}
                 open={openPropertiesForm}
                 setOpen={setOpenPropertiesForm}
 
-                handleKeyDown={handleKeyDown}
-                handleClickAdd={handleClickAdd}
-                handleClickEdit={handleClickEdit}
-                handleClickDelete={handleClickDelete}
-
                 addEditForm={addEditForm}
                 openAddEditForm={openAddEditForm}
+
+                dynamic={dynamic}
             />
         )
-    else {
+    
+    // If dynamic and not ready, display messages
+    else if (dynamic && items.message === undefined) {
+        console.log(items)
+        return "Waiting for response..."
+    }
+    else if(dynamic && mData === undefined)
+        return "undefined"
+    
+    else
         // Display the main plots screen
         return (
             <div>
@@ -228,71 +433,99 @@ function CombinedLoadApp() {
                     }}>
                         {/* Main Plot */}
                         <h1>Load Locations</h1>
-                        <XYPlot
-                            height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
-                            xDomain={[0, beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin={{ left: 60, right: 60 }}
-                        >
-                            <VerticalGridLines />
-                            <HorizontalGridLines />
-                            <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title={"Load Locations"} />
-                            <YAxis hideTicks />
-                            {/* Display the beam line. */}
-                            <LineSeries data={[{ x: 0, y: 0 }, { x: beamProperties["Length of Beam"], y: 0 }]} />
-                            {/* Display the supports. */}
-                            {(beamProperties["Support Type"] === "Simply Supported")
-                                ?
-                                // Simply Supported supports
+                        {dynamic?
+                            <XYPlot 
+                                height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
+                                xDomain={[0, beamProperties["Length of Beam"]]} yDomain ={[-100000000,100000000]} margin={{ left: 60, right: 60 }}
+                            >
+                                <VerticalGridLines/>
+                                <HorizontalGridLines/>
+                                <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title={"Load Locations"} />
+                                <YAxis/>
+                                {/* Display the beam */}
+                                <LineSeries data={updateMdata(mData, beamProperties["Length of Beam"])} curve={'curveMonotoneX'}/>
+                                {/* Display the supports. */}
                                 <LabelSeries data={[{
-                                    x: beamProperties["Pinned Support Position"], y: 0, yOffset: 24, label: "\u25b2",
+                                    x: 0, y: 0, yOffset: 24, label: "\u25b2",
                                     style: { fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle" }
                                 },
                                 {
-                                    x: beamProperties["Roller Support Position"], y: 0, yOffset: 24, label: "\u2b24",
+                                    x: beamProperties["Length of Beam"], y: 0, yOffset: 24, label: "\u2b24",
                                     style: { fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle" }
                                 }]} />
-                                :
-                                // Cantilever support
-                                getCantileverSupportDisplay(beamProperties["Length of Beam"])
-                            }
-                            {/* Display the labels and arrows for loads. */}
-                            <LabelSeries data={labelMakerForLoads(loads, beamProperties, selectedLoadID)} onValueClick={element => setSelectedLoadID(element.loadID)} />
-                            {/* Display the line parts of uniform and triangular loads. */}
-                            {loads.map((load, loadID) => {
-                                if (load.Type === "Point")
-                                    return
-                                let data = [{ x: load.X1, y: 8 * (930 / (window.innerHeight - 100)) },
-                                { x: load.X2, y: 8 * (930 / (window.innerHeight - 100)) }]
-                                if (load.Type === "Triangular")
-                                    data.push({ x: (load["Taller End"] === "Left") ? load.X1 : load.X2, y: 20 * (930 / (window.innerHeight - 100)) },
-                                        { x: load.X1, y: 8 * (930 / (window.innerHeight - 100)) })
+                                {/* Display the loads */}
+                                <LabelSeries data={labelMakerForLoads(loads, beamProperties, selectedLoadID, true, mData)} onValueClick={element => setSelectedLoadID(element.loadID)} />
+                            </XYPlot>
+                        :
+                            <XYPlot
+                                height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
+                                xDomain={[0, beamProperties["Length of Beam"]]} yDomain={[-100, 100]} margin={{ left: 60, right: 60 }}
+                            >
+                                <VerticalGridLines />
+                                <HorizontalGridLines />
+                                <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title={"Load Locations"} />
+                                <YAxis hideTicks />
+                                {/* Display the beam line. */}
+                                <LineSeries data={[{ x: 0, y: 0 }, { x: beamProperties["Length of Beam"], y: 0 }]} />
+                                {/* Display the supports. */}
+                                {(beamProperties["Support Type"] === "Simply Supported")
+                                    ?
+                                    // Simply Supported supports
+                                    <LabelSeries data={[{
+                                        x: beamProperties["Pinned Support Position"], y: 0, yOffset: 24, label: "\u25b2",
+                                        style: { fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle" }
+                                    },
+                                    {
+                                        x: beamProperties["Roller Support Position"], y: 0, yOffset: 24, label: "\u2b24",
+                                        style: { fontSize: 25, font: "verdana", fill: "#12939A", dominantBaseline: "text-after-edge", textAnchor: "middle" }
+                                    }]} />
+                                    :
+                                    // Cantilever support
+                                    getCantileverSupportDisplay(beamProperties["Length of Beam"])
+                                }
+                                {/* Display the labels and arrows for loads. */}
+                                <LabelSeries data={labelMakerForLoads(loads, beamProperties, selectedLoadID, false)} onValueClick={element => setSelectedLoadID(element.loadID)} />
+                                {/* Display the line parts of uniform and triangular loads. */}
+                                {loads.map((load, loadID) => {
+                                    if (load.Type === "Point")
+                                        return
+                                    let data = [{ x: load.X1, y: 8 * (930 / (window.innerHeight - 100)) },
+                                    { x: load.X2, y: 8 * (930 / (window.innerHeight - 100)) }]
+                                    if (load.Type === "Triangular")
+                                        data.push({ x: (load["Taller End"] === "Left") ? load.X1 : load.X2, y: 20 * (930 / (window.innerHeight - 100)) },
+                                            { x: load.X1, y: 8 * (930 / (window.innerHeight - 100)) })
 
-                                return (
-                                    <LineSeries
-                                        data={data}
-                                        onSeriesClick={() => { setSelectedLoadID(loadID) }}
-                                        key={loadID}
-                                        color={load.Color}
-                                        strokeWidth={3}
-                                    />
-                                )
-                            })}
-                        </XYPlot>
+                                    return (
+                                        <LineSeries
+                                            data={data}
+                                            onSeriesClick={() => { setSelectedLoadID(loadID) }}
+                                            key={loadID}
+                                            color={load.Color}
+                                            strokeWidth={3}
+                                        />
+                                    )
+                                })}
+                            </XYPlot>
+                        }
                         {/* Load Selection dropdown */}
                         <LoadSelector loads={loads} value={selectedLoadID} onChange={handleSelectedChange} />
                         <div>
                             {/* Add, Edit, Delete Load buttons */}
-                            <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickAdd}>Add Load</Button>
-                            <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickEdit} disabled={loads.length === 0}>Edit Load</Button>
-                            <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
+                            <div>
+                                <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickAdd}>Add Load</Button>
+                                <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickEdit} disabled={loads.length === 0}>Edit Load</Button>
+                                <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
+                            </div>
+                            <Button variant="outlined" onClick={handleClickDynamic}>Switch to {dynamic?"Static":"Dynamic"} Load Simulator</Button>
 
                             {/* Add/Edit Load form */}
                             {addEditForm()}
                         </div>
                         <div>
                             {/* Movement and Help buttons */}
-                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(-1 * beamProperties["Length of Beam"] / 100) }}>&#8592;</Button>
+                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(-1 * beamProperties["Length of Beam"] / 100, 1, 10) }}>&#8592;</Button>
                             <Button variant="contained" sx={{ margin: 0.5 }} onClick={handleClickHelp}>Help</Button>
-                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(beamProperties["Length of Beam"] / 100) }}>&#8594;</Button>
+                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(beamProperties["Length of Beam"] / 100, 1, 10) }}>&#8594;</Button>
 
                             {/* Help menu */}
                             <Dialog open={openHelpMenu} onClose={() => setOpenHelpMenu(false)}>
@@ -363,11 +596,16 @@ function CombinedLoadApp() {
                             beamProperties={beamProperties}
                             steps={100}
                         />
+
+                        {/* Dynamic Deflection Diagram */}
+                        <SidePlot title="Dynamic Deflection Diagram"
+                            beamProperties={beamProperties}
+                            mData={mData}
+                        />
                     </div>
                 </div>
             </div>
         )
-    }
 }
 
 /**
@@ -377,34 +615,56 @@ function CombinedLoadApp() {
  * This function is not responsible for the line/triangle parts of non-point loads.
  * Point load labels are higher than the rest to reduce the amount of overlapping text.
  */
-function labelMakerForLoads(loads, beamProperties, selectedLoadID) {
+function labelMakerForLoads(loads, beamProperties, selectedLoadID, dynamic, mData) {
+    if(dynamic && mData===undefined)
+        return null
     var data = []
     loads.forEach((load, loadID) => {
+        // xLoc is the center of the load. It serves as the location for labels, and the x coordinate users see for loads.
+        let xLoc = (load.X1 + load.X2) / 2 // Convert to display format, where position = the middle of the load
+        let yLoc = dynamic ? calcPlayerLoc(xLoc, mData, beamProperties) : 0
+
         // Check if the load is a point load, and if it is the selected load.
         let isPoint = load.Type === "Point"
         let isSelected = loadID == selectedLoadID
 
-        // xLoc is the center of the load. It serves as the location for labels, and the x coordinate users see for loads.
-        let xLoc = (load.X1 + load.X2) / 2 // Convert to display format, where position = the middle of the load
-
         // For selected load, the stats will be labelled with letters.
         let statsLabel = ""
         // X or X1 label
-        statsLabel += (isSelected ? (load.Type === "Point" ? "X=" : "X1=") : "") + load.X1 + ", "
+        statsLabel += (isSelected ? (isPoint ? "X=" : "X1=") : "") + load.X1 + ", "
         // X2 label if applicable
         if (load.Type !== "Point")
             statsLabel += (isSelected ? "X2=" : "") + load.X2 + ", "
         // P or W label
-        statsLabel += (isSelected ? (load.Type === "Point" ? "P=" : "W=") : "") + load["Load Force"]
+        statsLabel += (isSelected ? (isPoint ? "P=" : "W=") : "") + load["Load Force"]
 
         // Load name and stats labels. For point loads it will be 10 units higher.
-        data.push({ x: xLoc, y: 0, yOffset: (isPoint ? -75 : -55), label: load.Name, loadID: loadID, style: { fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle" } })
-        data.push({ x: xLoc, y: 0, yOffset: (isPoint ? -65 : -45), label: statsLabel, loadID: loadID, style: { fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle" } })
+        data.push({ x: xLoc, y: yLoc, yOffset: (isPoint ? -75 : -55), label: load.Name, loadID: loadID, style: { fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle" } })
+        data.push({ x: xLoc, y: yLoc, yOffset: (isPoint ? -65 : -45), label: statsLabel, loadID: loadID, style: { fontSize: 10, dominantBaseline: "text-after-edge", textAnchor: "middle" } })
 
         // Point Loads have a big arrow, non-point loads have mini arrows
-        getLoadArrows(data, load, loadID, beamProperties["Length of Beam"])
+        getLoadArrows(data, load, loadID, beamProperties["Length of Beam"], yLoc)
     })
     return data
+}
+
+// Find the y position of a load at x=loc, according to the given data.
+function calcPlayerLoc(loc, data, beamProperties){
+    if(data === undefined){
+        return 0;
+    }
+    var px  = (9/beamProperties["Length of Beam"])*loc
+    if(px === 9.0){
+        return 0.0;
+    }
+    var x1 = parseInt(px, 10)
+    var y1 = data[x1].y
+    var x2 = x1 + 1
+    var y2 = data[x2].y
+    var m = (y2-y1)/(x2-x1)
+    var c = y1 - (m*x1)
+    var py = (m*px) + c
+    return py
 }
 
 /**
@@ -418,15 +678,15 @@ function labelMakerForLoads(loads, beamProperties, selectedLoadID) {
  * 
  * loadID is the index of the load that these arrows belong to. It helps users click on loads to select them
  */
-function getLoadArrows(data, load, loadID, beamLength) {
+function getLoadArrows(data, load, loadID, beamLength, yLoc) {
     if (load.Type === "Point")
-        data.push({ x: load.X1, y: 0, yOffset: 10, label: "\u2193", loadID: loadID, style: { fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle" } })
+        data.push({ x: load.X1, y: yLoc, yOffset: 10, label: "\u2193", loadID: loadID, style: { fontSize: 45, font: "verdana", dominantBaseline: "text-after-edge", textAnchor: "middle" } })
     else {
         let numArrows = Math.floor((load.X2 - load.X1) / beamLength * 20) + 1
         // Evenly spaced
         for (let i = 0; i <= numArrows; i++) {
             let x = load.X1 + (i / numArrows) * (load.X2 - load.X1)
-            data.push({ x: x, y: 0, yOffset: 6, label: "\u2193", loadID: loadID, style: { fontSize: 25, font: "verdana", fill: load.Color, dominantBaseline: "text-after-edge", textAnchor: "middle" } })
+            data.push({ x: x, y: yLoc, yOffset: 6, label: "\u2193", loadID: loadID, style: { fontSize: 25, font: "verdana", fill: load.Color, dominantBaseline: "text-after-edge", textAnchor: "middle" } })
         }
     }
 }
@@ -474,5 +734,12 @@ function formatVal(scale) {
     // The returned values must be Strings for XYPlot's tickFormat, else 0 will be read as false and will not display
 }
 
+function updateMdata(data, lengthOfBeam){
+    let d = []
+    for(let o in data){
+        d.push( {x:data[o].x * lengthOfBeam/9 , y:data[o].y})
+    }
+    return d
+}
 
 export default CombinedLoadApp

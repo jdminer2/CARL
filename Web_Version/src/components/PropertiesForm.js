@@ -4,22 +4,17 @@ import { Button, FormControlLabel, Radio, RadioGroup } from '@mui/material'
 /**
  * This component displays a menu where users can change beam, support, and load properties.
  * 
- * Props:
- * 
  * loads - list of loads
  * beamProperties - object containing beam and support properties
  * selectedLoadID - which load is selected
  * handleSelectedChange - function to take an event from the radio buttons and change the selected load accordingly
+ * handleKeyDown - What to do when a key is pressed
+ * buttonHandlers - What to do when buttons are clicked. Should include add, edit, delete, dynamic. 
  * 
  * action - for passing messages from the outside
  * setAction - for clearing the message passed in
  * open - whether the form is open
  * setOpen - used to let the form open and close itself
- * 
- * handleKeyDown - What to do when a key is pressed
- * handleClickAdd - What to do when the add button is clicked
- * handleClickEdit - What to do when the edit button is clicked
- * handleClickDelete - What to do when the delete button is clicked
  * 
  * addEditForm - Add/Edit Form component with all props pre-added
  * openAddEditForm - Whether the Add/Edit Form is open
@@ -38,7 +33,7 @@ const PropertiesForm = (props) => {
     // Receive messages from the outside via the action prop to close the menu (it does not exist when it is being opened)
     useEffect(() => {
         if (props.action === "Close") {
-            handleClose("close")
+            handleClose()
             props.setAction("")
         }
     }, [props.action])
@@ -46,17 +41,14 @@ const PropertiesForm = (props) => {
     // If Length of Beam is changed such that an existing load becomes out of bounds, warning text appears.
     // This checks if the problematic load has been edited or deleted, and updates the warning text accordingly.
     useEffect(() => {
-        validateInputs("Length of Beam")
-    }, [props.loads.length, props.openAddEditForm])
+        validateInputs(["Length of Beam", "Elasticity", "Inertia", "Pinned Support Position", "Roller Support Position", "Density", "Area", "Damping Ratio", "rA", "Gravity"])
+    }, [props.loads.length, props.openAddEditForm, props.dynamic])
 
     // Function to submit the properties form
-    function handleClose(e) {
-        validateInputs(["Length of Beam", "Elasticity", "Inertia", "Pinned Support Position", "Roller Support Position"])
-        if (warning === "") {
+    function handleClose() {
+        validateInputs(["Length of Beam", "Elasticity", "Inertia", "Pinned Support Position", "Roller Support Position", "Density", "Area", "Damping Ratio", "rA", "Gravity"])
+        if (warning === "")
             props.setOpen(false)
-        }
-        // This is necessary, else when user attempts to submit invalid values, url will be modified, causing problems.
-        e.preventDefault()
     }
 
     /**
@@ -86,16 +78,29 @@ const PropertiesForm = (props) => {
             if (["Pinned Support Position", "Roller Support Position"].includes(field) && props.beamProperties["Support Type"] !== "Simply Supported")
                 return
 
+            let dynamicField = ["Density", "Area", "Damping Ratio", "rA", "Gravity"].includes(field)
+            let fieldValue = dynamicField?props.dynamicProperties[field]:props.beamProperties[field]
+
+            // Dynamic properties in static mode or vice versa
+            if(dynamicField && !props.dynamic)
+                return
+            if(["Pinned Support Position", "Roller Support Position"].includes(field) && props.dynamic)
+                return
+
             // Check that field is a number.
-            if (parseFloat(props.beamProperties[field]) != props.beamProperties[field]) {
+            if (parseFloat(fieldValue) != fieldValue) {
                 setWarning(field + " must be a number.")
                 newInvalidFields.push(field)
                 return
             }
-            props.beamProperties[field] = Number(props.beamProperties[field])
+            fieldValue = Number(fieldValue)
+            if(dynamicField)
+                props.dynamicProperties[field] = fieldValue
+            else
+                props.beamProperties[field] = fieldValue
 
             // Check that field >= 0
-            if (props.beamProperties[field] < 0) {
+            if (fieldValue < 0) {
                 setWarning(field + " must be at least 0.")
                 newInvalidFields.push(field)
                 return
@@ -103,7 +108,7 @@ const PropertiesForm = (props) => {
 
             // Length of Beam, Elasticity, and Inertia cannot be 0
             if (["Length of Beam", "Elasticity", "Inertia"].includes(field))
-                if (props.beamProperties[field] < 10 ** -7) {
+                if (fieldValue < 10 ** -7) {
                     setWarning(field + " cannot be 0.")
                     newInvalidFields.push(field)
                     return
@@ -147,8 +152,24 @@ const PropertiesForm = (props) => {
         setInvalidFields(newInvalidFields)
     }
 
+    function getFields() {
+        let fields = [{ field: "Length of Beam", label: "Length of Beam (L)", dynamic: false },
+                      { field: "Elasticity", label: "Modulus of Elasticity (E)", dynamic: false },
+                      { field: "Inertia", label: "Moment of Inertia (I)", dynamic: false }]
+        if(props.dynamic)
+            fields.push({ field: "Density", label: "Density", dynamic: true },
+                        { field: "Area", label: "Cross-Sectional Area", dynamic: true },
+                        { field: "Damping Ratio", label: "Damping Ratio", dynamic: true },
+                        { field: "rA", label: "rA", dynamic: true },
+                        { field: "Gravity", label: "Gravity", dynamic: true })
+        else
+            fields.push({ field: "Pinned Support Position", label: "Pinned Support Position", dynamic: false },
+                        { field: "Roller Support Position", label: "Roller Support Position", dynamic: false })
+        return fields
+    }
+
     return (
-        <form onKeyDown={props.handleKeyDown} onSubmit={handleClose} ref={formRef} tabIndex="0">
+        <form onKeyDown={props.handleKeyDown} ref={formRef} tabIndex="0">
             <div style={{backgroundColor: "#DFDFDF"}}>
                 <img src={require("../resources/images/SAIL_logo_header_v3.png")}
                         alt="Logo for SAIL: Structural Analysis Integrated Learning"
@@ -158,31 +179,33 @@ const PropertiesForm = (props) => {
             <div>
                 <h3 style={{ marginBottom: 0 }}>Beam Properties</h3>
                 {/* Support type radio button selection */}
-                <RadioGroup
-                    value={props.beamProperties["Support Type"]}
-                    onChange={(val) => {
-                        props.beamProperties["Support Type"] = val.target.value
-                        validateInputs(["Length of Beam", "Pinned Support Position", "Roller Support Position"])
-                    }}
-                    sx={{ display: 'inline-flex' }}
-                    row
-                >
-                    <FormControlLabel control={<Radio />} value="Simply Supported" label="Simply Supported" style={{ marginLeft: 5 }} />
-                    <FormControlLabel control={<Radio />} value="Cantilever" label="Cantilever" style={{ marginLeft: 5 }} />
-                </RadioGroup>
+                {props.dynamic?[]:
+                    <RadioGroup
+                        value={props.beamProperties["Support Type"]}
+                        onChange={(val) => {
+                            props.beamProperties["Support Type"] = val.target.value
+                            validateInputs(["Length of Beam", "Pinned Support Position", "Roller Support Position"])
+                        }}
+                        sx={{ display: 'inline-flex' }}
+                        row
+                    >
+                        <FormControlLabel control={<Radio />} value="Simply Supported" label="Simply Supported" style={{ marginLeft: 5 }} />
+                        <FormControlLabel control={<Radio />} value="Cantilever" label="Cantilever" style={{ marginLeft: 5 }} />
+                    </RadioGroup>
+                }
+                
                 {/* Textfields. Support Positions disabled for cantilever */}
-                {[{ field: "Length of Beam", label: "Length of Beam (L)" },
-                { field: "Pinned Support Position", label: "Pinned Support Position" },
-                { field: "Roller Support Position", label: "Roller Support Position" },
-                { field: "Elasticity", label: "Modulus of Elasticity (E)" },
-                { field: "Inertia", label: "Moment of Inertia (I)" }].map(field => {
+                {getFields().map(field => {
                     return (
                         <div key={field.label} style={{ justifyContent: 'center', display: 'flex' }}>
                             <span style={{ textAlign: 'left', width: 200 }}>{field.label}:</span>
                             <input type="text"
-                                defaultValue={props.beamProperties[field.field]}
+                                defaultValue={field.dynamic?props.dynamicProperties[field.field]:props.beamProperties[field.field]}
                                 onChange={(e) => {
-                                    props.beamProperties[field.field] = e.target.value
+                                    if(field.dynamic)
+                                        props.dynamicProperties[field.field] = e.target.value
+                                    else
+                                        props.beamProperties[field.field] = e.target.value
                                     validateInputs(field.field)
                                 }}
                                 style={{ width: 100 }}
@@ -206,9 +229,12 @@ const PropertiesForm = (props) => {
                 </RadioGroup>
                 <div>
                     {/* Add, Edit, Delete Load buttons */}
-                    <Button variant="outlined" sx={{ width: 135 }} onClick={props.handleClickAdd}>Add Load</Button>
-                    <Button variant="outlined" sx={{ width: 135 }} onClick={props.handleClickEdit} disabled={props.loads.length === 0}>Edit Load</Button>
-                    <Button variant="outlined" sx={{ width: 135 }} onClick={props.handleClickDelete} disabled={props.loads.length === 0}>Delete Load</Button>
+                    <div>
+                        <Button variant="outlined" sx={{ width: 135 }} onClick={props.buttonHandlers.add}>Add Load</Button>
+                        <Button variant="outlined" sx={{ width: 135 }} onClick={props.buttonHandlers.edit} disabled={props.loads.length === 0}>Edit Load</Button>
+                        <Button variant="outlined" sx={{ width: 135 }} onClick={props.buttonHandlers.delete} disabled={props.loads.length === 0}>Delete Load</Button>
+                    </div>
+                    <Button variant="outlined" onClick={props.buttonHandlers.dynamic}>Switch to {props.dynamic?"Static":"Dynamic"} Load Simulator</Button>
                     {/* Add/Edit Load form */}
                     {props.addEditForm()}
                 </div>
@@ -216,7 +242,7 @@ const PropertiesForm = (props) => {
             {/* Text display for invalid inputs. */}
             <p style={{ fontWeight: 'bold' }}>{warning}</p>
             {/* Submit button. */}
-            <input type="submit" value="Analyze" />
+            <input type="button" onClick={handleClose} value="Analyze" />
         </form>
     )
 }
