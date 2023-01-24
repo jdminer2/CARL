@@ -109,7 +109,7 @@ const AddEditForm = (props) => {
         else
             props.loads[props.selectedLoadID] = newLoad
 
-        props.onAddEditDelete()
+        props.onAddEdit()
     }
 
     /**

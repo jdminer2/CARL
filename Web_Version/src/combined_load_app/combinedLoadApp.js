@@ -17,33 +17,7 @@ let socket = io.connect(endpoint)
 
 function CombinedLoadApp() {
     // Data
-    const [loads, setLoads] = useState([
-        {Name: "Load 1",
-        Type: "Point",
-        X1: 50.0,
-        X2: 50.0,
-        ["Load Force"]: 10.0},
-        {Name: "Load 2",
-        Type: "Point",
-        X1: 60.0,
-        X2: 60.0,
-        ["Load Force"]: 15.0},
-        {Name: "Load 3",
-        Type: "Point",
-        X1: 20.0,
-        X2: 20.0,
-        ["Load Force"]: 10.0},
-        {Name: "Load 4",
-        Type: "Point",
-        X1: 70.0,
-        X2: 70.0,
-        ["Load Force"]: 20.0},
-        {Name: "Load 5",
-        Type: "Point",
-        X1: 10.0,
-        X2: 10.0,
-        ["Load Force"]: 30.0}
-    ])
+    const [loads, setLoads] = useState([])
     const [beamProperties, setBeamProperties] = useState({
         ["Support Type"]: "Simply Supported",
         ["Length of Beam"]: 100,
@@ -69,7 +43,7 @@ function CombinedLoadApp() {
     const [addEditFormAction, setAddEditFormAction] = useState("")
     const [propertiesFormAction, setPropertiesFormAction] = useState("")
     // Whether dynamic plot is enabled
-    const [dynamic, setDynamic] = useState(true)
+    const [dynamic, setDynamic] = useState(false)
     const [isLoaded, setIsLoaded] = useState(false)
     const [items, setItems] = useState([])
     const [mi, setI] = useState(0)
@@ -94,10 +68,10 @@ function CombinedLoadApp() {
     +", 'dampingRatio':"+ 0.02
     +", 'rA': "+ 85000.0
     +", 'EI': "+ 21000000000
-    +", 'mass': ["+ [10.0,15.0,10.0,20.0,10.0]
+    +", 'mass': ["+ []
     +"], 'gravity': "+ 9.8
-    +", 'force': ["+ [100.0,150.0,100.0,200.0,100.0]
-    +"], 'locationOfLoad': ["+ [50,60,20,70,30]
+    +", 'force': ["+ []
+    +"], 'locationOfLoad': ["+ []
     +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
 
     // Shortcut to re-render the screen
@@ -119,6 +93,9 @@ function CombinedLoadApp() {
     useEffect(() => {
         if (plotScreenRef.current)
             plotScreenRef.current.focus()
+        // Restarts the dynamic beam
+        if(dynamic)
+            socket = io.connect(endpoint)
     }, [openPropertiesForm])
 
     // Communication with backend
@@ -149,24 +126,11 @@ function CombinedLoadApp() {
             return
         loads.splice(selectedLoadID, 1)
         setSelectedLoadID(loads.length - 1)
+        refreshDynamic()
         reRender()
     }
-    function refreshDynamic() {
-        setItems([])
-        setI(0)
-        setData([
-            {x: 0, y: 0},
-            {x: 1, y: 0},
-            {x: 2, y: 0},
-            {x: 3, y: 0},
-            {x: 4, y: 0},
-            {x: 5, y: 0},
-            {x: 6, y: 0},
-            {x: 7, y: 0},
-            {x: 8, y: 0},
-            {x: 9, y: 0}
-        ])
-        
+    function refreshDynamic() { 
+        let message = items.message
         setTestUrl(makeUrl(1,10))
     }
 
@@ -289,7 +253,6 @@ function CombinedLoadApp() {
         if(dynamic) {
             if(openPropertiesForm)
                 return
-            // console.log(items)
             if(items.message === undefined)
                 return        
 
@@ -325,11 +288,8 @@ function CombinedLoadApp() {
         setIsLoaded(false)
         var loc = makeLocMass(mag,"locations")
         var masses = makeLocMass(mag, "masses")
-        var forces = []
-        for(let mass in masses){
-            forces.push(mass*dynamicProperties.Gravity)
-        }
-        
+        var forces = masses.map(mass => mass*dynamicProperties.Gravity)
+
         const turl = "{'length': "+ beamProperties["Length of Beam"] 
         +", 'elasticity': "+ 1.0
         +", 'inertia': "+ 1.0
@@ -378,7 +338,7 @@ function CombinedLoadApp() {
                 setOpen={setOpenAddEditForm}
 
                 dynamic={dynamic}
-                onAddEditDelete={refreshDynamic}
+                onAddEdit={refreshDynamic}
             />
         )
     }
@@ -409,10 +369,8 @@ function CombinedLoadApp() {
         )
     
     // If dynamic and not ready, display messages
-    else if (dynamic && items.message === undefined) {
-        console.log(items)
+    else if (dynamic && items.message === undefined && testUrl !== "")
         return "Waiting for response..."
-    }
     else if(dynamic && mData === undefined)
         return "undefined"
     
@@ -436,7 +394,7 @@ function CombinedLoadApp() {
                         {dynamic?
                             <XYPlot 
                                 height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
-                                xDomain={[0, beamProperties["Length of Beam"]]} yDomain ={[-100000000,100000000]} margin={{ left: 60, right: 60 }}
+                                xDomain={[0, beamProperties["Length of Beam"]]} yDomain ={[-10000000,10000000]} margin={{ left: 60, right: 60 }}
                             >
                                 <VerticalGridLines/>
                                 <HorizontalGridLines/>
