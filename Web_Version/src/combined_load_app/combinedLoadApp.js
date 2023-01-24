@@ -596,12 +596,6 @@ function CombinedLoadApp() {
                             beamProperties={beamProperties}
                             steps={100}
                         />
-
-                        {/* Dynamic Deflection Diagram */}
-                        <SidePlot title="Dynamic Deflection Diagram"
-                            beamProperties={beamProperties}
-                            mData={mData}
-                        />
                     </div>
                 </div>
             </div>
