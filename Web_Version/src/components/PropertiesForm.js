@@ -114,8 +114,13 @@ const PropertiesForm = (props) => {
                     return
                 }
 
-            // Pinned and Roller Support Positions must be <= Length of Beam, but it doesn't matter for cantilever beam.
+            // Pinned and Roller Support Positions must be <= Length of Beam, but it doesn't matter for cantilever beam and dynamic does not support it.
             if (["Length of Beam", "Pinned Support Position", "Roller Support Position"].includes(field) && props.beamProperties["Support Type"] === "Simply Supported") {
+                if(props.dynamic) {
+                    props.beamProperties["Pinned Support Position"] = 0
+                    props.beamProperties["Roller Support Position"] = props.beamProperties["Length of Beam"]
+                }
+                
                 if (props.beamProperties["Pinned Support Position"] > props.beamProperties["Length of Beam"]) {
                     setWarning("Pinned Support Position must be less than or equal to Length of Beam.")
                     newInvalidFields.push(field)

@@ -64,8 +64,12 @@ function SidePlot(props) {
 
         // Update plot scale if needed
         let newScale = getScale(plotData)
-        if (newScale != scale)
+        if (newScale != scale) {
             setScale(newScale)
+            if(props.title==="Deflection Diagram")
+                props.setDeflectionScale(newScale)
+        }
+
 
         return plotData
     }

@@ -18,6 +18,7 @@ let socket = io.connect(endpoint)
 function CombinedLoadApp() {
     // Data
     const [loads, setLoads] = useState([])
+    const [selectedLoadID, setSelectedLoadID] = useState(-1)
     const [beamProperties, setBeamProperties] = useState({
         ["Support Type"]: "Simply Supported",
         ["Length of Beam"]: 100,
@@ -27,14 +28,17 @@ function CombinedLoadApp() {
         Inertia: 2000.0
     })
     const [dynamicProperties, setDynamicProperties] = useState({
-        Density: 1.0,
+        Density: 0.283,
         Area: 1.0,
         ["Damping Ratio"]: 0.02,
         rA: 85000.0,
         Gravity: 9.8
     })
-    // The index of the load to move/modify/delete
-    const [selectedLoadID, setSelectedLoadID] = useState(0)
+    // Scale for dynamic displacement
+    const [deflectionScale, setDeflectionScale] = useState(1)
+    // Whether dynamic mode is enabled
+    const [dynamic, setDynamic] = useState(false)
+
     // Whether forms should be shown
     const [openHelpMenu, setOpenHelpMenu] = useState(false)
     const [openPropertiesForm, setOpenPropertiesForm] = useState(true)
@@ -42,9 +46,7 @@ function CombinedLoadApp() {
     // Communication with the forms
     const [addEditFormAction, setAddEditFormAction] = useState("")
     const [propertiesFormAction, setPropertiesFormAction] = useState("")
-    // Whether dynamic plot is enabled
-    const [dynamic, setDynamic] = useState(false)
-    const [isLoaded, setIsLoaded] = useState(false)
+
     const [items, setItems] = useState([])
     const [mi, setI] = useState(0)
     const [mData, setData] = useState([
@@ -59,20 +61,19 @@ function CombinedLoadApp() {
         {x: 8, y: 0},
         {x: 9, y: 0}
     ])
-    
-    const [testUrl, setTestUrl] = useState("{'length': "+ beamProperties["Length of Beam"] 
-    +", 'elasticity': "+ 1.0
-    +", 'inertia': "+ 1.0
-    +", 'density': "+ 1.0
-    +", 'area': "+ 1.0
-    +", 'dampingRatio':"+ 0.02
-    +", 'rA': "+ 85000.0
-    +", 'EI': "+ 21000000000
+    const [testUrl, setTestUrl] = useState(["{'length': "+ beamProperties["Length of Beam"] 
+    +", 'elasticity': "+ beamProperties.Elasticity
+    +", 'inertia': "+ beamProperties.Inertia
+    +", 'density': "+ dynamicProperties.Density
+    +", 'area': "+ dynamicProperties.Area
+    +", 'dampingRatio':"+ dynamicProperties["Damping Ratio"]
+    +", 'rA': "+ dynamicProperties.rA
+    +", 'EI': "+ beamProperties.Elasticity * beamProperties.Inertia
     +", 'mass': ["+ []
-    +"], 'gravity': "+ 9.8
+    +"], 'gravity': "+ dynamicProperties.Gravity
     +", 'force': ["+ []
     +"], 'locationOfLoad': ["+ []
-    +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}")
+    +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}"])
 
     // Shortcut to re-render the screen
     const [render, setRender] = useState(false)
@@ -93,9 +94,6 @@ function CombinedLoadApp() {
     useEffect(() => {
         if (plotScreenRef.current)
             plotScreenRef.current.focus()
-        // Restarts the dynamic beam
-        if(dynamic)
-            socket = io.connect(endpoint)
     }, [openPropertiesForm])
 
     // Communication with backend
@@ -103,12 +101,11 @@ function CombinedLoadApp() {
         if(dynamic) {
             setItems(message)
             setI(0)
-            setIsLoaded(true)
         }
     })
     useEffect(() =>
-        socket.emit("message",testUrl)
-    ,[testUrl])
+        socket.emit("message",testUrl[0])
+    ,[testUrl[0]])
 
     // When Add Load button is clicked
     function handleClickAdd () {
@@ -130,19 +127,32 @@ function CombinedLoadApp() {
         reRender()
     }
     function refreshDynamic() { 
-        let message = items.message
-        setTestUrl(makeUrl(1,10))
+        makeUrl(1,10)
     }
 
     // When Dynamic button is clicked
     function handleClickDynamic() {
-        if(!dynamic)
-            socket.emit("message",testUrl)
         setDynamic(!dynamic)
+        setOpenPropertiesForm(true)
+
         setLoads([])
         setSelectedLoadID(-1)
         beamProperties["Support Type"] = "Simply Supported"
-        setOpenPropertiesForm(true)
+        
+        setData([
+            {x: 0, y: 0},
+            {x: 1, y: 0},
+            {x: 2, y: 0},
+            {x: 3, y: 0},
+            {x: 4, y: 0},
+            {x: 5, y: 0},
+            {x: 6, y: 0},
+            {x: 7, y: 0},
+            {x: 8, y: 0},
+            {x: 9, y: 0}
+        ])
+
+        socket.emit("message",testUrl[0])
     }
     // When Edit Properties button is clicked
     function handleClickProperties() {
@@ -220,16 +230,10 @@ function CombinedLoadApp() {
      * If move would place load out of bounds, only move the load to the edge.
      */
     function moveSelectedLoad(disp,mag,tl) {
-        if(dynamic && !isLoaded)
-            return
-
         // Ensure selected load exists
         if (selectedLoadID < 0)
             return
         let load = loads[selectedLoadID]
-
-        if(dynamic)
-            setIsLoaded(false)
 
         // Constrain movement to be in-bounds
         disp = Math.min(disp, beamProperties["Length of Beam"] - load.X2)
@@ -244,8 +248,7 @@ function CombinedLoadApp() {
         load.X2 = newX2
         
         if(dynamic)
-            setTestUrl(makeUrl(mag,tl))
-
+            makeUrl(mag,tl)
         reRender()
     }
 
@@ -257,67 +260,43 @@ function CombinedLoadApp() {
                 return        
 
             if(mi < items.message.length) {
-                setData([
-                    {x: 0, y: items.message[mi][0]},
-                    {x: 1, y: items.message[mi][1]},
-                    {x: 2, y: items.message[mi][2]},
-                    {x: 3, y: items.message[mi][3]},
-                    {x: 4, y: items.message[mi][4]},
-                    {x: 5, y: items.message[mi][5]},
-                    {x: 6, y: items.message[mi][6]},
-                    {x: 7, y: items.message[mi][7]},
-                    {x: 8, y: items.message[mi][8]},
-                    {x: 9, y: items.message[mi][9]}
-                ])
+                setData(items.message[mi].map((e,i) => {return {x: i, y: e * 10**-10}}))
                 setI(mi + 1)
                 if(mi === items.message.length - 20)
                     // locations
-                    moveSelectedLoad(0,2, 10)
+                    moveSelectedLoad(0,1,10)
             }
-            else
-                setIsLoaded(false)
         }
     }
-    useInterval(updateGraph, -1)
+    useInterval(updateGraph, 20)
 
     function makeUrl(mag,tl){
-        // var ival = Math.min([ival+10,items.message.length-1])
-        var ival = mi;
+        let ival = Math.min(mi+15,items.message.length -1)
+        let locs = loads.map(load => load.X1)
+        let forces = loads.map(load => load["Load Force"])
+        let masses = forces.map((force, loadID) => {
+            let mass = force
+            if(dynamicProperties.Gravity != 0)
+                mass /= dynamicProperties.Gravity
+            if (loadID === selectedLoadID)
+                mass *= mag
+            return force
+        })
 
-        var ival = Math.min(ival+15,items.message.length -1)
-        setIsLoaded(false)
-        var loc = makeLocMass(mag,"locations")
-        var masses = makeLocMass(mag, "masses")
-        var forces = masses.map(mass => mass*dynamicProperties.Gravity)
-
-        const turl = "{'length': "+ beamProperties["Length of Beam"] 
-        +", 'elasticity': "+ 1.0
-        +", 'inertia': "+ 1.0
-        +", 'density': "+ 1.0
-        +", 'area': "+ 1.0
-        +", 'dampingRatio':"+ 0.02
-        +", 'rA': "+ 85000.0 
-        +", 'EI': "+ 21000000000
-        +", 'mass': ["+ masses 
-        +"], 'gravity': "+ 9.8
-        +", 'force': ["+ forces 
-        +"], 'locationOfLoad': ["+ loc  
-        +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': " + mag + ", 'timelimit' : "+tl+", 'q' : '[" +items.q[ival]+"]', 'mt' : "+ival+"}"
-
-        return turl
-    }
-    function makeLocMass(mag,need){
-        if(need === "locations")
-            return loads.map(load => load.X1)
-        else
-            return loads.map((load, loadID) => {
-                let mass = load["Load Force"]
-                if(dynamicProperties.Gravity != 0)
-                    mass /= dynamicProperties.Gravity
-                if(loadID === selectedLoadID)
-                    mass *= mag
-                return mass
-            })
+        testUrl[0] =
+            "{'length': "+ beamProperties["Length of Beam"] 
+            +", 'elasticity': "+ beamProperties.Elasticity
+            +", 'inertia': "+ beamProperties.Inertia
+            +", 'density': "+ dynamicProperties.Density
+            +", 'area': "+ dynamicProperties.Area
+            +", 'dampingRatio':"+ dynamicProperties["Damping Ratio"]
+            +", 'rA': "+ dynamicProperties.rA
+            +", 'EI': "+ beamProperties.Elasticity * beamProperties.Inertia
+            +", 'mass': ["+ masses 
+            +"], 'gravity': "+  dynamicProperties.Gravity
+            +", 'force': ["+ forces 
+            +"], 'locationOfLoad': ["+ locs  
+            +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': " + mag + ", 'timelimit' : "+tl+", 'q' : '[" +items.q[ival]+"]', 'mt' : "+ival+"}"
     }
 
     /**
@@ -369,7 +348,7 @@ function CombinedLoadApp() {
         )
     
     // If dynamic and not ready, display messages
-    else if (dynamic && items.message === undefined && testUrl !== "")
+    else if (dynamic && items.message === undefined)
         return "Waiting for response..."
     else if(dynamic && mData === undefined)
         return "undefined"
@@ -394,12 +373,12 @@ function CombinedLoadApp() {
                         {dynamic?
                             <XYPlot 
                                 height={window.innerHeight * 0.5} width={(innerWidth > 500) ? (window.innerWidth * 0.4) : window.innerWidth}
-                                xDomain={[0, beamProperties["Length of Beam"]]} yDomain ={[-10000000,10000000]} margin={{ left: 60, right: 60 }}
+                                xDomain={[0, beamProperties["Length of Beam"]]} yDomain ={[deflectionScale * 3,deflectionScale * 3]} margin={{ left: 60, right: 60 }}
                             >
                                 <VerticalGridLines/>
                                 <HorizontalGridLines/>
                                 <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title={"Load Locations"} />
-                                <YAxis/>
+                                <YAxis tickFormat={formatVal(beamProperties["Length of Beam"])}/>
                                 {/* Display the beam */}
                                 <LineSeries data={updateMdata(mData, beamProperties["Length of Beam"])} curve={'curveMonotoneX'}/>
                                 {/* Display the supports. */}
@@ -553,6 +532,7 @@ function CombinedLoadApp() {
                             loads={loads}
                             beamProperties={beamProperties}
                             steps={100}
+                            setDeflectionScale={setDeflectionScale}
                         />
                     </div>
                 </div>
@@ -687,6 +667,7 @@ function formatVal(scale) {
 }
 
 function updateMdata(data, lengthOfBeam){
+    // Horizontally stretch the given data to cover the length of the beam
     let d = []
     for(let o in data){
         d.push( {x:data[o].x * lengthOfBeam/9 , y:data[o].y})
