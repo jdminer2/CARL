@@ -21,9 +21,9 @@ function CombinedLoadApp() {
     const [selectedLoadID, setSelectedLoadID] = useState(-1)
     const [beamProperties, setBeamProperties] = useState({
         ["Support Type"]: "Simply Supported",
-        ["Length of Beam"]: 100,
+        ["Length of Beam"]: 10,
         ["Pinned Support Position"]: 0,
-        ["Roller Support Position"]: 100,
+        ["Roller Support Position"]: 10,
         Elasticity: 29000.0,
         Inertia: 2000.0
     })

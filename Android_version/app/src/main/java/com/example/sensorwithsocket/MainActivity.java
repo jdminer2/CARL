@@ -165,9 +165,11 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     }
                     mainWebView.loadUrl("javascript:document.getElementById('single_right_btn').click()");
                     MainActivity.this.location += 1;int ival = getIval();
+                    if(MainActivity.this.location > 100)
+                        MainActivity.this.location = 100;
                     String qstring = Arrays.toString(q.get(ival).toArray());
                     Log.d("qstring",qstring);
-                    String msg = "{'length': 100, 'elasticity': 1.0, 'inertia': 1.0, 'density': 1.0, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 210000000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
+                    String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                     attemptSend(msg,true);
                 }
             });
@@ -183,9 +185,11 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                         return;
                     }
                     MainActivity.this.location -= 1;int ival = getIval();
+                    if(MainActivity.this.location < 0)
+                        MainActivity.this.location = 0;
                     String qstring = Arrays.toString(q.get(ival).toArray());
                     Log.d("qstring",qstring);
-                    String msg = "{'length': 100, 'elasticity': 1.0, 'inertia': 1.0, 'density': 1.0, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 210000000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
+                    String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                     attemptSend(msg,true);
                  }
             });
@@ -203,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     int ival = getIval();
                     String qstring = Arrays.toString(q.get(ival).toArray());
                     Log.d("qstring",qstring);
-                    String msg = "{'length': 100, 'elasticity': 1.0, 'inertia': 1.0, 'density': 1.0, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 210000000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+ 5 +", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
+                    String msg = "{'length': 100, 'elasticity':29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+ 5 +", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                     attemptSend(msg,true);
                 }
             });
@@ -392,7 +396,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
 //            Toast.makeText(this,"socket connected",Toast.LENGTH_LONG).show();
         }
 
-        String tMsg= "{'length': 100, 'elasticity': 1.0, 'inertia': 1.0, 'density': 1.0, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 210000000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 20, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}";
+        String tMsg= "{'length': 100, 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 20, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}";
         if(conMessage){
             tMsg=msg;
         }
@@ -414,9 +418,9 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                         int ival = getIval();
                         String qstring = Arrays.toString(q.get(ival).toArray());
 //                        Log.d("qstring",qstring);
-                        String msg = "{'length': 100, 'elasticity': 1.0, 'inertia': 1.0, 'density': 1.0, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 210000000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 100, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
+                        String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 100, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                         attemptSend(msg,true);
-//                        attemptSend("{'length': 100, 'elasticity': 1.0, 'inertia': 1.0, 'density': 1.0, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 210000000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 20, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': "+ q.get(mi).toString()+", 'mt': 0}",true);
+//                        attemptSend("{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 20, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': "+ q.get(mi).toString()+", 'mt': 0}",true);
                     }
                     if(mi >= dataModel.getGraphData().getValue().size()-1){
                         return;
