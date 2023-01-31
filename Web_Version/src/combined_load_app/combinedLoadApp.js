@@ -73,7 +73,7 @@ function CombinedLoadApp() {
     +"], 'gravity': "+ dynamicProperties.Gravity
     +", 'force': ["+ []
     +"], 'locationOfLoad': ["+ []
-    +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}"])
+    +"], 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 10, 'q': 0, 'mt': 0}"])
 
     // Shortcut to re-render the screen
     const [render, setRender] = useState(false)
@@ -378,7 +378,7 @@ function CombinedLoadApp() {
                                 <VerticalGridLines/>
                                 <HorizontalGridLines/>
                                 <XAxis tickFormat={formatVal(beamProperties["Length of Beam"])} title={"Load Locations"} />
-                                <YAxis tickFormat={formatVal(beamProperties["Length of Beam"])}/>
+                                <YAxis tickFormat={formatVal(deflectionScale)}/>
                                 {/* Display the beam */}
                                 <LineSeries data={updateMdata(mData, beamProperties["Length of Beam"])} curve={'curveMonotoneX'}/>
                                 {/* Display the supports. */}

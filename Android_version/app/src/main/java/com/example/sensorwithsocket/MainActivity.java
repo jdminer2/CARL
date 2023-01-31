@@ -31,6 +31,7 @@ import org.json.JSONException;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Objects;
 
 import io.socket.client.Socket;
@@ -86,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         this.rightBtn = findViewById(R.id.right_btn);
         this.jumpBtn = findViewById(R.id.jump_btn);
         this.directionalBtn = findViewById(R.id.directional_btn);
-        this.location = 20.00;
+        this.location = 50.00;
         resetWebView();
         if(enableSensor){
             tester = findViewById(R.id.tester);
@@ -145,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     isWebViewActive = true;
                     mainWebView.reload();
                     mainWebView.setVisibility(View.VISIBLE);
-                    directionalBtn.setVisibility(View.VISIBLE);
+                    directionalBtn.setVisibility(View.INVISIBLE);
                     setButtonsVisiblity(View.INVISIBLE);
                 }
             });
@@ -165,8 +166,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     }
                     mainWebView.loadUrl("javascript:document.getElementById('single_right_btn').click()");
                     MainActivity.this.location += 1;int ival = getIval();
-                    if(MainActivity.this.location > 100)
-                        MainActivity.this.location = 100;
                     String qstring = Arrays.toString(q.get(ival).toArray());
                     Log.d("qstring",qstring);
                     String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
@@ -185,13 +184,11 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                         return;
                     }
                     MainActivity.this.location -= 1;int ival = getIval();
-                    if(MainActivity.this.location < 0)
-                        MainActivity.this.location = 0;
                     String qstring = Arrays.toString(q.get(ival).toArray());
                     Log.d("qstring",qstring);
                     String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                     attemptSend(msg,true);
-                 }
+                }
             });
             jumpBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -207,7 +204,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     int ival = getIval();
                     String qstring = Arrays.toString(q.get(ival).toArray());
                     Log.d("qstring",qstring);
-                    String msg = "{'length': 100, 'elasticity':29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+ 5 +", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
+                    String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+ 5 +", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                     attemptSend(msg,true);
                 }
             });
@@ -246,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         if(!wantTo){
             return;
         }
-        this.location = 20.0D;
+        this.location = 50.0D;
         handler = new Handler();
         MySocketIo mySocketIo = new MySocketIo("https://sail-ncsu.herokuapp.com/");
         this.socket = mySocketIo.getSocket();
@@ -256,20 +253,20 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         graph.addSeries(this.series);
         this.viewport = graph.getViewport();
         this.viewport.setYAxisBoundsManual(true);
-        this.viewport.setMinX(-1.0);
-        viewport.setMinY(-7000000.0);
-        viewport.setMaxX(9.0);
-        viewport.setMaxY(7000000.0);
+        this.viewport.setMinX(0.0);
+        viewport.setMinY(-0.1);
+        viewport.setMaxX(10.0);
+        viewport.setMaxY(0.1);
         viewport.setScalable(true);
         pointModel = new ViewModelProvider(this, new ViewModelProvider.Factory() {
             @NonNull
             @Override
             public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-                 try{
-                     return modelClass.newInstance();
-                 }catch (Exception e){
-                     return null;
-                 }
+                try{
+                    return modelClass.newInstance();
+                }catch (Exception e){
+                    return null;
+                }
             }
         }).get(DataPointModel.class);
         isStarted = false;
@@ -320,7 +317,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     double c = y1 - (m*x1);
                     double py = (m*pos) + c;
                     DataForGraph.addTheData(player,pos,py);
-                    DataForGraph.addTheData(player,pos,py + 4000000D);
+                    DataForGraph.addTheData(player,pos,py + .0004D);
 
                     graph.removeAllSeries();
                     graph.addSeries(tempSeries);
@@ -338,6 +335,14 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     try{
                         Log.d("arg",args[0].toString());
                         List<List<Double>> dataList = DataForGraph.getDataAsList(args[0].toString());
+                        List<List<Double>> newDataList = new LinkedList<List<Double>>();
+                        for(int i = 0; i < dataList.size(); i++) {
+                            List<Double> row = dataList.get(i);
+                            List<Double> newRow = new LinkedList<Double>();
+                            for(int j = 0; j < row.size(); j++)
+                                newRow.add(row.get(j) * Math.pow(10,-10));
+                            newDataList.add(newRow);
+                        }
 
                         List<List<Double>> qDataList = DataForGraph.getQdataAsList(args[0].toString());
                         Log.d("qTest1", "ran"+ qDataList.get(5).toString());
@@ -348,9 +353,9 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                                 Log.d("qtest3",args[0].toString());
                                 requestSent = false;
                                 q = qDataList;
-                                data  = dataList;
+                                data  = newDataList;
                                 Log.d("qTest","ran"+ qDataList.get(5).toString());
-                                dataModel.getGraphData().setValue(dataList);
+                                dataModel.getGraphData().setValue(newDataList);
 //                                Toast.makeText(MainActivity.this, "got new data", Toast.LENGTH_SHORT).show();
                             }
                         });
@@ -396,7 +401,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
 //            Toast.makeText(this,"socket connected",Toast.LENGTH_LONG).show();
         }
 
-        String tMsg= "{'length': 100, 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 20, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}";
+        String tMsg= "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 50, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': 0, 'mt': 0}";
         if(conMessage){
             tMsg=msg;
         }
@@ -420,7 +425,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
 //                        Log.d("qstring",qstring);
                         String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 100, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                         attemptSend(msg,true);
-//                        attemptSend("{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 20, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': "+ q.get(mi).toString()+", 'mt': 0}",true);
+//                        attemptSend("{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': 50, 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': 2, 'timelimit' : 100, 'q': "+ q.get(mi).toString()+", 'mt': 0}",true);
                     }
                     if(mi >= dataModel.getGraphData().getValue().size()-1){
                         return;
