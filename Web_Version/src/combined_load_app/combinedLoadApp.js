@@ -460,9 +460,9 @@ function CombinedLoadApp() {
                         </div>
                         <div>
                             {/* Movement and Help buttons */}
-                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(-1 * beamProperties["Length of Beam"] / 100, 1, 10) }}>&#8592;</Button>
+                            <Button variant="contained" sx={{ margin: 0.5 }} id={"multi_left_btn"} onClick={() => { moveSelectedLoad(-1 * beamProperties["Length of Beam"] / 100, 1, 10) }}>&#8592;</Button>
                             <Button variant="contained" sx={{ margin: 0.5 }} onClick={handleClickHelp}>Help</Button>
-                            <Button variant="contained" sx={{ margin: 0.5 }} onClick={() => { moveSelectedLoad(beamProperties["Length of Beam"] / 100, 1, 10) }}>&#8594;</Button>
+                            <Button variant="contained" sx={{ margin: 0.5 }} id={"multi_right_btn"} onClick={() => { moveSelectedLoad(beamProperties["Length of Beam"] / 100, 1, 10) }}>&#8594;</Button>
 
                             {/* Help menu */}
                             <Dialog open={openHelpMenu} onClose={() => setOpenHelpMenu(false)}>

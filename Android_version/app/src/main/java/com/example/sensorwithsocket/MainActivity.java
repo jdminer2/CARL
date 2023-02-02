@@ -46,7 +46,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
     LiveData<AccelerometerSensorDataModel> accStreamLiveData;
     LiveData<GyroscopeSensorDataModel> gyStreamLiveData;
     MyViewModel viewModel;
-    Button tester;
     Button leftBtn, rightBtn, jumpBtn;
     boolean enableSensor;
     Socket socket;
@@ -64,7 +63,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
     private int delay;
     private double location;
     private double force;
-    private boolean firstSent;// delete it later
     private List<List<Double>> q;
     private Button desktopVersionSwitch;
     public boolean isWebViewActive;
@@ -82,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         this.desktopVersionSwitch = findViewById(R.id.dswitch);
         this.enableSensor = true;
         initForSocketsAndGraph(true);
+        attemptSend("trial",false);
         this.mainWebView = findViewById(R.id.main_web_view);
         this.leftBtn = findViewById(R.id.left_btn);
         this.rightBtn = findViewById(R.id.right_btn);
@@ -90,7 +89,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         this.location = 50.00;
         resetWebView();
         if(enableSensor){
-            tester = findViewById(R.id.tester);
             this.deadReckoning = new DeadReckoningImpl();
             this.accSensorLiveData = new AccSensorDataLiveData(this);
             this.accStreamLiveData = Transformations.map(accSensorLiveData, new Function<float[], AccelerometerSensorDataModel>() {
@@ -109,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                 public GyroscopeSensorDataModel apply(float[] input) {
                     float[] filteredReadings = deadReckoningGyro.filterAccelerometerReadings(input);
 //                    float[] filteredReadings = input;
-                    float peak = deadReckoningGyro.peakEstimation(filteredReadings[0]);
+                    float peak = deadReckoningGyro.peakEstimation(filteredReadings[1]);
                     return null;
                 }
             });
@@ -128,17 +126,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     }
                 }
             });
-            tester.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if(!firstSent){
-                        attemptSend("trial",false);
-                        firstSent = true;
-                    }
-                    MainActivity.this.getMovement(Movement.STEP);
 
-                }
-            });
             setUpObservers();
             desktopVersionSwitch.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -146,17 +134,12 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     isWebViewActive = true;
                     mainWebView.reload();
                     mainWebView.setVisibility(View.VISIBLE);
-                    directionalBtn.setVisibility(View.INVISIBLE);
                     setButtonsVisiblity(View.INVISIBLE);
                 }
             });
             rightBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if(!firstSent){
-                        Toast.makeText(MainActivity.this,"Not yet started", Toast.LENGTH_LONG).show();
-                        return;
-                    }
                     if(requestSent){
                         Toast.makeText(MainActivity.this,"Slow Down", Toast.LENGTH_LONG).show();
                         return;
@@ -167,7 +150,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                     mainWebView.loadUrl("javascript:document.getElementById('single_right_btn').click()");
                     MainActivity.this.location += 1;int ival = getIval();
                     String qstring = Arrays.toString(q.get(ival).toArray());
-                    Log.d("qstring",qstring);
                     String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                     attemptSend(msg,true);
                 }
@@ -175,17 +157,12 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
             leftBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if(!firstSent){
-                        Toast.makeText(MainActivity.this,"Not yet started", Toast.LENGTH_LONG).show();
-                        return;
-                    }
                     if(requestSent){
                         Toast.makeText(MainActivity.this,"Slow Down", Toast.LENGTH_LONG).show();
                         return;
                     }
                     MainActivity.this.location -= 1;int ival = getIval();
                     String qstring = Arrays.toString(q.get(ival).toArray());
-                    Log.d("qstring",qstring);
                     String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+1+", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                     attemptSend(msg,true);
                 }
@@ -193,17 +170,12 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
             jumpBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if(!firstSent){
-                        Toast.makeText(MainActivity.this,"Not yet started", Toast.LENGTH_LONG).show();
-                        return;
-                    }
                     if(requestSent){
                         Toast.makeText(MainActivity.this,"Slow Down", Toast.LENGTH_LONG).show();
                         return;
                     }
                     int ival = getIval();
                     String qstring = Arrays.toString(q.get(ival).toArray());
-                    Log.d("qstring",qstring);
                     String msg = "{'length': 100, 'elasticity': 29000.0, 'inertia': 2000.0, 'density': 0.283, 'area': 1.0, 'dampingRatio': 0.02, 'rA': 85000.0, 'EI': 58000000.0, 'mass': 10.0, 'gravity': 9.81, 'force': 98.1, 'locationOfLoad': "+MainActivity.this.location+", 'nDOF': 5, 'pointsToAnimate': 10, 'timeLength': 10, 'magnitude': "+ 5 +", 'timelimit' : 10, 'q' : '"+ qstring +"', 'mt': "+ival+"}";
                     attemptSend(msg,true);
                 }
@@ -255,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         this.viewport.setYAxisBoundsManual(true);
         this.viewport.setMinX(0.0);
         viewport.setMinY(-0.1);
-        viewport.setMaxX(10.0);
+        viewport.setMaxX(100.0);
         viewport.setMaxY(0.1);
         viewport.setScalable(true);
         pointModel = new ViewModelProvider(this, new ViewModelProvider.Factory() {
@@ -281,7 +253,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                 }
             }
         }).get(DataModel.class);
-
         Observer<List<List<Double>>> dataObserver = new Observer<List<List<Double>>>() {
             @Override
             public void onChanged(List<List<Double>> lists) {
@@ -302,22 +273,22 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                 if(doubles != null){
                     LineGraphSeries<DataPoint> tempSeries = new LineGraphSeries<>();
                     while(i < doubles.size()){
-                        DataForGraph.addTheData(tempSeries,(double)i,doubles.get(i));
+                        DataForGraph.addTheData(tempSeries,(double)i * 100D/9D,doubles.get(i));
 //                        Log.d("dataPoint","" + i + doubles.get(i));
                         i += 1;
                     }
                     LineGraphSeries<DataPoint> player = new LineGraphSeries<>();
-                    double pos = (9D/100D) * location;
-                    int px = (int)((9D/100D) * location );
+                    int pos = (int)((9D/100D) * location );
+                    double px = location;
                     double x1 = px;
-                    double y1 = doubles.get(px);
-                    double x2 = px + 1;
-                    double y2 = doubles.get(px + 1);
+                    double x2 = px + 100D/9D;
+                    double y1 = doubles.get(pos);
+                    double y2 = doubles.get(pos + 1);
                     double m = (y2-y1)/(x2-x1);
                     double c = y1 - (m*x1);
-                    double py = (m*pos) + c;
-                    DataForGraph.addTheData(player,pos,py);
-                    DataForGraph.addTheData(player,pos,py + .0004D);
+                    double py = (m*px) + c;
+                    DataForGraph.addTheData(player,px,py);
+                    DataForGraph.addTheData(player,px,py + .04D);
 
                     graph.removeAllSeries();
                     graph.addSeries(tempSeries);
@@ -333,46 +304,32 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
                 requestSent = false;
                 if(args[0] != null){
                     try{
-                        Log.d("arg",args[0].toString());
                         List<List<Double>> dataList = DataForGraph.getDataAsList(args[0].toString());
+                        // Vertically compress
                         List<List<Double>> newDataList = new LinkedList<List<Double>>();
                         for(int i = 0; i < dataList.size(); i++) {
                             List<Double> row = dataList.get(i);
                             List<Double> newRow = new LinkedList<Double>();
                             for(int j = 0; j < row.size(); j++)
-                                newRow.add(row.get(j) * Math.pow(10,-10));
+                                newRow.add(row.get(j) * Math.pow(10,-12));
                             newDataList.add(newRow);
                         }
 
                         List<List<Double>> qDataList = DataForGraph.getQdataAsList(args[0].toString());
-                        Log.d("qTest1", "ran"+ qDataList.get(5).toString());
-                        Log.d("qTest2", "ran"+dataList.get(5).toString());
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Log.d("qtest3",args[0].toString());
                                 requestSent = false;
                                 q = qDataList;
                                 data  = newDataList;
-                                Log.d("qTest","ran"+ qDataList.get(5).toString());
                                 dataModel.getGraphData().setValue(newDataList);
 //                                Toast.makeText(MainActivity.this, "got new data", Toast.LENGTH_SHORT).show();
                             }
                         });
                     }catch (JSONException e){
-                        Log.d("errj","error occured");
                         e.printStackTrace();
                     }
-                }else{
-                    Log.d("errorInRespons","error in response");
                 }
-            }
-        });
-        tester = findViewById(R.id.tester);
-        tester.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                attemptSend("trial",false);
             }
         });
     }
@@ -380,7 +337,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         leftBtn.setVisibility(visiblity);
         rightBtn.setVisibility(visiblity);
         jumpBtn.setVisibility(visiblity);
-        tester.setVisibility(visiblity);
         desktopVersionSwitch.setVisibility(visiblity);
     }
     public double getLocation(){
@@ -405,7 +361,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         if(conMessage){
             tMsg=msg;
         }
-        Log.d("sendingMessage", tMsg);
         requestSent = true;
         this.socket.emit("message",tMsg);
     }
@@ -477,7 +432,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
             }
         });
         System.out.println(viewModel.getGyroStreamLiveData());
-        Log.d("testob",""+viewModel.getGyroStreamLiveData());
         viewModel.getGyroStreamLiveData().observe(this, new Observer<GyroscopeSensorDataModel>() {
             @Override
             public void onChanged(GyroscopeSensorDataModel gyroscopeSensorDataModel) {
