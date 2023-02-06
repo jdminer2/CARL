@@ -72,7 +72,7 @@ public class DeadReckoningImpl implements DeadReckoning{
         Movement movement = Movement.IDLE;
         if(gyroFlag){
 
-            if(peak >= 1.1f || peak <= -1.2f){
+            if(peak >= 1.1f || peak <= -1.1f){
                 movement = Movement.TURN;
             }
 //            if(peak > 0.0f) {
@@ -98,7 +98,7 @@ public class DeadReckoningImpl implements DeadReckoning{
 //                Log.d("theta", "theta is : " + theta);
         }else if(peak >= 4.0f || peak <= -4.0f) {
             movement = Movement.JUMP;
-        } else if(peak >= 1.0f || peak <= -1.0f) {
+        } else if(peak >= 0.5f || peak <= -0.5f) {
             movement = Movement.STEP;
         }
 
