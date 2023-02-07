@@ -419,6 +419,9 @@ function CombinedLoadApp() {
                                         <TableRow><TableCell>
                                             Positive shear force represents clockwise twist. Positive bending moment represents concave-up bending.
                                         </TableCell></TableRow>
+                                        <TableRow><TableCell>
+                                            Some features are unavailable in Dynamic Load Simulator, including uniform and triangular loads, cantilever beam, and moved supports.
+                                        </TableCell></TableRow>
                                     </TableBody></Table>
                                 </DialogContent>
                             </Dialog>
