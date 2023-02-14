@@ -14,7 +14,7 @@ function App() {
                 <Route path="/mobile_app" element={
                     <MobilePage/>
                 }/>
-                <Route path="*" element={
+                <Route path="/*" element={
                     <CombinedLoad/>
                 }/>
             </Routes>
