@@ -17,6 +17,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodSession;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Button;
@@ -190,7 +191,9 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         }
 
     }
-    private void resetWebView(){
+
+    @JavascriptInterface
+    public void resetWebView(){
         if(isWebViewActive){
             mainWebView.reload();
         }
@@ -198,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         WebSettings webSettings = mainWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-        mainWebView.loadUrl("https://sail-ncsu.herokuapp.com/");
+        mainWebView.loadUrl("https://sail-ncsu.herokuapp.com/mobile_app");
         this.mainWebView.setVisibility(View.INVISIBLE);
         setButtonsVisiblity(View.VISIBLE);
     }
