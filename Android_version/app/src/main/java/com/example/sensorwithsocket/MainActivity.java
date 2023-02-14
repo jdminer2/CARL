@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelStore;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -70,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
     public WebView mainWebView;
     public Button directionalBtn;
     public int direction;
+    public Activity self;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -88,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         this.jumpBtn = findViewById(R.id.jump_btn);
         this.directionalBtn = findViewById(R.id.directional_btn);
         this.location = 5.0;
+        this.self = this;
         resetWebView();
         if(enableSensor){
             this.deadReckoning = new DeadReckoningImpl();
@@ -107,9 +110,8 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
             this.gyStreamLiveData = Transformations.map(gySensorDataLiveData, new Function<float[], GyroscopeSensorDataModel>() {
                 @Override
                 public GyroscopeSensorDataModel apply(float[] input) {
-                    float[] filteredReadings = deadReckoningGyro.filterAccelerometerReadings(input);
 //                    float[] filteredReadings = input;
-                    deadReckoningGyro.peakEstimation(filteredReadings[2]);
+                    deadReckoningGyro.publishRotation(input, self);
                     return null;
                 }
             });

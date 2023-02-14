@@ -5,6 +5,8 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import android.app.Activity;
+import android.view.Surface;
 
 public class DeadReckoningImpl implements DeadReckoning{
     private LowPassFilter lowPassFilter;
@@ -14,7 +16,7 @@ public class DeadReckoningImpl implements DeadReckoning{
     private List<float[]> recordedPattern;
     private List<MovementDetectionCallback> observers;
     private boolean gyroFlag;
-    private int theta = 0;
+    private float theta = 0;
     DeadReckoningImpl(){
         this.lowPassFilter = new LowPassFilter();
         this.highPassFilter = new HighPassFilter();
@@ -68,35 +70,42 @@ public class DeadReckoningImpl implements DeadReckoning{
         observers.add(movementDetectionCallback);
     }
 
+    public void publishRotation(float[] input, Activity activity) {
+        float oldTheta = theta;
+        Log.d("turn", "" + input[0] +" "+ input[1] +" "+ input[2]);
+        // angle represents counter-clockwise turning of the device, or technically the clockwise adjustment of the screen's display
+        // it is assumed the user holds the device so that the top of the visual display points up or forward
+        switch(activity.getWindowManager().getDefaultDisplay().getRotation()) {
+            case Surface.ROTATION_0:
+                theta += input[1];
+                break;
+            case Surface.ROTATION_90:
+                theta += input[0];
+                break;
+            case Surface.ROTATION_180:
+                theta -= input[1];
+                break;
+            case Surface.ROTATION_270:
+                theta -= input[0];
+                break;
+        }
+        theta += input[2];
+
+        // For some reason it worked better when I multiplied everything by 5.
+        while(theta > 10*Math.PI)
+            theta -= 10*Math.PI;
+        while(theta < 0)
+            theta += 10*Math.PI;
+
+        if((oldTheta > 5*Math.PI) != (theta > 5*Math.PI))
+            for(MovementDetectionCallback observer : observers)
+                observer.getMovement(Movement.TURN);
+    }
+
     private void publishMovement(float peak) {
         Movement movement = Movement.IDLE;
-        if(gyroFlag){
 
-            if(peak >= 1.1f || peak <= -1.1f){
-                movement = Movement.TURN;
-            }
-//            if(peak > 0.0f) {
-//                Log.d("gpeak", "peak is : " + peak);
-//                peak *= 10;
-//            }
-//
-//            if(Math.abs(peak) >= 1.55f){
-//                movement = Movement.TURN;
-//                this.theta = 0;
-//            }else if(peak >= 0.78f || peak <= -0.78f){
-//                this.theta += (peak < 0)?-45:45;
-//            }
-//            else{
-//                this.theta += ((int)(peak*22.5));
-//            }
-//
-//            if(Math.abs(theta) >= 90) {
-//                movement = Movement.TURN;
-//                this.theta = 0;
-//            }
-//            if(theta != 0)
-//                Log.d("theta", "theta is : " + theta);
-        }else if(peak >= 4.0f || peak <= -4.0f) {
+        if(peak >= 4.0f || peak <= -4.0f) {
             movement = Movement.JUMP;
         } else if(peak >= 0.5f || peak <= -0.5f) {
             movement = Movement.STEP;
