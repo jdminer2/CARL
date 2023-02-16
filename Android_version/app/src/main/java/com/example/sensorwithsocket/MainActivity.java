@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         this.location = 5.0;
         this.self = this;
         resetWebView();
+        mainWebView.addJavascriptInterface(this, "Android");
         if(enableSensor){
             this.deadReckoning = new DeadReckoningImpl();
             this.accSensorLiveData = new AccSensorDataLiveData(this);

@@ -186,7 +186,7 @@ function calcLoadHeight(loc, data, beamLength){
     const xLeft = Math.floor(x)
     const xRight = xLeft + 1
     let y
-    if(0 <= xLeft <= 9 && 0 <= xRight <= 9) {
+    if(0 <= xLeft && xLeft <= 9 && 0 <= xRight && xRight <= 9) {
         const yLeft = data[xLeft].y
         const yRight = data[xRight].y
         const m = (yRight-yLeft)/(xRight-xLeft)
