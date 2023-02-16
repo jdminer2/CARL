@@ -117,11 +117,6 @@ function MobileApp() {
         makeUrl(1,10)
     }
 
-    function handleClickAndroid() {
-        let Android
-        Android.resetWebView()
-    }
-
     // When Help button is clicked
     function handleClickHelp() {
         setOpenHelpMenu(true)
@@ -259,7 +254,6 @@ function MobileApp() {
                                 <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickEdit} disabled={loads.length === 0}>Edit Load</Button>
                                 <Button variant="outlined" sx={{ width: 135 }} onClick={handleClickDelete} disabled={loads.length === 0}>Delete Load</Button>
                             </div>
-                            <Button variant="outlined" id={"mobile_return_btn"} onClick={handleClickAndroid}>Return to Mobile App</Button>
 
                             {/* Add/Edit Load form */}
                             {addEditForm()}

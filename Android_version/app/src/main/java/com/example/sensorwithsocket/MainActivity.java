@@ -18,7 +18,6 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodSession;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Button;
@@ -92,7 +91,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         this.location = 5.0;
         this.self = this;
         resetWebView();
-        mainWebView.addJavascriptInterface(this, "Android");
         if(enableSensor){
             this.deadReckoning = new DeadReckoningImpl();
             this.accSensorLiveData = new AccSensorDataLiveData(this);
@@ -136,10 +134,16 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
             desktopVersionSwitch.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    isWebViewActive = true;
-                    mainWebView.reload();
-                    mainWebView.setVisibility(View.VISIBLE);
-                    setButtonsVisiblity(View.INVISIBLE);
+                    if(isWebViewActive) {
+                        desktopVersionSwitch.setText("GO TO DESKTOP VERSION");
+                        resetWebView();
+                    } else {
+                        isWebViewActive = true;
+                        mainWebView.reload();
+                        mainWebView.setVisibility(View.VISIBLE);
+                        desktopVersionSwitch.setText("GO TO MOBILE VERSION");
+                        setButtonsVisiblity(View.INVISIBLE);
+                    }
                 }
             });
             rightBtn.setOnClickListener(new View.OnClickListener() {
@@ -195,7 +199,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
 
     }
 
-    @JavascriptInterface
     public void resetWebView(){
         if(isWebViewActive){
             mainWebView.reload();
@@ -355,7 +358,6 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
         leftBtn.setVisibility(visiblity);
         rightBtn.setVisibility(visiblity);
         jumpBtn.setVisibility(visiblity);
-        desktopVersionSwitch.setVisibility(visiblity);
     }
     public double getLocation(){
         return this.location;
