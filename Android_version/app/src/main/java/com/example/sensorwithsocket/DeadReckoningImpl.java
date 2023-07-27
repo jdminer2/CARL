@@ -16,6 +16,9 @@ public class DeadReckoningImpl implements DeadReckoning{
     private List<float[]> recordedPattern;
     private List<MovementDetectionCallback> observers;
     private boolean gyroFlag;
+    // Half of the directions are interpreted as left-movement along the beam, and half are interpreted as right.
+    // borderTheta and borderTheta + PI are the turning points between left and right movement.
+    private float borderTheta = (float)(Math.PI/2);
     private float theta = 0;
     DeadReckoningImpl(){
         this.lowPassFilter = new LowPassFilter();
@@ -77,27 +80,29 @@ public class DeadReckoningImpl implements DeadReckoning{
         // it is assumed the user holds the device so that the top of the visual display points up or forward
         switch(activity.getWindowManager().getDefaultDisplay().getRotation()) {
             case Surface.ROTATION_0:
-                theta += input[1];
+                theta += input[1]/5;
                 break;
             case Surface.ROTATION_90:
-                theta += input[0];
+                theta += input[0]/5;
                 break;
             case Surface.ROTATION_180:
-                theta -= input[1];
+                theta -= input[1]/5;
                 break;
             case Surface.ROTATION_270:
-                theta -= input[0];
+                theta -= input[0]/5;
                 break;
         }
-        theta += input[2];
+        theta += input[2]/5;
+
+        Log.d("Rotation", ""+theta);
 
         // For some reason it worked better when I multiplied everything by 5.
-        while(theta > 10*Math.PI)
-            theta -= 10*Math.PI;
+        while(theta >= 2*Math.PI)
+            theta -= 2*Math.PI;
         while(theta < 0)
-            theta += 10*Math.PI;
+            theta += 2*Math.PI;
 
-        if((oldTheta > 5*Math.PI) != (theta > 5*Math.PI))
+        if((borderTheta <= oldTheta && oldTheta < borderTheta + Math.PI) != (borderTheta <= theta && theta < borderTheta + Math.PI))
             for(MovementDetectionCallback observer : observers)
                 observer.getMovement(Movement.TURN);
     }
@@ -114,5 +119,10 @@ public class DeadReckoningImpl implements DeadReckoning{
         for(MovementDetectionCallback observer : observers) {
             observer.getMovement(movement);
         }
+    }
+
+    // Resets borderTheta so the current direction is exactly in the middle between the two turning points.
+    public void setBorderTheta() {
+        borderTheta = (float)((theta + Math.PI/2) % Math.PI);
     }
 }

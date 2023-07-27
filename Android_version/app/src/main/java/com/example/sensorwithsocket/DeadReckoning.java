@@ -13,4 +13,5 @@ public interface DeadReckoning {
     void startRecording();
     List<float[]> getWalkPattern();
     void subscribeForMovementChanges(MovementDetectionCallback movementDetectionCallback);
+    void setBorderTheta();
 }

@@ -20,7 +20,7 @@ public class DesktopVersion extends AppCompatActivity {
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-        webView.loadUrl("https://sail-ncsu.herokuapp.com/");
+        webView.loadUrl("https://sail-ncsu.herokuapp.com/mobile_app");
 
         Button jstest = findViewById(R.id.jstester);
         jstest.setOnClickListener(new View.OnClickListener() {

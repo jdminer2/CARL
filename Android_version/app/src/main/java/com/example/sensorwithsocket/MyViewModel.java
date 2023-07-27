@@ -60,7 +60,7 @@ public class MyViewModel extends ViewModel {
                     }
 //                    Toast.makeText(activity.getBaseContext(), "jump detected",Toast.LENGTH_LONG).show();
                 }else if(input.equals(Movement.TURN.name())){
-                    mainActivity.directionalBtn.performClick();
+                    mainActivity.flipButton();
 //                    Toast.makeText(activity.getBaseContext(), "Turn *** detected",Toast.LENGTH_LONG).show();
                 }
                 return null;

@@ -122,12 +122,8 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
             directionalBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    direction *= -1;
-                    if(direction == -1){
-                        directionalBtn.setText("<-");
-                    }else{
-                        directionalBtn.setText("->");
-                    }
+                    deadReckoningGyro.setBorderTheta();
+                    flipButton();
                 }
             });
 
@@ -454,6 +450,15 @@ public class MainActivity extends AppCompatActivity implements MovementDetection
             public void onChanged(GyroscopeSensorDataModel gyroscopeSensorDataModel) {
             }
         });
+    }
+
+    public void flipButton() {
+        direction *= -1;
+        if(direction == -1){
+            directionalBtn.setText("<-");
+        }else{
+            directionalBtn.setText("->");
+        }
     }
 
 }
