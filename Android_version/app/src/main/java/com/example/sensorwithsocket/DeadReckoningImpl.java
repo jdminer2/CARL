@@ -75,7 +75,6 @@ public class DeadReckoningImpl implements DeadReckoning{
 
     public void publishRotation(float[] input, Activity activity) {
         float oldTheta = theta;
-        Log.d("turn", "" + input[0] +" "+ input[1] +" "+ input[2]);
         // angle represents counter-clockwise turning of the device, or technically the clockwise adjustment of the screen's display
         // it is assumed the user holds the device so that the top of the visual display points up or forward
         switch(activity.getWindowManager().getDefaultDisplay().getRotation()) {

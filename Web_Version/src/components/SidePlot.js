@@ -64,7 +64,7 @@ function SidePlot(props) {
 
         // Update plot scale if needed
         let newScale = getScale(plotData)
-        if (newScale != scale) {
+        if (newScale != scale && newScale > 10 ** -10) {
             setScale(newScale)
             if(props.title==="Deflection Diagram")
                 props.setDeflectionScale(newScale)
@@ -988,9 +988,9 @@ function getScale(dataList) {
         maxAbsVal = Math.max(maxAbsVal, abs(dataPoint.y))
     )
 
-    // If the line is all 0, scale will be 1
+    // If the line is all 0, make no change to scale (return 0)
     if (maxAbsVal <= 10 ** -10)
-        return 1
+        return 0
 
     // Peak of the graph stays at a constant height on the graph as scale continuously changes.
     return maxAbsVal * 1.5
